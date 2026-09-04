@@ -5,6 +5,15 @@ dist-ssr
 *.local
 .cursorrules
 
+# Local design and browser QA artifacts
+/audit-*/
+/agent-*.png
+/design-qa*.png
+/design-qa.md
+/game-provider-*.png
+/iab-*.png
+/login-*.png
+
 # Auto-generated files
 src/types/import/auto-imports.d.ts
 src/types/import/components.d.ts

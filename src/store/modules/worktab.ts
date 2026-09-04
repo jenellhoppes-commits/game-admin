@@ -439,14 +439,18 @@ export const useWorktabStore = defineStore(
           try {
             if (tab.name) {
               const routes = routerInstance.getRoutes()
-              if (routes.some((r) => r.name === tab.name)) return true
+              const namedRoute = routes.find((route) => route.name === tab.name)
+              if (namedRoute) return !namedRoute.meta.isHideTab
             }
             if (tab.path) {
               const resolved = routerInstance.resolve({
                 path: tab.path,
                 query: (tab.query as LocationQueryRaw) || undefined
               })
-              return resolved.matched.length > 0
+              const targetRoute = resolved.matched.at(-1)
+              return Boolean(
+                targetRoute && targetRoute.name !== 'Exception404' && !targetRoute.meta.isHideTab
+              )
             }
             return false
           } catch {
@@ -454,13 +458,23 @@ export const useWorktabStore = defineStore(
           }
         }
 
-        // 过滤出有效的标签页
-        const validTabs = opened.value.filter((tab) => isTabRouteValid(tab))
+        // 过滤无效／旧版隐藏标签，并同步当前路由名称
+        const validTabs = opened.value
+          .filter((tab) => isTabRouteValid(tab))
+          .map((tab) => {
+            const targetRoute = tab.name
+              ? routerInstance.getRoutes().find((route) => route.name === tab.name)
+              : tab.path
+                ? routerInstance.resolve(tab.path).matched.at(-1)
+                : undefined
+            const routeTitle = targetRoute?.meta.title
+            return routeTitle ? { ...tab, title: String(routeTitle) } : tab
+          })
 
         if (validTabs.length !== opened.value.length) {
-          console.warn('发现无效的标签页路由，已自动清理')
-          opened.value = validTabs
+          console.warn('發現無效或舊版工作分頁，已自動清理')
         }
+        opened.value = validTabs
 
         // 验证当前激活标签的有效性
         const isCurrentValid = current.value && isTabRouteValid(current.value)
@@ -561,7 +575,7 @@ export const useWorktabStore = defineStore(
   },
   {
     persist: {
-      key: 'worktab',
+      key: 'game-provider-prd-v6-worktab',
       storage: localStorage
     }
   }

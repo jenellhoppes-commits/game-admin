@@ -1,9 +1,14 @@
 <!-- 授权页右上角组件 -->
 <template>
   <div
-    class="absolute w-full flex-cb top-4.5 z-10 flex-c !justify-end max-[1180px]:!justify-between"
+    class="auth-top-bar flex-cb z-10"
+    :class="
+      embedded
+        ? 'auth-top-bar--embedded'
+        : 'absolute w-full top-4.5 flex-c !justify-end max-[1180px]:!justify-between'
+    "
   >
-    <div class="flex-cc !hidden max-[1180px]:!flex ml-2 max-sm:ml-6">
+    <div v-if="!embedded" class="flex-cc !hidden max-[1180px]:!flex ml-2 max-sm:ml-6">
       <ArtLogo class="icon" size="46" />
       <h1 class="text-xl ont-mediumf ml-2">{{ AppConfig.systemInfo.name }}</h1>
     </div>
@@ -82,6 +87,8 @@
 
   defineOptions({ name: 'AuthTopBar' })
 
+  withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+
   const settingStore = useSettingStore()
   const userStore = useUserStore()
   const { isDark, systemThemeColor } = storeToRefs(settingStore)
@@ -105,6 +112,16 @@
 </script>
 
 <style scoped>
+  .auth-top-bar--embedded {
+    position: static;
+    flex: none;
+    justify-content: flex-end;
+  }
+
+  .auth-top-bar--embedded > div:last-child {
+    margin-right: 0;
+  }
+
   .color-dots {
     pointer-events: none;
     backdrop-filter: blur(10px);

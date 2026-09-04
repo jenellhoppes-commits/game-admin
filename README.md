@@ -1,104 +1,46 @@
-<img  src="https://www.qiniu.lingchen.kim/github-cover-light6.webp" />
+# Game Provider Back Office
 
-<br />
-<h1 align="center">Art Design Pro</h1>
-<p align="center">A backend system template that combines design aesthetics with efficient development, helping you quickly build professional-grade applications</p>
-<div align="center">English | <a href="./README.zh-CN.md">简体中文</a></div>
+遊戲商總後台前端展示專案，基於 Art Design Pro 建立，使用 Vue 3、TypeScript、Vite、Element Plus、Pinia 與 ECharts。
 
-<br />
-<div align="center">
+## 線上展示
 
-[![license](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE) [![github stars](https://img.shields.io/github/stars/Daymychen/art-design-pro)](https://github.com/Daymychen/art-design-pro/stargazers) [![github forks](https://img.shields.io/github/forks/Daymychen/art-design-pro)](https://github.com/Daymychen/art-design-pro/network/members)
+[GitHub Pages](https://jenellhoppes-commits.github.io/game-admin/)
 
-</div>
-<br />
+## 主要模組
 
-## What makes this project special?
+- 營運儀錶板
+- 遊戲、代理、商戶與會員管理
+- 注單、交易與獎池管理
+- 風控與審核中心
+- 對帳、結算、報表與財務設定
+- 帳號權限、語系、通知、系統參數與系統紀錄
 
-**Interface Design**: Modern UI design with smooth interactions, focusing on user experience and visual design
+目前版本使用前端 Mock Data 展示介面與操作流程，未串接正式後端、資料庫、錢包、RNG 或結算服務。
 
-**Quick Start**: Clean architecture + comprehensive documentation, easy for backend developers to use
+## 本機開發
 
-**Rich Components**: Built-in high-quality components for data display, forms, and more to meet different business scenarios
-
-**Smooth Interactions**: Button clicks, theme switching, page transitions, chart animations - experience comparable to commercial products
-
-**Efficient Development**: Built-in practical APIs like useTable and ArtForm to significantly improve development efficiency
-
-**Clean Scripts**: Built-in one-click cleanup script to quickly remove demo data and get a ready-to-develop base project
-
-## Tech Stack
-
-Development Framework: Vue3, TypeScript, Vite, Element-Plus, Tailwind CSS
-
-Code Standards: Eslint, Prettier, Stylelint, Husky, Lint-staged, cz-git
-
-## Preview
-
-<kbd><img src="https://www.qiniu.lingchen.kim/github-c1.webp" alt="Light Theme"/></kbd>
-
-<kbd><img src="https://www.qiniu.lingchen.kim/github-c2.webp" alt="Light Theme"/></kbd>
-
-<kbd><img src="https://www.qiniu.lingchen.kim/github-c4.webp" alt="Dark Theme"/></kbd>
-
-<kbd><img src="https://www.qiniu.lingchen.kim/github-c5.webp" alt="Dark Theme"/></kbd>
-
-## Quick Access
-
-[Live Demo](https://www.artd.pro) | [Official Documentation](https://www.artd.pro/docs) | [Changelog](./CHANGELOG.en.md)
-
-## Installation & Setup
+環境需求：Node.js 20.19 以上、pnpm 8.8 以上。
 
 ```bash
-# Install dependencies
-pnpm install
-
-# If pnpm install fails, try using the command below
-pnpm install --ignore-scripts
-
-# Start local development environment
+pnpm install --frozen-lockfile
 pnpm dev
+```
 
-# Build for production
+開發網址：`http://localhost:3006/#/dashboard`
+
+## 正式建置
+
+```bash
 pnpm build
 ```
 
-## Clean Version
+建置結果會輸出至 `dist/`。推送至 `main` 分支後，GitHub Actions 會自動建置並發布到 GitHub Pages。
 
-The project includes a cleanup script to quickly remove demo data and provide developers with a ready-to-develop base project
+## 開發文件
 
-```bash
-pnpm clean:dev
-```
+- [開發環境與專案結構](./docs/DEVELOPMENT_SETUP.md)
+- [介面設計規範](./docs/DESIGN_SYSTEM.md)
 
-## Technical Support
+## 基礎框架
 
-QQ Group: <a href="https://qm.qq.com/cgi-bin/qm/qr?k=Gg6yzZLFaNgmRhK0T5Qcjf7-XcAFWWXm&jump_from=webapi&authKey=YpRKVJQyFKYbGTiKw0GJ/YQXnNF+GdXNZC5beQQqnGZTvuLlXoMO7nw5fNXvmVhA">1038930070</a> (Click the link to join the group chat)
-
-## Browser Compatibility
-
-Supports modern mainstream browsers including Chrome, Safari, Firefox, and more.
-
-## Contributing
-
-We sincerely welcome and appreciate the support of every contributor! Whether you have new ideas, feature suggestions, or code optimizations, you can participate in the following ways:
-
-Submit Pull Requests: Share your code and help the project grow.
-
-Create GitHub Issues: Provide bug feedback or new feature suggestions to help us improve together.
-
-Every contribution you make takes this project one step further! Come join our open source community!
-
-## Continuous Optimization & Extension
-
-The project maintains active updates, supports the latest frontend tech stack, is compatible with mainstream frameworks, and ensures long-term stability and extensibility. Community-driven feedback mechanisms allow your needs to be quickly integrated into project iterations.
-
-## Donation
-
-If you feel this project has reduced your development costs and solved problems in your work/life, you can support us through the following ways:
-
-<img src="https://www.qiniu.lingchen.kim/%E7%BB%84%202%402x%202.png" alt="Donation QR Code"/>
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Daymychen/art-design-pro&type=Date)](https://www.star-history.com/#Daymychen/art-design-pro&Date)
+本專案沿用 [Art Design Pro](https://github.com/Daymychen/art-design-pro) 的核心架構與 MIT 授權，並針對遊戲商營運後台進行資訊架構、頁面與 Mock Data 擴充。

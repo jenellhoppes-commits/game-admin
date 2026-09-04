@@ -61,6 +61,21 @@
       </div>
 
       <div class="flex-c gap-2.5">
+        <div class="provider-context">
+          <ElTag type="success" effect="plain" round>
+            <span class="context-item"><ArtSvgIcon icon="ri:server-line" />正式環境</span>
+          </ElTag>
+          <ElBadge
+            :value="approvalStore.pendingItems.length"
+            :hidden="!approvalStore.pendingItems.length"
+          >
+            <ElButton link class="approval-entry" @click="router.push('/approvals/pending')">
+              <ArtSvgIcon icon="ri:git-pull-request-line" />
+              待審核
+            </ElButton>
+          </ElBadge>
+        </div>
+
         <!-- 搜索 -->
         <div
           v-if="shouldShowGlobalSearch"
@@ -176,6 +191,7 @@
   import { useSettingStore } from '@/store/modules/setting'
   import { useUserStore } from '@/store/modules/user'
   import { useMenuStore } from '@/store/modules/menu'
+  import { useApprovalCenterStore } from '@/store/modules/approvalCenter'
   import AppConfig from '@/config'
   import { languageOptions } from '@/locales'
   import { mittBus } from '@/utils/sys'
@@ -196,6 +212,7 @@
   const settingStore = useSettingStore()
   const userStore = useUserStore()
   const menuStore = useMenuStore()
+  const approvalStore = useApprovalCenterStore()
 
   // 顶部栏功能配置
   const {
@@ -468,6 +485,30 @@
   /* Breathing animation for chat dot */
   .breathing-dot {
     animation: breathing 1.5s ease-in-out infinite;
+  }
+
+  .provider-context,
+  .context-item,
+  .approval-entry {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .provider-context {
+    gap: 14px;
+    padding-right: 4px;
+    font-size: 13px;
+  }
+
+  .approval-entry {
+    color: var(--art-gray-700);
+  }
+
+  @media screen and (width <= 1180px) {
+    .provider-context {
+      display: none;
+    }
   }
 
   /* iPad breakpoint adjustments */

@@ -66,6 +66,8 @@ export interface RouteMeta extends Record<string | number | symbol, unknown> {
   authMark?: string
   /** 父级路径 */
   parentPath?: string
+  /** 側邊選單的業務分區標題 */
+  menuGroup?: string
 }
 
 /**

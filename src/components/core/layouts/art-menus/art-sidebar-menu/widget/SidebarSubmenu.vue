@@ -1,5 +1,13 @@
 <template>
   <template v-for="(item, index) in filteredMenuItems" :key="getUniqueKey(item, index)">
+    <div
+      v-if="shouldShowMenuGroup(item, index)"
+      v-show="menuOpen"
+      class="menu-group-title"
+      :style="{ color: theme.textColor || theme.iconColor || 'var(--art-gray-500)' }"
+    >
+      {{ item.meta.menuGroup }}
+    </div>
     <ElSubMenu v-if="hasChildren(item)" :index="item.path || item.meta.title" :level="level">
       <template #title>
         <div class="menu-icon flex-cc">
@@ -65,6 +73,7 @@
 
   interface MenuTheme {
     iconColor?: string
+    textColor?: string
   }
 
   interface Props {
@@ -104,6 +113,11 @@
    * 只显示未隐藏的菜单项
    */
   const filteredMenuItems = computed(() => filterRoutes(props.list))
+
+  const shouldShowMenuGroup = (item: AppRouteRecord, index: number): boolean => {
+    if (props.level !== 0 || !item.meta.menuGroup) return false
+    return index === 0 || filteredMenuItems.value[index - 1]?.meta.menuGroup !== item.meta.menuGroup
+  }
 
   /**
    * 跳转到指定页面
@@ -197,3 +211,17 @@
     return `${item.path || item.meta.title || 'menu'}-${props.level}-${index}`
   }
 </script>
+
+<style scoped lang="scss">
+  .menu-group-title {
+    padding: 18px 18px 6px;
+    overflow: hidden;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    opacity: 0.66;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+  }
+</style>

@@ -46,7 +46,7 @@ export const SETTING_DEFAULT_CONFIG = {
   /** 是否显示菜单按钮 */
   showMenuButton: true,
   /** 是否显示快速入口 */
-  showFastEnter: true,
+  showFastEnter: false,
   /** 是否显示刷新按钮 */
   showRefreshButton: true,
   /** 是否显示面包屑 */
@@ -58,7 +58,7 @@ export const SETTING_DEFAULT_CONFIG = {
   /** 是否显示进度条 */
   showNprogress: false,
   /** 是否显示设置引导 */
-  showSettingGuide: true,
+  showSettingGuide: false,
   /** 是否显示节日文本 */
   showFestivalText: false,
   /** 是否显示水印 */
