@@ -1,10 +1,6 @@
 <template>
   <div v-if="record" class="detail-page">
-    <AppPageHeader
-      :title="isMerchant ? merchantRecord!.merchantName : agentRecord!.agentName"
-      :eyebrow="isMerchant ? '商戶對帳詳細' : '代理對帳詳細'"
-      :description="`${record.id} · ${record.period} · ${isMerchant ? merchantRecord!.lineUid : agentRecord!.agentCode}`"
-    >
+    <AppPageHeader :title="recordTitle" :eyebrow="recordEyebrow" :description="recordDescription">
       <template #actions>
         <ElTag :type="statusType(record.status)" effect="light">{{
           statusLabel(record.status)
@@ -12,7 +8,7 @@
         <ElButton v-if="isMerchant" :disabled="!canRecalculate" @click="recalculate"
           >重新計算</ElButton
         >
-        <ElButton type="primary" :disabled="!canConfirm" @click="confirm">確認對帳</ElButton>
+        <ElButton type="primary" :disabled="!canConfirm" @click="openConfirm">確認對帳</ElButton>
       </template>
     </AppPageHeader>
 
@@ -83,11 +79,17 @@
               <ElDescriptionsItem v-if="isMerchant" label="商戶線路">{{
                 merchantRecord!.lineUid
               }}</ElDescriptionsItem>
-              <ElDescriptionsItem label="代理"
-                >{{ record.agentId }}｜{{ record.agentName }}</ElDescriptionsItem
-              >
-              <ElDescriptionsItem v-if="!isMerchant" label="納入商戶數">{{
+              <ElDescriptionsItem v-if="isMerchant || isAgent" label="代理">{{
+                agentDisplay
+              }}</ElDescriptionsItem>
+              <ElDescriptionsItem v-if="isAgent" label="納入商戶數">{{
                 agentRecord!.merchantCount
+              }}</ElDescriptionsItem>
+              <ElDescriptionsItem v-if="isSupplier" label="供應商">
+                {{ supplierRecord!.supplierCode }}｜{{ supplierRecord!.supplierName }}
+              </ElDescriptionsItem>
+              <ElDescriptionsItem v-if="isSupplier" label="納入遊戲數">{{
+                supplierRecord!.gameCount
               }}</ElDescriptionsItem>
               <ElDescriptionsItem label="交易幣別">{{
                 record.snapshot.transactionCurrency
@@ -155,7 +157,7 @@
           </ElTable>
         </ElTabPane>
 
-        <ElTabPane v-else label="商戶對帳" name="merchants">
+        <ElTabPane v-else-if="isAgent" label="商戶對帳" name="merchants">
           <ElTable :data="includedMerchants" border>
             <ElTableColumn label="商戶／線路" min-width="240"
               ><template #default="scope"
@@ -186,6 +188,42 @@
               ></ElTableColumn
             >
           </ElTable>
+        </ElTabPane>
+
+        <ElTabPane label="結算單" name="settlement">
+          <div class="section-heading">
+            <div>
+              <h2>本期結算結果</h2>
+              <p>結算單直接附屬於對帳資料，不再另外建立獨立的結算管理層級。</p>
+            </div>
+            <ElTag :type="['Confirmed', 'Locked'].includes(record.status) ? 'success' : 'info'">
+              {{ ['Confirmed', 'Locked'].includes(record.status) ? '已產生' : '待確認對帳' }}
+            </ElTag>
+          </div>
+          <ElDescriptions :column="descriptionColumns" border>
+            <ElDescriptionsItem label="結算單號">ST-{{ record.id }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="對帳期間">{{ record.period }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="原始應結">{{
+              settlementMoney(record.initialSettlementAmount)
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="差異／尾差調整">{{
+              settlementMoney(record.adjustmentAmount)
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="實收／實付金額">{{
+              record.actualSettlementAmount === undefined
+                ? '待確認'
+                : settlementMoney(record.actualSettlementAmount)
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="最終結算金額">{{
+              settlementMoney(record.finalSettlementAmount)
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="匯率快照">{{
+              record.snapshot.exchangeRateSnapshotIds.join('、') || '同幣別，不需換匯'
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="確認說明">{{
+              record.confirmationNote || '—'
+            }}</ElDescriptionsItem>
+          </ElDescriptions>
         </ElTabPane>
 
         <ElTabPane :label="`差異（${record.differenceCount}）`" name="differences">
@@ -271,6 +309,46 @@
         </ElTabPane>
       </ElTabs>
     </ElCard>
+
+    <ElDialog v-model="confirmVisible" title="確認對帳與實收／實付金額" width="min(560px, 92vw)">
+      <ElAlert
+        title="確認後會依輸入金額自動建立尾差增減紀錄，並產生本期結算單。"
+        type="info"
+        :closable="false"
+        show-icon
+      />
+      <ElForm label-position="top" class="confirm-form">
+        <ElFormItem label="平台計算應結金額">
+          <ElInput :model-value="settlementMoney(record.finalSettlementAmount)" disabled />
+        </ElFormItem>
+        <ElFormItem label="實收／實付金額" required>
+          <ElInputNumber
+            v-model="confirmForm.actualAmount"
+            :min="0"
+            :precision="record.snapshot.amountPrecision"
+            class="full"
+          />
+        </ElFormItem>
+        <ElFormItem label="本次增減">
+          <ElInput :model-value="settlementMoney(confirmAdjustment)" disabled />
+        </ElFormItem>
+        <ElFormItem
+          :label="confirmAdjustment === 0 ? '確認備註' : '尾差原因'"
+          :required="confirmAdjustment !== 0"
+        >
+          <ElInput
+            v-model="confirmForm.note"
+            type="textarea"
+            :rows="3"
+            placeholder="例如：依實際入帳金額去除尾數"
+          />
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="confirmVisible = false">取消</ElButton>
+        <ElButton type="primary" @click="confirm">確認並產生結算單</ElButton>
+      </template>
+    </ElDialog>
   </div>
   <ElResult v-else icon="warning" title="找不到對帳資料"
     ><template #extra
@@ -280,7 +358,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import { useFinanceCenterStore } from '@/store/modules/financeCenter'
@@ -291,14 +369,45 @@
   const store = useFinanceCenterStore()
   const { width } = useWindowSize()
   const isMerchant = computed(() => route.name === 'MerchantReconciliationDetail')
+  const isSupplier = computed(() => route.name === 'SupplierReconciliationDetail')
+  const isAgent = computed(() => !isMerchant.value && !isSupplier.value)
   const merchantRecord = computed(() =>
     isMerchant.value ? store.findMerchantReconciliation(String(route.params.id)) : undefined
   )
   const agentRecord = computed(() =>
-    !isMerchant.value ? store.findAgentReconciliation(String(route.params.id)) : undefined
+    isAgent.value ? store.findAgentReconciliation(String(route.params.id)) : undefined
   )
-  const record = computed(() => merchantRecord.value || agentRecord.value)
+  const supplierRecord = computed(() =>
+    isSupplier.value ? store.findSupplierReconciliation(String(route.params.id)) : undefined
+  )
+  const record = computed(() => merchantRecord.value || agentRecord.value || supplierRecord.value)
+  const recordTitle = computed(
+    () =>
+      supplierRecord.value?.supplierName ||
+      merchantRecord.value?.merchantName ||
+      agentRecord.value?.agentName ||
+      ''
+  )
+  const recordEyebrow = computed(() =>
+    isSupplier.value ? '供應商對帳詳細' : isMerchant.value ? '商戶對帳詳細' : '代理對帳詳細'
+  )
+  const recordDescription = computed(() =>
+    record.value
+      ? `${record.value.id} · ${record.value.period} · ${
+          supplierRecord.value?.supplierCode ||
+          merchantRecord.value?.lineUid ||
+          agentRecord.value?.agentCode ||
+          ''
+        }`
+      : ''
+  )
+  const agentDisplay = computed(() => {
+    const value = merchantRecord.value || agentRecord.value
+    return value ? `${value.agentId}｜${value.agentName}` : '—'
+  })
   const activeTab = ref('summary')
+  const confirmVisible = ref(false)
+  const confirmForm = reactive({ actualAmount: 0, note: '' })
   const descriptionColumns = computed(() => (width.value < 720 ? 1 : 2))
   const dailyRows = computed(() =>
     merchantRecord.value ? store.getDailyRows(merchantRecord.value) : []
@@ -313,6 +422,11 @@
     record.value ? store.getDifferences(record.value.id) : []
   )
   const logs = computed(() => (record.value ? store.getLogs(record.value.id) : []))
+  const confirmAdjustment = computed(() =>
+    record.value
+      ? Number((confirmForm.actualAmount - record.value.finalSettlementAmount).toFixed(2))
+      : 0
+  )
   const canRecalculate = computed(() =>
     Boolean(
       merchantRecord.value &&
@@ -391,18 +505,25 @@
     if (record.value && store.recalculateMerchant(record.value.id))
       ElMessage.success('已重新計算並更新快照')
   }
-  const confirm = async () => {
+  const openConfirm = () => {
     if (!record.value || !canConfirm.value) return
-    await ElMessageBox.confirm('確認後將作為後續結算依據，是否繼續？', '確認對帳', {
-      type: 'warning',
-      confirmButtonText: '確認',
-      cancelButtonText: '取消'
-    })
-    const success = isMerchant.value
-      ? store.confirmMerchant(record.value.id)
-      : store.confirmAgent(record.value.id)
-    if (success) ElMessage.success('對帳已確認')
-    else ElMessage.error('尚未符合確認條件')
+    confirmForm.actualAmount = record.value.finalSettlementAmount
+    confirmForm.note = ''
+    confirmVisible.value = true
+  }
+  const confirm = () => {
+    if (!record.value || (confirmAdjustment.value !== 0 && !confirmForm.note.trim()))
+      return ElMessage.warning('有增減金額時，請填寫尾差原因')
+    const success = isSupplier.value
+      ? store.confirmSupplier(record.value.id, confirmForm.actualAmount, confirmForm.note)
+      : isMerchant.value
+        ? store.confirmMerchant(record.value.id, confirmForm.actualAmount, confirmForm.note)
+        : store.confirmAgent(record.value.id, confirmForm.actualAmount, confirmForm.note)
+    if (success) {
+      confirmVisible.value = false
+      activeTab.value = 'settlement'
+      ElMessage.success('對帳已確認，結算單已產生')
+    } else ElMessage.error('尚未符合確認條件')
   }
 </script>
 
@@ -451,6 +572,14 @@
 
   .content-card :deep(.el-card__body) {
     padding-top: 4px;
+  }
+
+  .confirm-form {
+    margin-top: 18px;
+  }
+
+  .full {
+    width: 100%;
   }
 
   .section {

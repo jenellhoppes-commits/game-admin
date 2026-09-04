@@ -42,13 +42,13 @@ const permissionSeeds: Array<
   ['reports', '報表中心', '查看報表', 'View', false, 'Normal', '查看各類營運與財務報表'],
   ['reports', '報表中心', '匯出報表', 'Export', true, 'Medium', '匯出完整營運或財務報表'],
   [
-    'finance-settings',
-    '財務設定',
-    '管理匯率與結算規則',
+    'exchange-rates',
+    '匯率管理',
+    '管理幣別與匯率設定',
     'Edit',
     true,
     'High',
-    '發布匯率及異動結算計算規則'
+    '新增幣別配對、發布每日適用匯率及查看歷史快照'
   ],
   ['platform', '平台管理', '管理後台帳號', 'Edit', true, 'High', '新增、停用、解鎖與重設後台帳號'],
   [
@@ -151,9 +151,7 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
   )
   const financeIds = computed(() =>
     permissions.value
-      .filter((item) =>
-        ['dashboard', 'finance', 'reports', 'finance-settings'].includes(item.module)
-      )
+      .filter((item) => ['dashboard', 'finance', 'reports', 'exchange-rates'].includes(item.module))
       .map((item) => item.id)
   )
   const roles = ref<PlatformRoleRecord[]>([
@@ -340,13 +338,85 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
 
   const logs = ref<PlatformAccessLog[]>([
     {
+      id: 'ACL-0009',
+      entityType: 'Reconciliation',
+      entityId: 'SRC-202609-0008',
+      module: '對帳／結算',
+      action: '確認供應商對帳',
+      beforeValue: '待確認',
+      afterValue: '已確認',
+      operator: 'Finance Amy',
+      ipAddress: '10.20.2.25',
+      riskLevel: 'High',
+      createdAt: '2026-09-04 16:35',
+      note: '實收金額與系統金額差異已確認'
+    },
+    {
+      id: 'ACL-0008',
+      entityType: 'Exchange Rate',
+      entityId: 'FX-TWD-20260904',
+      module: '匯率管理',
+      action: '更新今日適用匯率',
+      beforeValue: '31.82',
+      afterValue: '31.86',
+      operator: 'Finance Brian',
+      ipAddress: '10.20.2.26',
+      riskLevel: 'High',
+      createdAt: '2026-09-04 14:10',
+      note: '依平台調整規則加成 0.04'
+    },
+    {
+      id: 'ACL-0007',
+      entityType: 'Merchant',
+      entityId: 'M00006',
+      module: '商務中心',
+      action: '啟用商戶',
+      beforeValue: '待審核',
+      afterValue: '啟用',
+      operator: 'Operations One',
+      ipAddress: '10.20.1.22',
+      riskLevel: 'Medium',
+      createdAt: '2026-09-04 11:42',
+      note: '商戶資料與合約條件已完成審核'
+    },
+    {
+      id: 'ACL-0006',
+      entityType: 'Game',
+      entityId: 'PG-SLOT-001',
+      module: '遊戲中心',
+      action: '調整遊戲狀態',
+      beforeValue: '維護中',
+      afterValue: '上線',
+      operator: 'Game Ops',
+      ipAddress: '10.20.1.24',
+      riskLevel: 'Medium',
+      createdAt: '2026-09-04 10:25',
+      note: '供應商維護完成並通過驗證'
+    },
+    {
+      id: 'ACL-0005',
+      entityType: 'Report',
+      entityId: 'RPT-AGENT-0904',
+      module: '報表中心',
+      action: '匯出代理報表',
+      beforeValue: '—',
+      afterValue: 'CSV',
+      operator: 'Operations Two',
+      ipAddress: '10.20.1.23',
+      riskLevel: 'Normal',
+      createdAt: '2026-09-04 09:50',
+      note: '資料期間 2026-09-01 至 2026-09-04'
+    },
+    {
       id: 'ACL-0004',
       entityType: 'Account',
       entityId: 'ADM-00012',
+      module: '帳號與權限',
       action: '帳號自動鎖定',
       beforeValue: '啟用',
       afterValue: '鎖定',
       operator: '系統',
+      riskLevel: 'High',
       createdAt: '2026-09-04 08:55',
       note: '連續登入失敗 5 次'
     },
@@ -354,10 +424,13 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
       id: 'ACL-0003',
       entityType: 'Sensitive Grant',
       entityId: 'SG-0004',
+      module: '帳號與權限',
       action: '申請敏感權限',
       beforeValue: '無',
       afterValue: '待審核',
       operator: 'CS Taiwan',
+      ipAddress: '10.20.4.31',
+      riskLevel: 'High',
       createdAt: '2026-09-04 10:10',
       note: '暫時查看會員敏感資料'
     },
@@ -365,10 +438,13 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
       id: 'ACL-0002',
       entityType: 'Role',
       entityId: 'ROLE-003',
+      module: '帳號與權限',
       action: '更新角色權限',
       beforeValue: '8 項',
       afterValue: '9 項',
       operator: 'Super Admin',
+      ipAddress: '10.20.0.20',
+      riskLevel: 'High',
       createdAt: '2026-09-03 14:20',
       note: '新增匯率管理權限'
     },
@@ -376,10 +452,13 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
       id: 'ACL-0001',
       entityType: 'Data Scope',
       entityId: 'SCOPE-CS',
+      module: '帳號與權限',
       action: '更新資料範圍',
       beforeValue: '2 個商戶',
       afterValue: '3 個商戶',
       operator: 'Super Admin',
+      ipAddress: '10.20.0.20',
+      riskLevel: 'Medium',
       createdAt: '2026-09-01 16:40',
       note: '新增 M00006'
     }
@@ -397,10 +476,13 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
       id: `ACL-${String(logs.value.length + 1).padStart(4, '0')}`,
       entityType,
       entityId,
+      module: '帳號與權限',
       action,
       beforeValue,
       afterValue,
       operator: 'Super Admin',
+      ipAddress: '10.20.0.20',
+      riskLevel: entityType === 'Account' ? 'Medium' : 'High',
       createdAt: formatNow(),
       note
     })
@@ -489,6 +571,32 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
     return true
   }
 
+  const createRole = (
+    payload: Pick<
+      PlatformRoleRecord,
+      'name' | 'code' | 'description' | 'permissionIds' | 'sensitivePermissionIds' | 'dataScopeId'
+    >
+  ) => {
+    const id = `ROLE-${String(roles.value.length + 1).padStart(3, '0')}`
+    roles.value.unshift({
+      ...payload,
+      id,
+      accountCount: 0,
+      builtIn: false,
+      status: 'Active',
+      updatedAt: formatNow()
+    })
+    addLog(
+      'Role',
+      id,
+      '新增角色',
+      '無',
+      `${payload.permissionIds.length} 項權限 / ${payload.dataScopeId}`,
+      '角色已建立，可指派給人員帳號'
+    )
+    return id
+  }
+
   const reviewSensitiveGrant = (id: string, approved: boolean) => {
     const item = sensitiveGrants.value.find((row) => row.id === id)
     if (!item || item.status !== 'Pending Review') return false
@@ -536,6 +644,7 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
     logs,
     getRoleNames,
     saveAccount,
+    createRole,
     setAccountStatus,
     resetPassword,
     saveRole,

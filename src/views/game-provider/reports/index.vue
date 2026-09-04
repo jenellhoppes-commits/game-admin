@@ -1,28 +1,38 @@
 <template>
   <div class="report-page">
-    <AppPageHeader :title="copy.title" :eyebrow="copy.eyebrow" :description="copy.description">
+    <AppPageHeader :title="mainCopy.title" eyebrow="報表中心" :description="mainCopy.description">
       <template #actions>
         <ElButton @click="definitionVisible = true">指標說明</ElButton>
         <ElButton type="primary" @click="exportRows">匯出報表</ElButton>
       </template>
     </AppPageHeader>
 
-    <div class="summary-grid">
-      <button
-        v-for="card in summaryCards"
-        :key="card.label"
-        type="button"
-        @click="card.filter && applySummaryFilter(card.filter)"
-      >
-        <span>{{ card.label }}</span>
-        <strong :class="card.tone">{{ card.value }}</strong>
-        <small>{{ card.note }}</small>
-      </button>
-    </div>
-
-    <ElAlert :title="modeAlert" type="info" :closable="false" show-icon />
+    <ElCard v-if="analysisOptions.length > 1" shadow="never" class="analysis-tabs-card">
+      <div class="analysis-heading">
+        <div>
+          <strong>分析視角</strong>
+          <span>同一份報表內切換維度，不再增加側邊選單</span>
+        </div>
+      </div>
+      <ElTabs v-model="activeMode">
+        <ElTabPane
+          v-for="option in analysisOptions"
+          :key="option.value"
+          :label="option.label"
+          :name="option.value"
+        />
+      </ElTabs>
+    </ElCard>
 
     <ElCard shadow="never" class="filter-card">
+      <template #header>
+        <div class="card-heading">
+          <div>
+            <strong>查詢條件</strong>
+            <span>控制要納入統計的資料範圍</span>
+          </div>
+        </div>
+      </template>
       <ElForm inline label-position="left">
         <ElFormItem label="資料日期">
           <ElDatePicker
@@ -35,7 +45,14 @@
             :clearable="false"
           />
         </ElFormItem>
-        <ElFormItem label="交易幣別">
+        <ElFormItem label="統計週期">
+          <ElSegmented
+            v-model="filters.granularity"
+            :options="['日', '週', '月']"
+            aria-label="統計週期"
+          />
+        </ElFormItem>
+        <ElFormItem label="資料幣別">
           <ElSelect
             v-model="filters.currency"
             clearable
@@ -111,31 +128,127 @@
       </ElForm>
     </ElCard>
 
+    <ElCard shadow="never" class="currency-display-card">
+      <template #header>
+        <div class="card-heading">
+          <div>
+            <strong>金額顯示與匯率</strong>
+            <span>只改變報表顯示，不會改寫原始資料或正式結算金額</span>
+          </div>
+          <ElButton link type="primary" @click="openRateHistory">查看匯率歷史</ElButton>
+        </div>
+      </template>
+      <div class="currency-display-grid">
+        <div class="currency-control">
+          <span class="control-label">顯示方式</span>
+          <ElRadioGroup v-model="displayMode">
+            <ElRadioButton value="Original">各自原幣</ElRadioButton>
+            <ElRadioButton value="Reference">統一換算</ElRadioButton>
+          </ElRadioGroup>
+        </div>
+        <div class="currency-control">
+          <span class="control-label">換算幣別</span>
+          <ElSelect
+            v-model="referenceCurrency"
+            class="currency-target-select"
+            :disabled="displayMode === 'Original'"
+            aria-label="換算幣別"
+          >
+            <ElOption
+              v-for="currency in displayCurrencies"
+              :key="currency.code"
+              :label="`${currency.code}｜${currency.name}`"
+              :value="currency.code"
+            />
+          </ElSelect>
+        </div>
+        <div class="rate-summary">
+          <div>
+            <span>目前顯示口徑</span>
+            <strong>{{ conversionSummary }}</strong>
+          </div>
+          <div>
+            <span>目前適用匯率</span>
+            <strong>{{ currentRateLabel }}</strong>
+          </div>
+          <div>
+            <span>匯率依據</span>
+            <strong>{{ rateBasisLabel }}</strong>
+          </div>
+        </div>
+      </div>
+    </ElCard>
+
+    <ElAlert :title="modeAlert" type="info" :closable="false" show-icon />
+
+    <div class="summary-grid">
+      <button
+        v-for="card in summaryCards"
+        :key="card.label"
+        type="button"
+        :class="{ 'is-clickable': Boolean(card.filter) }"
+        :disabled="!card.filter"
+        @click="card.filter && applySummaryFilter(card.filter)"
+      >
+        <span>{{ card.label }}</span>
+        <strong :class="card.tone">{{ card.value }}</strong>
+        <small>{{ card.note }}</small>
+      </button>
+    </div>
+
+    <div class="insight-grid" :class="{ 'has-tree': showHierarchy }">
+      <ElCard v-if="showHierarchy" shadow="never" class="hierarchy-card">
+        <template #header>
+          <div class="card-heading">
+            <div>
+              <strong>{{ mainReport === 'agents' ? '代理層級' : '代理／商戶層級' }}</strong>
+              <span>{{ selectedHierarchyLabel }}</span>
+            </div>
+            <ElButton link type="primary" @click="clearHierarchy">查看全部</ElButton>
+          </div>
+        </template>
+        <ElTree
+          ref="hierarchyTreeRef"
+          :data="hierarchyData"
+          node-key="id"
+          default-expand-all
+          highlight-current
+          :expand-on-click-node="false"
+          @node-click="selectHierarchyNode"
+        />
+      </ElCard>
+
+      <ElCard shadow="never" class="distribution-card">
+        <template #header>
+          <div class="card-heading">
+            <div>
+              <strong>{{ distributionTitle }}</strong>
+              <span>依目前篩選條件顯示前 {{ distributionItems.length }} 名</span>
+            </div>
+            <ElTag effect="plain">{{ appliedFilters.granularity }}統計</ElTag>
+          </div>
+        </template>
+        <div v-if="distributionItems.length" class="distribution-list">
+          <div v-for="item in distributionItems" :key="item.id" class="distribution-item">
+            <div class="distribution-label">
+              <span>{{ item.label }}</span>
+              <strong>{{ item.display }}</strong>
+            </div>
+            <div class="distribution-track">
+              <i :style="{ width: `${item.percent}%` }" />
+            </div>
+          </div>
+        </div>
+        <ElEmpty v-else :description="distributionEmptyText" :image-size="72" />
+      </ElCard>
+    </div>
+
     <ElCard shadow="never" class="table-card">
       <div class="table-toolbar">
         <div>
           <strong>{{ copy.tableTitle }}</strong>
           <span>共 {{ filteredRows.length }} 筆</span>
           <small>最後更新：{{ reportStore.reportTime }}</small>
-        </div>
-        <div class="display-controls">
-          <ElRadioGroup v-model="displayMode" size="small">
-            <ElRadioButton value="Original">原幣</ElRadioButton>
-            <ElRadioButton value="Reference">參考換算</ElRadioButton>
-          </ElRadioGroup>
-          <ElSelect
-            v-if="displayMode === 'Reference'"
-            v-model="referenceCurrency"
-            class="reference-select"
-            aria-label="參考換算幣別"
-          >
-            <ElOption
-              v-for="currency in currencies"
-              :key="currency"
-              :label="currency"
-              :value="currency"
-            />
-          </ElSelect>
         </div>
       </div>
 
@@ -213,7 +326,7 @@
       </ElDescriptions>
       <div class="drawer-note">
         <strong>目前報表</strong>
-        <p>{{ copy.title }}｜{{ copy.description }}</p>
+        <p>{{ mainCopy.title }}｜{{ copy.title }}｜{{ copy.description }}</p>
       </div>
     </ElDrawer>
   </div>
@@ -231,6 +344,8 @@
   defineOptions({ name: 'ReportCenter' })
 
   type DisplayMode = 'Original' | 'Reference'
+  type MainReport = 'operations' | 'games' | 'agents' | 'merchants' | 'jackpots'
+  type Granularity = '日' | '週' | '月'
   type ColumnKind = 'text' | 'integer' | 'amount' | 'percent' | 'status'
   type ColumnKey = keyof ReportMetricRow
 
@@ -253,6 +368,7 @@
 
   interface ReportFilters {
     dateRange: [string, string]
+    granularity: Granularity
     currency: string
     agentId: string
     merchantId: string
@@ -260,6 +376,20 @@
     keyword: string
     excludeTest: boolean
     status: ReportRowStatus | ''
+  }
+
+  interface AnalysisOption {
+    label: string
+    value: ReportMode
+  }
+
+  interface HierarchyNode {
+    id: string
+    label: string
+    type: 'root' | 'agent' | 'merchant'
+    agentId?: string
+    merchantId?: string
+    children?: HierarchyNode[]
   }
 
   interface SummaryCard {
@@ -529,6 +659,53 @@
     }
   }
 
+  const mainReportCopies: Record<MainReport, { title: string; description: string }> = {
+    operations: {
+      title: '營運報表',
+      description: '掌握全平台投注、會員與交易健康度，並依日期、週期及幣別切換統計口徑。'
+    },
+    games: {
+      title: '遊戲報表',
+      description: '從遊戲表現、RTP 與注單三個視角，分析內容成效與異常偏移。'
+    },
+    agents: {
+      title: '代理報表',
+      description: '沿代理層級查看旗下商戶、營運貢獻與結算結果，快速定位差異來源。'
+    },
+    merchants: {
+      title: '商戶報表',
+      description: '依代理與商戶樹狀關係，分析商戶、線路及結算表現。'
+    },
+    jackpots: {
+      title: '獎池報表',
+      description: '集中檢視各獎池的水位、累積、派發與異常狀態。'
+    }
+  }
+
+  const analysisByReport: Record<MainReport, AnalysisOption[]> = {
+    operations: [
+      { label: '營運概況', value: 'overview' },
+      { label: '交易分析', value: 'transaction' },
+      { label: '會員分析', value: 'member' }
+    ],
+    games: [
+      { label: '遊戲表現', value: 'game-performance' },
+      { label: 'RTP 分析', value: 'rtp' },
+      { label: '注單分析', value: 'bet' }
+    ],
+    agents: [
+      { label: '代理總覽', value: 'agent' },
+      { label: '旗下商戶', value: 'agent-merchant' },
+      { label: '結算分析', value: 'agent-settlement' }
+    ],
+    merchants: [
+      { label: '商戶總覽', value: 'merchant' },
+      { label: '線路分析', value: 'merchant-line' },
+      { label: '結算分析', value: 'merchant-settlement' }
+    ],
+    jackpots: [{ label: '獎池總覽', value: 'jackpot' }]
+  }
+
   const route = useRoute()
   const router = useRouter()
   const businessStore = useBusinessPartnerStore()
@@ -537,31 +714,28 @@
   const { width } = useWindowSize()
   const isMobile = computed(() => width.value <= 680)
 
-  const routeModeMap: Record<string, ReportMode> = {
-    ReportOverview: 'overview',
-    GamePerformanceReport: 'game-performance',
-    RtpReport: 'rtp',
-    MerchantReport: 'merchant',
-    MerchantLineReport: 'merchant-line',
-    AgentReport: 'agent',
-    AgentMerchantReport: 'agent-merchant',
-    MemberReports: 'member',
-    BetStatisticsReport: 'bet',
-    TransactionStatisticsReport: 'transaction',
-    JackpotReports: 'jackpot',
-    MerchantSettlementReport: 'merchant-settlement',
-    AgentSettlementReport: 'agent-settlement'
+  const routeReportMap: Record<string, MainReport> = {
+    OperationsReport: 'operations',
+    GameReport: 'games',
+    AgentReport: 'agents',
+    MerchantReport: 'merchants',
+    JackpotReport: 'jackpots'
   }
 
-  const mode = computed<ReportMode>(() => routeModeMap[String(route.name)] || 'overview')
-  const copy = computed(() => reportCopies[mode.value])
+  const mainReport = computed<MainReport>(() => routeReportMap[String(route.name)] || 'operations')
+  const mainCopy = computed(() => mainReportCopies[mainReport.value])
+  const analysisOptions = computed(() => analysisByReport[mainReport.value])
+  const activeMode = ref<ReportMode>('overview')
+  const mode = computed(() => activeMode.value)
+  const copy = computed(() => reportCopies[activeMode.value])
   const displayMode = ref<DisplayMode>('Original')
-  const referenceCurrency = ref('USD')
+  const referenceCurrency = ref('USDT')
   const definitionVisible = ref(false)
   const pagination = reactive({ current: 1, size: 10 })
 
   const defaultFilters = (): ReportFilters => ({
     dateRange: ['2026-09-01', '2026-09-04'],
+    granularity: '日',
     currency: '',
     agentId: '',
     merchantId: '',
@@ -572,6 +746,9 @@
   })
   const filters = reactive<ReportFilters>(defaultFilters())
   const appliedFilters = ref<ReportFilters>(defaultFilters())
+  const displayCurrencies = computed(() => reportStore.getDisplayCurrencies())
+  const currencyPrecision = (currency: string) =>
+    Math.min(displayCurrencies.value.find((item) => item.code === currency)?.decimalPlaces ?? 2, 6)
 
   const currencies = computed(() => [
     ...new Set(reportStore.getRows(mode.value).map((row) => row.currency))
@@ -601,13 +778,73 @@
       : businessStore.merchants
   )
 
+  const showHierarchy = computed(() => ['agents', 'merchants'].includes(mainReport.value))
+  const hierarchyTreeRef = ref()
+  const buildAgentNodes = (parentAgentId?: string): HierarchyNode[] =>
+    businessStore.agents
+      .filter((agent) => agent.parentAgentId === parentAgentId)
+      .map((agent) => {
+        const agentChildren = buildAgentNodes(agent.id)
+        const merchantChildren: HierarchyNode[] =
+          mainReport.value === 'merchants'
+            ? businessStore.merchants
+                .filter((merchant) => merchant.agentId === agent.id)
+                .map((merchant) => ({
+                  id: `merchant-${merchant.id}`,
+                  label: `${merchant.name}｜${merchant.code}`,
+                  type: 'merchant',
+                  agentId: agent.id,
+                  merchantId: merchant.id
+                }))
+            : []
+        return {
+          id: `agent-${agent.id}`,
+          label: `${agent.name}｜${agent.level}`,
+          type: 'agent',
+          agentId: agent.id,
+          children: [...agentChildren, ...merchantChildren]
+        }
+      })
+
+  const hierarchyData = computed<HierarchyNode[]>(() => [
+    {
+      id: 'all',
+      label: mainReport.value === 'agents' ? '全部代理' : '全部代理與商戶',
+      type: 'root',
+      children: buildAgentNodes()
+    }
+  ])
+  const selectedHierarchyLabel = computed(() => {
+    if (filters.merchantId) {
+      const merchant = businessStore.merchants.find((item) => item.id === filters.merchantId)
+      return merchant ? `目前：${merchant.name}` : '目前：全部'
+    }
+    if (filters.agentId) {
+      const agent = businessStore.agents.find((item) => item.id === filters.agentId)
+      return agent ? `目前：${agent.name}（含下層）` : '目前：全部'
+    }
+    return '選擇節點即可縮小統計範圍'
+  })
+  const appliedAgentIds = computed(() => {
+    const ids = new Set<string>()
+    const append = (agentId: string) => {
+      ids.add(agentId)
+      businessStore.agents
+        .filter((agent) => agent.parentAgentId === agentId)
+        .forEach((agent) => append(agent.id))
+    }
+    if (appliedFilters.value.agentId) append(appliedFilters.value.agentId)
+    return ids
+  })
+
   const sourceRows = computed(() => reportStore.getRows(mode.value))
   const filteredRows = computed(() => {
     const query = appliedFilters.value.keyword.trim().toLowerCase()
     return sourceRows.value.filter((row) => {
       if (appliedFilters.value.currency && row.currency !== appliedFilters.value.currency)
         return false
-      if (appliedFilters.value.agentId && row.agentId !== appliedFilters.value.agentId) return false
+      if (appliedFilters.value.agentId && (!row.agentId || !appliedAgentIds.value.has(row.agentId)))
+        return false
       if (appliedFilters.value.merchantId && row.merchantId !== appliedFilters.value.merchantId)
         return false
       if (appliedFilters.value.gameId && row.gameId !== appliedFilters.value.gameId) return false
@@ -621,19 +858,67 @@
       )
     })
   })
+  const sourceCurrencies = computed(() => [
+    ...new Set(filteredRows.value.map((row) => row.currency))
+  ])
+  const conversionQuotes = computed(() =>
+    sourceCurrencies.value.map((currency) => ({
+      currency,
+      quote: reportStore.getRateQuote(currency, referenceCurrency.value)
+    }))
+  )
+  const successfulQuotes = computed(() => conversionQuotes.value.filter((item) => item.quote.ok))
+  const latestRateDate = computed(
+    () =>
+      successfulQuotes.value
+        .map((item) => item.quote.rateDate || '')
+        .filter(Boolean)
+        .sort()
+        .at(-1) || '同幣別 1:1'
+  )
+  const usedSnapshotCount = computed(
+    () => new Set(successfulQuotes.value.flatMap((item) => item.quote.snapshotIds || [])).size
+  )
+  const conversionSummary = computed(() => {
+    if (displayMode.value === 'Original') return '每列保留資料原幣'
+    return `全部金額統一顯示為 ${referenceCurrency.value}`
+  })
+  const currentRateLabel = computed(() => {
+    if (displayMode.value === 'Original') return '未套用換算'
+    if (!sourceCurrencies.value.length) return '目前沒有可換算資料'
+    if (sourceCurrencies.value.length > 1) {
+      const failedCount = conversionQuotes.value.length - successfulQuotes.value.length
+      return failedCount
+        ? `${successfulQuotes.value.length} 種成功、${failedCount} 種缺少匯率`
+        : `${sourceCurrencies.value.length} 種資料幣別逐列換算`
+    }
+    const [{ currency, quote }] = conversionQuotes.value
+    if (!quote.ok) return quote.message
+    return `1 ${currency} = ${formatNumber(quote.rate, 6)} ${referenceCurrency.value}`
+  })
+  const rateBasisLabel = computed(() => {
+    if (displayMode.value === 'Original') return '不進行跨幣別加總'
+    const snapshotText = usedSnapshotCount.value
+      ? `${usedSnapshotCount.value} 筆鎖定快照`
+      : '同幣別不需快照'
+    return `${latestRateDate.value}｜${snapshotText}｜USDT 交叉換算`
+  })
   const pagedRows = computed(() => {
     const start = (pagination.current - 1) * pagination.size
     return filteredRows.value.slice(start, start + pagination.size)
   })
 
   const modeAlert = computed(() => {
-    if (['merchant-settlement', 'agent-settlement'].includes(mode.value)) {
-      return '結算報表使用當期鎖定的商務條件與正式匯率快照；後續匯率異動不回寫歷史結果。'
-    }
     if (displayMode.value === 'Reference') {
-      return `目前以 ${referenceCurrency.value} 進行參考換算；此數值只供跨幣別比較，不可作為正式結算依據。`
+      const settlementText = ['merchant-settlement', 'agent-settlement'].includes(mode.value)
+        ? '原結算結果仍使用當期正式快照，不會被改寫。'
+        : '換算結果只供營運比較，不可作為正式結算依據。'
+      return `目前以 ${referenceCurrency.value} 統一換算，採用 ${latestRateDate.value} 的平台鎖定匯率；${settlementText}`
     }
-    return '原幣模式不跨幣別加總；請使用交易幣別篩選，或切換「參考換算」進行趨勢比較。'
+    if (['merchant-settlement', 'agent-settlement'].includes(mode.value)) {
+      return '目前顯示正式結算原幣；每筆結果使用當期鎖定的商務條件與匯率快照。'
+    }
+    return '各自原幣不跨幣別加總；若要比較總額與排名，請選擇單一資料幣別或切換「統一換算」。'
   })
 
   const formatNumber = (value: number, digits = 0) =>
@@ -648,7 +933,8 @@
         ? reportStore.convertAmount(value, row.currency, referenceCurrency.value)
         : value
     const currency = displayMode.value === 'Reference' ? referenceCurrency.value : row.currency
-    return `${formatNumber(amount, 2)} ${currency}`
+    if (!Number.isFinite(amount)) return `匯率缺失｜${row.currency} → ${currency}`
+    return `${formatNumber(amount, currencyPrecision(currency))} ${currency}`
   }
 
   const formatCell = (row: ReportMetricRow, column: ReportColumn) => {
@@ -663,24 +949,84 @@
     return String(value)
   }
 
+  const distributionMetric = computed<{
+    key: ColumnKey
+    label: string
+    kind: 'amount' | 'integer' | 'percent'
+  }>(() => {
+    if (mode.value === 'rtp') return { key: 'actualRtp', label: '實際 RTP', kind: 'percent' }
+    if (mode.value === 'jackpot')
+      return { key: 'currentBalance', label: '獎池水位', kind: 'amount' }
+    if (mode.value === 'transaction')
+      return { key: 'transactionCount', label: '交易量', kind: 'integer' }
+    if (['member', 'bet'].includes(mode.value))
+      return { key: 'betAmount', label: '投注規模', kind: 'amount' }
+    return { key: 'ggr', label: '遊戲商輸贏', kind: 'amount' }
+  })
+  const distributionTitle = computed(() => `${distributionMetric.value.label}分布`)
+  const distributionNeedsConversion = computed(
+    () => displayMode.value === 'Original' && sourceCurrencies.value.length > 1
+  )
+  const distributionEmptyText = computed(() =>
+    distributionNeedsConversion.value
+      ? '不同幣別不能直接排名，請選擇單一資料幣別或切換統一換算'
+      : '目前條件沒有可分析資料'
+  )
+  const distributionItems = computed(() => {
+    if (distributionNeedsConversion.value) return []
+    const { key, kind } = distributionMetric.value
+    const ranked = filteredRows.value
+      .filter((row) => typeof row[key] === 'number')
+      .map((row) => {
+        const value = Number(row[key])
+        const comparableValue =
+          kind === 'amount' && displayMode.value === 'Reference'
+            ? reportStore.convertAmount(value, row.currency, referenceCurrency.value)
+            : value
+        return { row, value, comparableValue }
+      })
+      .filter((item) => Number.isFinite(item.comparableValue))
+      .sort((a, b) => Math.abs(b.comparableValue) - Math.abs(a.comparableValue))
+      .slice(0, 6)
+    const max = Math.max(...ranked.map((item) => Math.abs(item.comparableValue)), 1)
+    return ranked.map(({ row, value, comparableValue }) => {
+      const display =
+        kind === 'percent'
+          ? `${formatNumber(value, 2)}%`
+          : kind === 'integer'
+            ? `${formatNumber(value)} 筆`
+            : displayAmount(row, value)
+      return {
+        id: row.id,
+        label: row.primary,
+        display,
+        percent: Math.max(4, Math.round((Math.abs(comparableValue) / max) * 100))
+      }
+    })
+  })
+
   const summarizeAmount = (key: ColumnKey) => {
     const rows = filteredRows.value.filter((row) => typeof row[key] === 'number')
     const currencySet = new Set(rows.map((row) => row.currency))
     if (!rows.length) return { value: '—', note: '目前沒有可計算資料' }
     if (displayMode.value === 'Original' && currencySet.size > 1) {
-      return { value: '多幣別', note: '選擇交易幣別後顯示合計' }
+      return { value: '多幣別', note: '選擇資料幣別或統一換算' }
     }
     const currency = displayMode.value === 'Reference' ? referenceCurrency.value : rows[0].currency
-    const total = rows.reduce((sum, row) => {
+    const amounts = rows.map((row) => {
       const value = Number(row[key] || 0)
-      return (
-        sum +
-        (displayMode.value === 'Reference'
-          ? reportStore.convertAmount(value, row.currency, referenceCurrency.value)
-          : value)
-      )
-    }, 0)
-    return { value: formatNumber(total, 2), note: `${currency}｜目前篩選範圍` }
+      return displayMode.value === 'Reference'
+        ? reportStore.convertAmount(value, row.currency, referenceCurrency.value)
+        : value
+    })
+    if (amounts.some((amount) => !Number.isFinite(amount))) {
+      return { value: '匯率缺失', note: `無法完整換算為 ${currency}` }
+    }
+    const total = amounts.reduce((sum, amount) => sum + amount, 0)
+    return {
+      value: formatNumber(total, currencyPrecision(currency)),
+      note: `${currency}｜目前篩選範圍`
+    }
   }
 
   const summaryCards = computed<SummaryCard[]>(() => {
@@ -689,9 +1035,11 @@
         (total, row) => total + (row.transactionCount || 0),
         0
       )
-      const averageSuccess = filteredRows.value.length
-        ? filteredRows.value.reduce((total, row) => total + (row.successRate || 0), 0) /
-          filteredRows.value.length
+      const averageSuccess = transactionCount
+        ? filteredRows.value.reduce(
+            (total, row) => total + (row.successRate || 0) * (row.transactionCount || 0),
+            0
+          ) / transactionCount
         : 0
       return [
         { label: '交易筆數', value: formatNumber(transactionCount), note: '目前篩選範圍' },
@@ -699,7 +1047,7 @@
         {
           label: '平均成功率',
           value: `${formatNumber(averageSuccess, 2)}%`,
-          note: '依交易類型平均'
+          note: '依交易筆數加權'
         },
         {
           label: '需注意',
@@ -726,15 +1074,27 @@
         { label: '結算金額', ...summarizeAmount('settlementAmount') }
       ]
     }
-    const rtpRows = filteredRows.value.filter((row) => typeof row.actualRtp === 'number')
-    const averageRtp = rtpRows.length
-      ? rtpRows.reduce((total, row) => total + (row.actualRtp || 0), 0) / rtpRows.length
-      : 0
+    const rtpTotals = filteredRows.value.reduce(
+      (total, row) => {
+        const rate = reportStore.getRateQuote(row.currency, 'USDT')
+        const normalizedRate = rate.ok ? rate.rate : 0
+        return {
+          bet: total.bet + (row.betAmount || 0) * normalizedRate,
+          payout: total.payout + (row.payoutAmount || 0) * normalizedRate
+        }
+      },
+      { bet: 0, payout: 0 }
+    )
+    const averageRtp = rtpTotals.bet ? (rtpTotals.payout / rtpTotals.bet) * 100 : 0
     return [
       { label: '投注金額', ...summarizeAmount('betAmount') },
       { label: '派彩金額', ...summarizeAmount('payoutAmount') },
       { label: '遊戲商輸贏', ...summarizeAmount('ggr') },
-      { label: '平均實際 RTP', value: `${formatNumber(averageRtp, 2)}%`, note: '依目前列平均' }
+      {
+        label: '加權實際 RTP',
+        value: `${formatNumber(averageRtp, 2)}%`,
+        note: '總派彩 ÷ 總投注'
+      }
     ]
   })
 
@@ -766,6 +1126,25 @@
     pagination.current = 1
   }
 
+  const selectHierarchyNode = (node: HierarchyNode) => {
+    if (node.type === 'root') {
+      clearHierarchy()
+      return
+    }
+    filters.agentId = node.agentId || ''
+    filters.merchantId = node.type === 'merchant' ? node.merchantId || '' : ''
+    appliedFilters.value = structuredClone(toRaw(filters))
+    pagination.current = 1
+  }
+
+  const clearHierarchy = () => {
+    filters.agentId = ''
+    filters.merchantId = ''
+    appliedFilters.value = structuredClone(toRaw(filters))
+    pagination.current = 1
+    hierarchyTreeRef.value?.setCurrentKey('all')
+  }
+
   const resolveSourcePath = (row: ReportMetricRow) => {
     if (row.gameId) return `/games/management/${row.gameId}`
     if (row.lineUid && row.merchantId)
@@ -781,6 +1160,7 @@
     return '/dashboard'
   }
   const openSource = (row: ReportMetricRow) => router.push(resolveSourcePath(row))
+  const openRateHistory = () => router.push('/platform/exchange-rates/history')
 
   const exportRows = () => {
     const columns = copy.value.columns.filter((column) => column.kind !== 'status')
@@ -809,7 +1189,15 @@
     ElMessage.success(`已匯出 ${filteredRows.value.length} 筆報表資料`)
   }
 
-  watch(mode, () => resetFilters())
+  watch(
+    mainReport,
+    (report) => {
+      activeMode.value = analysisByReport[report][0].value
+      resetFilters()
+    },
+    { immediate: true }
+  )
+  watch(activeMode, () => resetFilters())
   watch(
     () => filters.agentId,
     () => {
@@ -828,6 +1216,36 @@
     padding-bottom: 24px;
   }
 
+  .analysis-tabs-card :deep(.el-card__body) {
+    padding-bottom: 0;
+  }
+
+  .analysis-heading {
+    margin-bottom: 4px;
+  }
+
+  .analysis-heading strong,
+  .analysis-heading span,
+  .card-heading strong,
+  .card-heading span {
+    display: block;
+  }
+
+  .analysis-heading span,
+  .card-heading span {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--art-gray-600);
+  }
+
+  .analysis-tabs-card :deep(.el-tabs__header) {
+    margin-bottom: 0;
+  }
+
+  .analysis-tabs-card :deep(.el-tabs__content) {
+    display: none;
+  }
+
   .summary-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -836,14 +1254,23 @@
 
   .summary-grid button {
     padding: 18px 20px;
+    color: inherit;
     text-align: left;
-    cursor: pointer;
+    cursor: default;
     background: var(--art-main-bg-color);
     border: 1px solid var(--art-border-color);
     border-radius: 10px;
   }
 
-  .summary-grid button:hover {
+  .summary-grid button:disabled {
+    opacity: 1;
+  }
+
+  .summary-grid button.is-clickable {
+    cursor: pointer;
+  }
+
+  .summary-grid button.is-clickable:hover {
     border-color: var(--el-color-primary);
   }
 
@@ -879,6 +1306,127 @@
     width: 180px;
   }
 
+  .currency-display-grid {
+    display: grid;
+    grid-template-columns: auto auto minmax(340px, 1fr);
+    gap: 24px;
+    align-items: end;
+  }
+
+  .currency-control {
+    display: grid;
+    gap: 8px;
+  }
+
+  .control-label {
+    font-size: 13px;
+    color: var(--art-gray-600);
+  }
+
+  .currency-target-select {
+    width: 190px;
+  }
+
+  .rate-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    background: var(--art-border-color);
+    border: 1px solid var(--art-border-color);
+    border-radius: 8px;
+  }
+
+  .rate-summary > div {
+    min-width: 0;
+    padding: 11px 14px;
+    background: var(--art-main-bg-color);
+  }
+
+  .rate-summary span,
+  .rate-summary strong {
+    display: block;
+  }
+
+  .rate-summary span {
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: var(--art-gray-600);
+  }
+
+  .rate-summary strong {
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+  }
+
+  .insight-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .insight-grid.has-tree {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .card-heading {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hierarchy-card :deep(.el-card__body) {
+    max-height: 310px;
+    overflow: auto;
+  }
+
+  .hierarchy-card :deep(.el-tree-node__content) {
+    height: 34px;
+    border-radius: 6px;
+  }
+
+  .distribution-list {
+    display: grid;
+    gap: 15px;
+  }
+
+  .distribution-label {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .distribution-label span {
+    overflow: hidden;
+    color: var(--art-gray-700);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .distribution-label strong {
+    flex: none;
+    font-weight: 600;
+  }
+
+  .distribution-track {
+    height: 8px;
+    overflow: hidden;
+    background: var(--art-gray-100);
+    border-radius: 999px;
+  }
+
+  .distribution-track i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--el-color-primary-light-5), var(--el-color-primary));
+    border-radius: inherit;
+    transition: width 180ms ease;
+  }
+
   .table-toolbar {
     display: flex;
     gap: 18px;
@@ -900,16 +1448,6 @@
   .table-toolbar span,
   .table-toolbar small {
     color: var(--art-gray-600);
-  }
-
-  .display-controls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .reference-select {
-    width: 100px;
   }
 
   .entity-link {
@@ -957,6 +1495,18 @@
     .summary-grid {
       grid-template-columns: repeat(2, 1fr);
     }
+
+    .insight-grid.has-tree {
+      grid-template-columns: 1fr;
+    }
+
+    .currency-display-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .rate-summary {
+      grid-column: 1 / -1;
+    }
   }
 
   @media (width <= 680px) {
@@ -984,6 +1534,19 @@
 
     .table-toolbar > div:first-child {
       flex-wrap: wrap;
+    }
+
+    .currency-display-grid,
+    .rate-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .rate-summary {
+      grid-column: auto;
+    }
+
+    .currency-target-select {
+      width: 100%;
     }
   }
 </style>

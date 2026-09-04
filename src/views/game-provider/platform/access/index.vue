@@ -8,15 +8,16 @@
       <template #actions>
         <ElButton @click="ElMessage.success('目前清單已匯出')">匯出</ElButton>
         <ElButton v-if="mode === 'accounts'" type="primary" @click="openAccount()"
-          >新增後台帳號</ElButton
+          >新增人員</ElButton
         >
+        <ElButton v-else type="primary" @click="openRole()">新增角色</ElButton>
       </template>
     </AppPageHeader>
 
-    <div class="summary-grid">
+    <div v-if="mode === 'accounts'" class="summary-grid">
       <button type="button" @click="setSummaryFilter('')"
-        ><span>後台帳號</span><strong>{{ store.accounts.length }}</strong
-        ><small>全部平台使用者</small></button
+        ><span>人員帳號</span><strong>{{ store.accounts.length }}</strong
+        ><small>全部後台使用者</small></button
       >
       <button type="button" @click="setSummaryFilter('Active')"
         ><span>啟用帳號</span><strong>{{ activeAccounts }}</strong
@@ -26,18 +27,31 @@
         ><span>鎖定帳號</span><strong class="danger">{{ lockedAccounts }}</strong
         ><small>需要管理員處理</small></button
       >
-      <button type="button" @click="goSensitive"
-        ><span>待審敏感權限</span><strong class="warning">{{ pendingGrants }}</strong
-        ><small>不得直接生效</small></button
+      <button type="button" @click="setSummaryFilter('Pending')"
+        ><span>待啟用帳號</span><strong class="warning">{{ pendingAccounts }}</strong
+        ><small>尚未完成首次登入</small></button
+      >
+    </div>
+    <div v-else class="summary-grid">
+      <div
+        ><span>角色總數</span><strong>{{ store.roles.length }}</strong
+        ><small>內建與自訂角色</small></div
+      >
+      <div
+        ><span>啟用角色</span><strong>{{ activeRoles.length }}</strong
+        ><small>可指派給人員</small></div
+      >
+      <div
+        ><span>權限項目</span><strong>{{ store.permissions.length }}</strong
+        ><small>依功能模組分組</small></div
+      >
+      <div
+        ><span>高風險權限</span><strong class="warning">{{ sensitivePermissions.length }}</strong
+        ><small>指派時需確認</small></div
       >
     </div>
 
-    <ElAlert
-      :title="copy.rule"
-      :type="mode === 'sensitive' ? 'warning' : 'info'"
-      :closable="false"
-      show-icon
-    />
+    <ElAlert :title="copy.rule" type="info" :closable="false" show-icon />
 
     <template v-if="mode === 'accounts'">
       <ElCard shadow="never" class="filter-card"
@@ -68,7 +82,7 @@
       <ElCard shadow="never" class="table-card"
         ><div class="toolbar"
           ><div
-            ><strong>後台帳號清單</strong><span>共 {{ accountRows.length }} 筆</span></div
+            ><strong>人員帳號清單</strong><span>共 {{ accountRows.length }} 筆</span></div
           ><span>帳號停用不會刪除歷史操作紀錄</span></div
         >
         <ElTable :data="accountRows" border row-key="id"
@@ -135,13 +149,17 @@
     </template>
 
     <template v-else-if="mode === 'roles'">
+      <ElAlert
+        title="在同一個角色內設定功能權限、高風險權限與資料範圍；儲存後會同步套用到所有被指派的人員帳號。"
+        type="info"
+        :closable="false"
+        show-icon
+      />
       <ElCard shadow="never" class="table-card"
         ><div class="toolbar"
           ><div
             ><strong>角色清單</strong><span>共 {{ store.roles.length }} 個角色</span></div
-          ><ElButton type="primary" plain @click="ElMessage.info('演示版先以既有角色進行配置')"
-            >新增角色</ElButton
-          ></div
+          ><ElButton type="primary" plain @click="openRole()">新增角色</ElButton></div
         >
         <ElTable :data="store.roles" border row-key="id"
           ><ElTableColumn label="角色" min-width="230" fixed="left"
@@ -154,7 +172,7 @@
             label="帳號數"
             width="90"
             align="center"
-          /><ElTableColumn label="一般權限" width="110" align="center"
+          /><ElTableColumn label="全部權限" width="110" align="center"
             ><template #default="scope">{{
               scope.row.permissionIds.length
             }}</template></ElTableColumn
@@ -369,33 +387,88 @@
       ></ElDialog
     >
 
-    <ElDialog v-model="roleDialog" title="配置角色" width="min(720px, 94vw)"
-      ><template v-if="editingRole"
-        ><ElDescriptions :column="2" border
-          ><ElDescriptionsItem label="角色">{{ editingRole.name }}</ElDescriptionsItem
-          ><ElDescriptionsItem label="代碼">{{ editingRole.code }}</ElDescriptionsItem
-          ><ElDescriptionsItem label="帳號數">{{ editingRole.accountCount }}</ElDescriptionsItem
-          ><ElDescriptionsItem label="角色類型">{{
-            editingRole.builtIn ? '系統內建' : '自訂角色'
-          }}</ElDescriptionsItem></ElDescriptions
-        ><ElForm label-position="top" class="dialog-form"
-          ><ElFormItem label="角色說明"><ElInput v-model="roleForm.description" /></ElFormItem
-          ><ElFormItem label="資料範圍"
-            ><ElSelect v-model="roleForm.dataScopeId" class="full"
-              ><ElOption
-                v-for="item in activeScopes"
-                :key="item.id"
-                :label="`${item.name}｜${scopeTypeLabel(item.type)}`"
-                :value="item.id" /></ElSelect></ElFormItem></ElForm
-        ><ElAlert
-          title="操作權限請至「操作權限」配置；敏感權限必須經獨立審核。"
-          type="warning"
-          :closable="false" /></template
-      ><template #footer
-        ><ElButton @click="roleDialog = false">取消</ElButton
-        ><ElButton type="primary" @click="saveRole">儲存角色</ElButton></template
-      ></ElDialog
+    <ElDialog
+      v-model="roleDialog"
+      :title="editingRole ? '角色權限配置' : '新增角色'"
+      width="min(920px, 96vw)"
+      class="role-permission-dialog"
     >
+      <ElForm label-position="top" class="dialog-form">
+        <div class="form-grid">
+          <ElFormItem label="角色名稱" required>
+            <ElInput v-model="roleForm.name" :disabled="Boolean(editingRole?.builtIn)" />
+          </ElFormItem>
+          <ElFormItem label="角色代碼" required>
+            <ElInput
+              v-model="roleForm.code"
+              :disabled="Boolean(editingRole)"
+              placeholder="例如 FINANCE_ADMIN"
+            />
+          </ElFormItem>
+        </div>
+        <ElFormItem label="角色說明">
+          <ElInput v-model="roleForm.description" />
+        </ElFormItem>
+        <ElFormItem label="資料範圍" required>
+          <ElSelect v-model="roleForm.dataScopeId" class="full">
+            <ElOption
+              v-for="item in activeScopes"
+              :key="item.id"
+              :label="`${item.name}｜${scopeTypeLabel(item.type)}`"
+              :value="item.id"
+            />
+          </ElSelect>
+        </ElFormItem>
+      </ElForm>
+
+      <div class="permission-editor-heading">
+        <div>
+          <strong>功能權限</strong>
+          <span>已選 {{ roleForm.permissionIds.length }}／{{ store.permissions.length }} 項</span>
+        </div>
+        <ElButton link type="primary" @click="toggleAllRolePermissions">
+          {{ roleForm.permissionIds.length === store.permissions.length ? '全部取消' : '全部選取' }}
+        </ElButton>
+      </div>
+      <ElAlert
+        v-if="selectedSensitiveCount"
+        :title="`目前包含 ${selectedSensitiveCount} 項高風險權限，請確認此角色確實需要。`"
+        type="warning"
+        :closable="false"
+        show-icon
+      />
+      <ElCheckboxGroup v-model="roleForm.permissionIds" class="role-permission-groups">
+        <section
+          v-for="group in rolePermissionGroups"
+          :key="group.module"
+          class="role-permission-group"
+        >
+          <div class="group-title">
+            <strong>{{ group.module }}</strong>
+            <span
+              >{{
+                group.items.filter((item) => roleForm.permissionIds.includes(item.id)).length
+              }}／{{ group.items.length }}</span
+            >
+          </div>
+          <label v-for="item in group.items" :key="item.id">
+            <ElCheckbox :value="item.id">
+              <span class="permission-label">
+                <strong>{{ item.name }}</strong>
+                <small>{{ item.description }}</small>
+              </span>
+            </ElCheckbox>
+            <ElTag :type="riskType(item.riskLevel)" effect="plain">
+              {{ item.sensitive ? '敏感' : riskLabel(item.riskLevel) }}
+            </ElTag>
+          </label>
+        </section>
+      </ElCheckboxGroup>
+      <template #footer>
+        <ElButton @click="roleDialog = false">取消</ElButton>
+        <ElButton type="primary" @click="saveRole">儲存角色與權限</ElButton>
+      </template>
+    </ElDialog>
 
     <ElDialog v-model="scopeDialog" title="編輯資料範圍" width="min(680px, 94vw)"
       ><ElForm label-position="top"
@@ -451,10 +524,10 @@
 
   defineOptions({ name: 'PlatformAccessManagement' })
   const route = useRoute()
-  const router = useRouter()
   const store = usePlatformAccessStore()
   const partnerStore = useBusinessPartnerStore()
   const modes = {
+    PlatformRolePermissions: 'roles',
     PlatformRoles: 'roles',
     PlatformPermissions: 'permissions',
     PlatformSensitivePermissions: 'sensitive',
@@ -463,14 +536,14 @@
   const mode = computed(() => modes[String(route.name) as keyof typeof modes] || 'accounts')
   const copies = {
     accounts: {
-      title: '後台帳號',
-      description: '管理平台人員登入帳號、角色、MFA 與帳號安全狀態。',
+      title: '人員管理',
+      description: '管理後台人員帳號、角色指派、MFA 與帳號安全狀態。',
       rule: '帳號停用、解鎖與密碼重設立即生效；所有操作均保留稽核紀錄。'
     },
     roles: {
-      title: '角色管理',
-      description: '以工作職責建立角色，統一配置操作權限與資料可見範圍。',
-      rule: '角色異動會套用至所屬帳號；系統內建角色不能刪除，但可調整非核心設定。'
+      title: '角色權限管理',
+      description: '建立角色並依功能分組，自由配置各項操作權限、高風險權限與資料範圍。',
+      rule: '角色權限異動會同步套用到所屬人員；高風險權限應遵循最小授權原則。'
     },
     permissions: {
       title: '操作權限',
@@ -497,9 +570,10 @@
   const lockedAccounts = computed(
     () => store.accounts.filter((item) => item.status === 'Locked').length
   )
-  const pendingGrants = computed(
-    () => store.sensitiveGrants.filter((item) => item.status === 'Pending Review').length
+  const pendingAccounts = computed(
+    () => store.accounts.filter((item) => item.status === 'Pending').length
   )
+  const sensitivePermissions = computed(() => store.permissions.filter((item) => item.sensitive))
   const activeRoles = computed(() => store.roles.filter((item) => item.status === 'Active'))
   const activeScopes = computed(() => store.dataScopes.filter((item) => item.status === 'Active'))
   const accountRows = computed(() =>
@@ -520,6 +594,12 @@
         ? moduleLabel(module)
         : module,
       items: normalPermissions.value.filter((item) => item.module === module)
+    }))
+  )
+  const rolePermissionGroups = computed(() =>
+    Array.from(new Set(store.permissions.map((item) => item.module))).map((module) => ({
+      module: moduleLabel(module),
+      items: store.permissions.filter((item) => item.module === module)
     }))
   )
   const selectedRoleId = ref('ROLE-002')
@@ -551,7 +631,13 @@
     status: 'Pending' as PlatformAccountStatus
   })
   const roleDialog = ref(false)
-  const roleForm = reactive({ description: '', dataScopeId: '' })
+  const roleForm = reactive({
+    name: '',
+    code: '',
+    description: '',
+    dataScopeId: '',
+    permissionIds: [] as string[]
+  })
   const editingRoleId = ref('')
   const editingRole = computed(() => store.roles.find((item) => item.id === editingRoleId.value))
   const scopeDialog = ref(false)
@@ -566,7 +652,6 @@
   const setSummaryFilter = (status: string) => {
     if (mode.value === 'accounts') filters.status = status
   }
-  const goSensitive = () => router.push('/platform/access/sensitive')
   const resetFilters = () => {
     filters.keyword = ''
     filters.department = ''
@@ -610,7 +695,7 @@
       approvals: '審核中心',
       finance: '對帳／結算',
       reports: '報表中心',
-      'finance-settings': '財務設定',
+      'exchange-rates': '匯率管理',
       platform: '平台管理'
     })[module] || module
   const scopeTypeLabel = (type: PlatformDataScopeRecord['type']) =>
@@ -695,22 +780,51 @@
     store.resetPassword(id)
     ElMessage.success('重設通知已建立')
   }
-  const openRole = (id: string) => {
-    const item = store.roles.find((row) => row.id === id)
-    if (!item) return
-    editingRoleId.value = id
-    roleForm.description = item.description
-    roleForm.dataScopeId = item.dataScopeId
+  const selectedSensitiveCount = computed(
+    () =>
+      roleForm.permissionIds.filter(
+        (id) => store.permissions.find((permission) => permission.id === id)?.sensitive
+      ).length
+  )
+  const toggleAllRolePermissions = () => {
+    roleForm.permissionIds =
+      roleForm.permissionIds.length === store.permissions.length
+        ? []
+        : store.permissions.map((item) => item.id)
+  }
+  const openRole = (id?: string) => {
+    const item = id ? store.roles.find((row) => row.id === id) : undefined
+    editingRoleId.value = item?.id || ''
+    roleForm.name = item?.name || ''
+    roleForm.code = item?.code || ''
+    roleForm.description = item?.description || ''
+    roleForm.dataScopeId = item?.dataScopeId || activeScopes.value[0]?.id || ''
+    roleForm.permissionIds = [...(item?.permissionIds || [])]
     roleDialog.value = true
   }
   const saveRole = () => {
-    if (!editingRole.value) return
-    store.saveRole(editingRole.value.id, {
+    if (!roleForm.name.trim() || !roleForm.code.trim() || !roleForm.dataScopeId)
+      return ElMessage.warning('請完整填寫角色名稱、代碼與資料範圍')
+    if (
+      !editingRole.value &&
+      store.roles.some((item) => item.code.toLowerCase() === roleForm.code.trim().toLowerCase())
+    )
+      return ElMessage.warning('角色代碼已存在')
+    const sensitivePermissionIds = roleForm.permissionIds.filter(
+      (id) => store.permissions.find((permission) => permission.id === id)?.sensitive
+    )
+    const payload = {
+      name: roleForm.name.trim(),
+      code: roleForm.code.trim().toUpperCase(),
       description: roleForm.description,
-      dataScopeId: roleForm.dataScopeId
-    })
+      dataScopeId: roleForm.dataScopeId,
+      permissionIds: [...roleForm.permissionIds],
+      sensitivePermissionIds
+    }
+    if (editingRole.value) store.saveRole(editingRole.value.id, payload)
+    else store.createRole(payload)
     roleDialog.value = false
-    ElMessage.success('角色設定已儲存')
+    ElMessage.success('角色與權限已儲存')
   }
   const savePermissions = () => {
     const role = store.roles.find((item) => item.id === selectedRoleId.value)
@@ -769,13 +883,17 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
 
-    button {
+    button,
+    > div {
       padding: 18px 20px;
       text-align: left;
-      cursor: pointer;
       background: var(--art-main-bg-color);
       border: 1px solid var(--art-border-color);
       border-radius: 10px;
+    }
+
+    button {
+      cursor: pointer;
       transition: border-color 0.2s;
 
       &:hover {
@@ -923,6 +1041,59 @@
     }
   }
 
+  .permission-editor-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 18px 0 12px;
+
+    strong,
+    span {
+      display: block;
+    }
+
+    span {
+      margin-top: 4px;
+      color: var(--art-gray-600);
+    }
+  }
+
+  .role-permission-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .role-permission-group {
+    padding: 14px;
+    border: 1px solid var(--art-border-color);
+    border-radius: 8px;
+
+    > label {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 64px;
+      border-bottom: 1px solid var(--art-border-color);
+
+      &:last-child {
+        border-bottom: 0;
+      }
+    }
+
+    :deep(.el-checkbox) {
+      flex: 1;
+      height: auto;
+      white-space: normal;
+    }
+
+    :deep(.el-checkbox__label) {
+      flex: 1;
+    }
+  }
+
   .dialog-form {
     margin-top: 18px;
   }
@@ -943,7 +1114,8 @@
 
   @media (width <= 1000px) {
     .summary-grid,
-    .permission-list {
+    .permission-list,
+    .role-permission-groups {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
@@ -956,6 +1128,7 @@
   @media (width <= 620px) {
     .summary-grid,
     .permission-list,
+    .role-permission-groups,
     .form-grid {
       grid-template-columns: 1fr;
     }

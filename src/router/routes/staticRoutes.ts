@@ -117,13 +117,13 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: '/finance/reconciliation',
     name: 'LegacyWalletReconciliation',
-    redirect: '/finance/reconciliation/merchants',
+    redirect: '/finance/reconciliation/suppliers',
     meta: { title: '錢包對帳（舊）', isHideTab: true }
   },
   {
     path: '/finance/sheets',
     name: 'LegacySettlementSheets',
-    redirect: '/finance/settlement/batches',
+    redirect: '/finance/reconciliation/merchants',
     meta: { title: '結算單（舊）', isHideTab: true }
   },
   {
@@ -135,26 +135,74 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: '/reports/merchant-currencies',
     name: 'LegacyMerchantCurrencyReports',
-    redirect: '/reports/merchants/lines',
+    redirect: '/reports/merchants',
     meta: { title: '商戶幣別報表（舊）', isHideTab: true }
   },
   {
     path: '/reports/players',
     name: 'LegacyPlayerReports',
-    redirect: '/reports/members',
+    redirect: '/reports/operations',
     meta: { title: '玩家報表（舊）', isHideTab: true }
   },
   {
     path: '/reports/rtp',
     name: 'LegacyRtpReports',
-    redirect: '/reports/games/rtp',
+    redirect: '/reports/games',
     meta: { title: 'RTP 報表（舊）', isHideTab: true }
   },
   {
     path: '/reports/wallet',
     name: 'LegacyWalletReports',
-    redirect: '/reports/transactions/records',
+    redirect: '/reports/operations',
     meta: { title: '錢包報表（舊）', isHideTab: true }
+  },
+  {
+    path: '/reports/overview',
+    name: 'LegacyReportOverview',
+    redirect: '/reports/operations',
+    meta: { title: '營運總覽（舊）', isHideTab: true }
+  },
+  {
+    path: '/reports/games/:section',
+    name: 'LegacyGameReportSection',
+    redirect: '/reports/games',
+    meta: { title: '遊戲報表（舊）', isHideTab: true }
+  },
+  {
+    path: '/reports/agents/:section',
+    name: 'LegacyAgentReportSection',
+    redirect: '/reports/agents',
+    meta: { title: '代理報表（舊）', isHideTab: true }
+  },
+  {
+    path: '/reports/merchants/:section',
+    name: 'LegacyMerchantReportSection',
+    redirect: '/reports/merchants',
+    meta: { title: '商戶報表（舊）', isHideTab: true }
+  },
+  {
+    path: '/reports/members',
+    name: 'LegacyMemberReport',
+    redirect: '/reports/operations',
+    meta: { title: '會員報表（舊）', isHideTab: true }
+  },
+  {
+    path: '/reports/transactions/:section',
+    name: 'LegacyTransactionReportSection',
+    redirect: '/reports/operations',
+    meta: { title: '交易報表（舊）', isHideTab: true }
+  },
+  {
+    path: '/reports/settlements/merchants',
+    name: 'LegacyMerchantSettlementReport',
+    redirect: '/reports/merchants',
+    meta: { title: '商戶結算報表（舊）', isHideTab: true }
+  },
+  {
+    path: '/reports/settlements/agents',
+    name: 'LegacyAgentSettlementReport',
+    redirect: '/reports/agents',
+    meta: { title: '代理結算報表（舊）', isHideTab: true }
   },
   {
     path: '/system/languages',
@@ -339,19 +387,19 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: '/finance/batches',
     name: 'LegacySettlementBatches',
-    redirect: '/finance/settlement/batches',
+    redirect: '/finance/reconciliation/merchants',
     meta: { title: '結算批次（舊）', isHideTab: true }
   },
   {
     path: '/finance/merchant-statements',
     name: 'LegacyMerchantStatements',
-    redirect: '/finance/settlement/merchant-statements',
+    redirect: '/finance/reconciliation/merchants',
     meta: { title: '商戶結算單（舊）', isHideTab: true }
   },
   {
     path: '/finance/agent-statements',
     name: 'LegacyAgentStatements',
-    redirect: '/finance/settlement/agent-statements',
+    redirect: '/finance/reconciliation/agents',
     meta: { title: '代理結算單（舊）', isHideTab: true }
   },
   {
@@ -363,19 +411,19 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: '/system/currencies',
     name: 'LegacySystemCurrencies',
-    redirect: '/finance-settings/currencies/data',
+    redirect: '/platform/exchange-rates/currencies',
     meta: { title: '幣別管理（舊）', isHideTab: true }
   },
   {
     path: '/system/exchange-rates',
     name: 'LegacySystemExchangeRates',
-    redirect: '/finance-settings/exchange-rates/daily',
+    redirect: '/platform/exchange-rates/settings',
     meta: { title: '匯率管理（舊）', isHideTab: true }
   },
   {
     path: '/system/settlement-settings',
     name: 'LegacySystemSettlementSettings',
-    redirect: '/finance-settings/settlement/default-currency',
+    redirect: '/platform/exchange-rates/settings',
     meta: { title: '結算設定（舊）', isHideTab: true }
   },
   {
@@ -405,8 +453,32 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: '/system/logs',
     name: 'LegacySystemLogs',
-    redirect: '/platform/logs/operations',
+    redirect: '/platform/access/logs',
     meta: { title: '系統紀錄（舊）', isHideTab: true }
+  },
+  {
+    path: '/platform/access/permissions',
+    name: 'LegacyPlatformPermissions',
+    redirect: '/platform/access/roles',
+    meta: { title: '操作權限（舊）', isHideTab: true }
+  },
+  {
+    path: '/platform/access/sensitive',
+    name: 'LegacyPlatformSensitivePermissions',
+    redirect: '/platform/access/roles',
+    meta: { title: '敏感權限（舊）', isHideTab: true }
+  },
+  {
+    path: '/platform/access/data-scopes',
+    name: 'LegacyPlatformDataScopes',
+    redirect: '/platform/access/roles',
+    meta: { title: '資料範圍（舊）', isHideTab: true }
+  },
+  {
+    path: '/platform/logs/operations',
+    name: 'LegacyPlatformOperationLogs',
+    redirect: '/platform/access/logs',
+    meta: { title: '操作紀錄（舊）', isHideTab: true }
   },
   {
     path: '/:pathMatch(.*)*',

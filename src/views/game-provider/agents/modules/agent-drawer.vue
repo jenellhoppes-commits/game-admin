@@ -101,6 +101,7 @@
   import { ElMessage } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import type { AgentRecord, AgentStatus } from '@/types/game-provider'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
 
   defineOptions({ name: 'AgentCreateDrawer' })
 
@@ -111,14 +112,17 @@
   const drawerSize = computed(() => (width.value < 640 ? '100%' : '520px'))
   const formRef = ref<FormInstance>()
   const submitting = ref(false)
-  const currencies = ['USD', 'TWD', 'EUR', 'JPY', 'SGD', 'THB', 'MYR']
+  const financeSettingsStore = useFinanceSettingsStore()
+  const currencies = computed(() =>
+    financeSettingsStore.settlementCurrencies.map((item) => item.code)
+  )
 
   const createInitialForm = () => ({
     code: '',
     name: '',
     level: 'L1' as AgentRecord['level'],
     parentAgent: '',
-    currency: 'USD',
+    currency: 'USDT',
     status: 'Pending' as AgentStatus,
     contact: '',
     note: ''

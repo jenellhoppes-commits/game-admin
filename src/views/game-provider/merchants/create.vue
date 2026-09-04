@@ -136,7 +136,7 @@
             <ElFormItem label="結算幣別" required>
               <ElSelect v-model="form.settlementCurrency" filterable class="w-full">
                 <ElOption
-                  v-for="currency in currencies"
+                  v-for="currency in settlementCurrencies"
                   :key="currency"
                   :label="currency"
                   :value="currency"
@@ -179,7 +179,7 @@
             <ElFormItem label="初始交易幣別" required>
               <ElSelect v-model="form.lineCurrency" filterable class="w-full">
                 <ElOption
-                  v-for="currency in currencies"
+                  v-for="currency in transactionCurrencies"
                   :key="currency"
                   :label="currency"
                   :value="currency"
@@ -258,6 +258,7 @@
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import type { SettlementBasis, SettlementCycle, WalletMode } from '@/types/game-provider'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import ApprovalPanel from '@/components/business/game-provider/approval-panel/index.vue'
@@ -275,6 +276,7 @@
   })
   const router = useRouter()
   const store = useBusinessPartnerStore()
+  const financeSettingsStore = useFinanceSettingsStore()
   const { width } = useWindowSize()
   const descriptionColumns = computed(() => (width.value < 760 ? 1 : 2))
   const activeStep = ref(0)
@@ -315,21 +317,12 @@
     'Asia/Kolkata',
     'Europe/Malta'
   ]
-  const currencies = [
-    'USDT',
-    'USD',
-    'TWD',
-    'SGD',
-    'PHP',
-    'THB',
-    'HKD',
-    'VND',
-    'MYR',
-    'JPY',
-    'AUD',
-    'INR',
-    'EUR'
-  ]
+  const settlementCurrencies = computed(() =>
+    financeSettingsStore.settlementCurrencies.map((item) => item.code)
+  )
+  const transactionCurrencies = computed(() =>
+    financeSettingsStore.transactionCurrencies.map((item) => item.code)
+  )
   const form = reactive({
     code: '',
     name: '',

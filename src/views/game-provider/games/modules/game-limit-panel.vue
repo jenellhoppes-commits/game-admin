@@ -189,6 +189,7 @@
   import GameProviderStatusTag from '@/components/business/game-provider/status-tag/index.vue'
   import { gameTypeMockData } from '@/mock/game-provider'
   import { useGameCatalogStore } from '@/store/modules/gameCatalog'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import type {
     GameLimitModel,
     GameLimitPlan,
@@ -198,13 +199,16 @@
 
   const props = defineProps<{ game: GameRecord }>()
   const store = useGameCatalogStore()
+  const financeSettingsStore = useFinanceSettingsStore()
   const { width } = useWindowSize()
   const formRef = ref<FormInstance>()
   const dialogVisible = ref(false)
   const importVisible = ref(false)
   const editingId = ref('')
   const importFileName = ref('')
-  const currencies = ['TWD', 'USD', 'USDT', 'CNY', 'THB', 'VND', 'JPY']
+  const currencies = computed(() =>
+    financeSettingsStore.transactionCurrencies.map((item) => item.code)
+  )
   const dialogWidth = computed(() => (width.value < 700 ? 'calc(100% - 24px)' : '700px'))
   const importDialogWidth = computed(() => (width.value < 760 ? 'calc(100% - 24px)' : '760px'))
   const plans = computed(() => store.getLimitPlans(props.game.id))
@@ -419,32 +423,38 @@
     display: grid;
     gap: 16px;
   }
+
   .panel-toolbar {
     display: flex;
+    gap: 16px;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
   }
+
   .panel-toolbar h2 {
     margin: 0;
     font-size: 17px;
   }
+
   .panel-toolbar p {
     margin: 5px 0 0;
     color: var(--art-gray-500);
   }
+
   .form-help {
     margin-top: 5px;
     font-size: 12px;
     color: var(--art-gray-500);
   }
+
   .import-file {
     color: var(--art-gray-600);
   }
+
   @media (width <= 720px) {
     .panel-toolbar {
-      align-items: flex-start;
       flex-direction: column;
+      align-items: flex-start;
     }
   }
 </style>

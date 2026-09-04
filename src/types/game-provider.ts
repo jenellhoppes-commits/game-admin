@@ -261,6 +261,7 @@ export interface FinanceCalculationSnapshot {
   settlementCurrency: string
   exchangeRate: number
   exchangeRateSource: string
+  exchangeRateSnapshotIds: string[]
   exchangeRateTime: string
   amountPrecision: number
   roundingRule: '四捨五入' | '無條件捨去' | '無條件進位' | '銀行家捨入'
@@ -282,6 +283,9 @@ export interface ReconciliationMetrics {
   initialSettlementAmount: number
   adjustmentAmount: number
   finalSettlementAmount: number
+  actualSettlementAmount?: number
+  roundingAdjustment?: number
+  confirmationNote?: string
 }
 
 export interface MerchantReconciliationRecord extends ReconciliationMetrics {
@@ -327,6 +331,26 @@ export interface AgentReconciliationRecord extends ReconciliationMetrics {
   lockedAt?: string
 }
 
+export interface SupplierReconciliationRecord extends ReconciliationMetrics {
+  id: string
+  period: string
+  periodStart: string
+  periodEnd: string
+  supplierId: string
+  supplierCode: string
+  supplierName: string
+  gameCount: number
+  currency: string
+  differenceCount: number
+  unresolvedDifferenceCount: number
+  status: FinanceReconciliationStatus
+  snapshot: FinanceCalculationSnapshot
+  createdAt: string
+  updatedAt: string
+  confirmedAt?: string
+  lockedAt?: string
+}
+
 export interface ReconciliationDailyRow {
   date: string
   betCount: number
@@ -350,11 +374,13 @@ export interface ReconciliationGameRow {
 
 export interface ReconciliationDifferenceRecord {
   id: string
-  reconciliationType: 'Merchant' | 'Agent'
+  reconciliationType: 'Supplier' | 'Merchant' | 'Agent'
   reconciliationId: string
   period: string
   merchantId?: string
   merchantName?: string
+  supplierId?: string
+  supplierName?: string
   agentId: string
   agentName: string
   lineUid?: string
@@ -380,6 +406,7 @@ export interface FinanceActionLog {
   entityType:
     | 'Merchant Reconciliation'
     | 'Agent Reconciliation'
+    | 'Supplier Reconciliation'
     | 'Difference'
     | 'Settlement Batch'
     | 'Merchant Statement'
@@ -486,6 +513,7 @@ export interface SettlementExchangeSnapshot {
   toCurrency: string
   rate: number
   source: string
+  sourceRateSnapshotIds: string[]
   rateTime: string
   status: 'Estimated' | 'Locked'
   lockedBy?: string
@@ -1325,12 +1353,18 @@ export type FinanceSettingStatus = 'Active' | 'Inactive'
 export type ExchangeRateStatus = 'Draft' | 'Published' | 'Locked'
 export type ExchangeSourceHealth = 'Normal' | 'Delayed' | 'Unavailable'
 export type FinanceRoundingRule = '四捨五入' | '無條件捨去' | '無條件進位' | '銀行家捨入'
+export type ExchangeAdjustmentMode = 'Add' | 'Subtract' | 'None'
+export type ExchangeAdjustmentUnit = 'Percent' | 'Fixed'
+export type ExchangeHistoryStatus = 'Success' | 'Failed' | 'Corrected'
+export type ExchangeRateType = 'Market' | 'Pegged' | 'Manual'
+export type CurrencyType = 'Fiat' | 'Crypto' | 'System'
 
 export interface CurrencyConfigRecord {
   code: string
   name: string
   symbol: string
   numericCode: string
+  currencyType: CurrencyType
   transactionEnabled: boolean
   settlementEnabled: boolean
   decimalPlaces: number
@@ -1351,18 +1385,51 @@ export interface ExchangeRateSourceRecord {
   lastSyncedAt: string
 }
 
+export interface ExchangeRateConfigRecord {
+  id: string
+  fromCurrency: string
+  toCurrency: string
+  rateType: ExchangeRateType
+  configuredRate?: number
+  sourceId: string
+  dailyFetchTime: string
+  adjustmentMode: ExchangeAdjustmentMode
+  adjustmentUnit: ExchangeAdjustmentUnit
+  adjustmentValue: number
+  precision: number
+  roundingRule: FinanceRoundingRule
+  effectiveVersion: string
+  effectiveFrom: string
+  status: FinanceSettingStatus
+  todaySourceRate: number
+  todayFinalRate: number
+  lockedAt?: string
+  updatedAt: string
+}
+
 export interface DailyExchangeRateRecord {
   id: string
   date: string
   fromCurrency: string
   toCurrency: string
+  rateType?: ExchangeRateType
   baseRate: number
   adjustmentPercent: number
+  adjustmentMode?: ExchangeAdjustmentMode
+  adjustmentUnit?: ExchangeAdjustmentUnit
+  adjustmentValue?: number
   finalRate: number
   sourceId: string
   status: ExchangeRateStatus
+  fetchedAt?: string
   publishedAt?: string
   lockedAt?: string
+  settingVersion?: string
+  settlementUsed?: boolean
+  settlementIds?: string[]
+  fetchStatus?: ExchangeHistoryStatus
+  failureReason?: string
+  correctionNote?: string
   updatedAt: string
 }
 
@@ -1477,12 +1544,25 @@ export interface PlatformDataScopeRecord {
 
 export interface PlatformAccessLog {
   id: string
-  entityType: 'Account' | 'Role' | 'Permission' | 'Sensitive Grant' | 'Data Scope'
+  entityType:
+    | 'Account'
+    | 'Role'
+    | 'Permission'
+    | 'Sensitive Grant'
+    | 'Data Scope'
+    | 'Game'
+    | 'Merchant'
+    | 'Exchange Rate'
+    | 'Reconciliation'
+    | 'Report'
   entityId: string
+  module?: string
   action: string
   beforeValue: string
   afterValue: string
   operator: string
+  ipAddress?: string
+  riskLevel?: 'Normal' | 'Medium' | 'High'
   createdAt: string
   note: string
 }

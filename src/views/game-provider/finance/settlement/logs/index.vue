@@ -1,9 +1,9 @@
 <template>
   <div class="page">
     <AppPageHeader
-      title="結算異動紀錄"
-      eyebrow="結算管理"
-      description="追蹤結算批次、結算單、匯率與調整項目的建立、審核及狀態變更。"
+      title="異動紀錄"
+      eyebrow="對帳／結算"
+      description="集中追蹤供應商、代理、商戶對帳，以及差異調整與結算結果。"
       ><template #actions
         ><ElButton @click="ElMessage.success('異動紀錄已匯出')">匯出</ElButton></template
       ></AppPageHeader
@@ -63,21 +63,25 @@
   import { ElMessage } from 'element-plus'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import { useFinanceCenterStore } from '@/store/modules/financeCenter'
-  defineOptions({ name: 'SettlementChangeLogs' })
+  defineOptions({ name: 'ReconciliationChangeLogs' })
   const router = useRouter()
   const store = useFinanceCenterStore()
   const filters = reactive({ keyword: '', entityType: '' })
   const entityOptions = [
-    { label: '結算批次', value: 'Settlement Batch' },
-    { label: '商戶結算單', value: 'Merchant Statement' },
-    { label: '代理結算單', value: 'Agent Statement' },
-    { label: '匯率快照', value: 'Exchange Snapshot' },
-    { label: '調整項目', value: 'Settlement Adjustment' }
+    { label: '供應商對帳', value: 'Supplier Reconciliation' },
+    { label: '代理對帳', value: 'Agent Reconciliation' },
+    { label: '商戶對帳', value: 'Merchant Reconciliation' },
+    { label: '差異處理', value: 'Difference' }
   ]
   const rows = computed(() =>
     store.actionLogs
-      .filter(
-        (item) => item.entityType.includes('Settlement') || item.entityType === 'Exchange Snapshot'
+      .filter((item) =>
+        [
+          'Supplier Reconciliation',
+          'Agent Reconciliation',
+          'Merchant Reconciliation',
+          'Difference'
+        ].includes(item.entityType)
       )
       .filter(
         (item) =>
@@ -95,16 +99,18 @@
   }
   const entityLabel = (type: string) =>
     ({
-      'Settlement Batch': '結算批次',
-      'Merchant Statement': '商戶結算單',
-      'Agent Statement': '代理結算單',
-      'Exchange Snapshot': '匯率快照',
-      'Settlement Adjustment': '調整項目'
+      'Supplier Reconciliation': '供應商對帳',
+      'Agent Reconciliation': '代理對帳',
+      'Merchant Reconciliation': '商戶對帳',
+      Difference: '差異處理'
     })[type] || type
   const openEntity = (type: string, id: string) => {
-    if (type === 'Settlement Batch') router.push(`/finance/settlement/batches/${id}`)
-    else if (type === 'Settlement Adjustment')
-      router.push({ path: '/finance/settlement/adjustments', query: { adjustmentId: id } })
+    if (type === 'Supplier Reconciliation') router.push(`/finance/reconciliation/suppliers/${id}`)
+    else if (type === 'Merchant Reconciliation')
+      router.push(`/finance/reconciliation/merchants/${id}`)
+    else if (type === 'Agent Reconciliation') router.push(`/finance/reconciliation/agents/${id}`)
+    else if (type === 'Difference')
+      router.push({ path: '/finance/reconciliation/differences', query: { differenceId: id } })
   }
 </script>
 

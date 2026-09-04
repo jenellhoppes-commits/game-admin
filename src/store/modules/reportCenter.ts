@@ -364,5 +364,15 @@ export const useReportCenterStore = defineStore('reportCenterStore', () => {
   const convertAmount = (amount: number, fromCurrency: string, toCurrency: string) =>
     round(amount * financeSettingsStore.getExchangeRate(fromCurrency, toCurrency))
 
-  return { getRows, convertAmount, reportTime }
+  const getDisplayCurrencies = () =>
+    financeSettingsStore.enabledCurrencies.map((currency) => ({
+      code: currency.code,
+      name: currency.name,
+      decimalPlaces: currency.decimalPlaces
+    }))
+
+  const getRateQuote = (fromCurrency: string, toCurrency: string) =>
+    financeSettingsStore.resolveExchangeRate(fromCurrency, toCurrency)
+
+  return { getRows, convertAmount, getDisplayCurrencies, getRateQuote, reportTime }
 })

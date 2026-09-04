@@ -67,10 +67,21 @@
         ><ElTableColumn prop="rate" label="匯率" min-width="130" /><ElTableColumn
           prop="source"
           label="來源"
-          min-width="150" /><ElTableColumn
-          prop="rateTime"
-          label="取值時間"
-          width="155" /><ElTableColumn label="狀態" width="100"
+          min-width="150" /><ElTableColumn label="基準匯率快照" min-width="220"
+          ><template #default="scope"
+            ><template v-if="scope.row.sourceRateSnapshotIds.length"
+              ><ElTag
+                v-for="id in scope.row.sourceRateSnapshotIds"
+                :key="id"
+                effect="plain"
+                class="snapshot-id"
+                >{{ id }}</ElTag
+              ></template
+            ><span v-else>同幣別，無需換算</span></template
+          ></ElTableColumn
+        ><ElTableColumn prop="rateTime" label="取值時間" width="155" /><ElTableColumn
+          label="狀態"
+          width="100"
           ><template #default="scope"
             ><ElTag :type="scope.row.status === 'Locked' ? 'success' : 'warning'">{{
               scope.row.status === 'Locked' ? '已鎖定' : '預估'
@@ -144,6 +155,10 @@
   .toolbar span,
   small {
     color: var(--art-gray-500);
+  }
+
+  .snapshot-id + .snapshot-id {
+    margin-left: 6px;
   }
 
   .summary-grid strong {

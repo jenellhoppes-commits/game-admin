@@ -33,7 +33,7 @@
     <ElCard class="filter-card" shadow="never">
       <ElForm :model="filters" inline>
         <ElFormItem label="關鍵字"
-          ><ElInput v-model="filters.keyword" clearable placeholder="差異、對帳、商戶或線路"
+          ><ElInput v-model="filters.keyword" clearable placeholder="差異、對帳或合作方"
         /></ElFormItem>
         <ElFormItem label="差異類型"
           ><ElSelect v-model="filters.type" clearable placeholder="全部類型"
@@ -75,8 +75,12 @@
         >
         <ElTableColumn label="對象" min-width="210"
           ><template #default="scope"
-            ><strong>{{ scope.row.merchantName || scope.row.agentName }}</strong
-            ><br /><small>{{ scope.row.lineUid || scope.row.agentId }}</small></template
+            ><strong>{{
+              scope.row.supplierName || scope.row.merchantName || scope.row.agentName
+            }}</strong
+            ><br /><small>{{
+              scope.row.lineUid || scope.row.supplierId || scope.row.agentId
+            }}</small></template
           ></ElTableColumn
         >
         <ElTableColumn label="類型" width="120"
@@ -169,6 +173,9 @@
             >
           </div>
           <ElDescriptions :column="drawerColumns" border>
+            <ElDescriptionsItem label="供應商">{{
+              currentDifference.supplierName || '—'
+            }}</ElDescriptionsItem>
             <ElDescriptionsItem label="商戶">{{
               currentDifference.merchantName || '—'
             }}</ElDescriptionsItem>
@@ -318,7 +325,7 @@
     store.differences
       .filter((item) => {
         const searchable =
-          `${item.id} ${item.reconciliationId} ${item.merchantName || ''} ${item.agentName} ${item.lineUid || ''}`.toLowerCase()
+          `${item.id} ${item.reconciliationId} ${item.supplierName || ''} ${item.merchantName || ''} ${item.agentName} ${item.lineUid || ''}`.toLowerCase()
         return (
           (!filters.keyword || searchable.includes(filters.keyword.toLowerCase())) &&
           (!filters.type || item.type === filters.type) &&
@@ -400,7 +407,13 @@
   const openReconciliation = () => {
     if (currentDifference.value)
       router.push(
-        `/finance/reconciliation/${currentDifference.value.reconciliationType === 'Merchant' ? 'merchants' : 'agents'}/${currentDifference.value.reconciliationId}`
+        `/finance/reconciliation/${
+          currentDifference.value.reconciliationType === 'Supplier'
+            ? 'suppliers'
+            : currentDifference.value.reconciliationType === 'Merchant'
+              ? 'merchants'
+              : 'agents'
+        }/${currentDifference.value.reconciliationId}`
       )
   }
   const startInvestigation = () => {

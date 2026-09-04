@@ -440,354 +440,156 @@ export const gameProviderRoutes: AppRouteRecord[] = [
     alias: '/settlements',
     name: 'FinanceCenter',
     component: '/index/index',
-    redirect: '/finance/reconciliation/merchants',
+    redirect: '/finance/reconciliation/suppliers',
     meta: { title: '對帳／結算', icon: 'ri:calculator-line', menuGroup: '財務管理', roles },
     children: [
-      directory('reconciliation', 'ReconciliationManagement', '對帳管理', 'ri:scales-3-line', [
-        page(
-          'merchants',
-          'MerchantReconciliation',
-          '商戶對帳',
-          'ri:store-2-line',
-          '/merchant-reconciliation',
-          '/game-provider/finance/reconciliation/index'
-        ),
-        hiddenDetail(
-          'merchants/:id',
-          'MerchantReconciliationDetail',
-          '商戶對帳詳細',
-          'ri:file-list-3-line',
-          '/merchant-reconciliation-detail',
-          '/finance/reconciliation/merchants',
-          '/game-provider/finance/reconciliation/detail'
-        ),
-        page(
-          'agents',
-          'AgentReconciliation',
-          '代理對帳',
-          'ri:node-tree',
-          '/agent-reconciliation',
-          '/game-provider/finance/reconciliation/index'
-        ),
-        hiddenDetail(
-          'agents/:id',
-          'AgentReconciliationDetail',
-          '代理對帳詳細',
-          'ri:file-list-3-line',
-          '/agent-reconciliation-detail',
-          '/finance/reconciliation/agents',
-          '/game-provider/finance/reconciliation/detail'
-        ),
-        page(
-          'differences',
-          'ReconciliationDifferences',
-          '差異處理',
-          'ri:file-warning-line',
-          '/reconciliation-differences',
-          '/game-provider/finance/reconciliation/differences'
-        )
-      ]),
-      directory('settlement', 'SettlementManagement', '結算管理', 'ri:calendar-check-line', [
-        page(
-          'batches',
-          'SettlementBatches',
-          '結算批次',
-          'ri:calendar-check-line',
-          '/settlements',
-          '/game-provider/finance/settlement/batches/index'
-        ),
-        hiddenDetail(
-          'batches/:id',
-          'SettlementBatchDetail',
-          '結算批次詳細',
-          'ri:calendar-check-line',
-          '/settlement-batch-detail',
-          '/finance/settlement/batches',
-          '/game-provider/finance/settlement/batches/detail'
-        ),
-        page(
-          'merchant-statements',
-          'MerchantSettlementStatements',
-          '商戶結算單',
-          'ri:file-list-3-line',
-          '/merchant-settlement-sheets',
-          '/game-provider/finance/settlement/statements/index'
-        ),
-        page(
-          'agent-statements',
-          'AgentSettlementStatements',
-          '代理結算單',
-          'ri:file-list-3-line',
-          '/agent-settlement-sheets',
-          '/game-provider/finance/settlement/statements/index'
-        ),
-        page(
-          'exchange-snapshots',
-          'SettlementExchangeSnapshots',
-          '匯率快照',
-          'ri:camera-line',
-          '/settlement-exchange-snapshots',
-          '/game-provider/finance/settlement/exchange-snapshots/index'
-        ),
-        page(
-          'adjustments',
-          'SettlementAdjustments',
-          '調整項目',
-          'ri:edit-box-line',
-          '/settlement-adjustments',
-          '/game-provider/finance/settlement/adjustments/index'
-        ),
-        page(
-          'logs',
-          'SettlementChangeLogs',
-          '異動紀錄',
-          'ri:file-history-line',
-          '/settlement-change-logs',
-          '/game-provider/finance/settlement/logs/index'
-        )
-      ])
+      page(
+        'reconciliation/suppliers',
+        'SupplierReconciliation',
+        '供應商對帳',
+        'ri:gamepad-line',
+        '/supplier-reconciliation',
+        '/game-provider/finance/reconciliation/index'
+      ),
+      hiddenDetail(
+        'reconciliation/suppliers/:id',
+        'SupplierReconciliationDetail',
+        '供應商對帳詳細',
+        'ri:file-list-3-line',
+        '/supplier-reconciliation-detail',
+        '/finance/reconciliation/suppliers',
+        '/game-provider/finance/reconciliation/detail'
+      ),
+      page(
+        'reconciliation/agents',
+        'AgentReconciliation',
+        '代理對帳',
+        'ri:node-tree',
+        '/agent-reconciliation',
+        '/game-provider/finance/reconciliation/index'
+      ),
+      hiddenDetail(
+        'reconciliation/agents/:id',
+        'AgentReconciliationDetail',
+        '代理對帳詳細',
+        'ri:file-list-3-line',
+        '/agent-reconciliation-detail',
+        '/finance/reconciliation/agents',
+        '/game-provider/finance/reconciliation/detail'
+      ),
+      page(
+        'reconciliation/merchants',
+        'MerchantReconciliation',
+        '商戶對帳',
+        'ri:store-2-line',
+        '/merchant-reconciliation',
+        '/game-provider/finance/reconciliation/index'
+      ),
+      hiddenDetail(
+        'reconciliation/merchants/:id',
+        'MerchantReconciliationDetail',
+        '商戶對帳詳細',
+        'ri:file-list-3-line',
+        '/merchant-reconciliation-detail',
+        '/finance/reconciliation/merchants',
+        '/game-provider/finance/reconciliation/detail'
+      ),
+      page(
+        'reconciliation/differences',
+        'ReconciliationDifferences',
+        '差異處理',
+        'ri:file-warning-line',
+        '/reconciliation-differences',
+        '/game-provider/finance/reconciliation/differences'
+      ),
+      page(
+        'reconciliation/logs',
+        'ReconciliationChangeLogs',
+        '異動紀錄',
+        'ri:file-history-line',
+        '/settlement-change-logs',
+        '/game-provider/finance/settlement/logs/index'
+      )
     ]
   },
   {
     path: '/reports',
     name: 'ReportCenter',
     component: '/index/index',
-    redirect: '/reports/overview',
+    redirect: '/reports/operations',
     meta: { title: '報表中心', icon: 'ri:bar-chart-box-line', menuGroup: '財務管理', roles },
     children: [
-      page('overview', 'ReportOverview', '營運總覽', 'ri:dashboard-3-line', '/reports', reportView),
-      directory('games', 'GameReportGroup', '遊戲報表', 'ri:gamepad-line', [
-        page(
-          'performance',
-          'GamePerformanceReport',
-          '遊戲表現',
-          'ri:line-chart-line',
-          '/report-game-performance',
-          reportView
-        ),
-        page('rtp', 'RtpReport', 'RTP', 'ri:percent-line', '/report-rtp', reportView)
-      ]),
-      directory('merchants', 'MerchantReportGroup', '商戶報表', 'ri:store-2-line', [
-        page(
-          'overview',
-          'MerchantReport',
-          '商戶',
-          'ri:store-2-line',
-          '/report-merchants',
-          reportView
-        ),
-        page(
-          'lines',
-          'MerchantLineReport',
-          '商戶線路',
-          'ri:route-line',
-          '/report-merchant-lines',
-          reportView
-        )
-      ]),
-      directory('agents', 'AgentReportGroup', '代理報表', 'ri:node-tree', [
-        page('overview', 'AgentReport', '代理', 'ri:node-tree', '/report-agents', reportView),
-        page(
-          'merchants',
-          'AgentMerchantReport',
-          '旗下商戶',
-          'ri:store-2-line',
-          '/report-agent-merchants',
-          reportView
-        )
-      ]),
       page(
-        'members',
-        'MemberReports',
-        '會員報表',
-        'ri:user-search-line',
-        '/report-players',
+        'operations',
+        'OperationsReport',
+        '營運報表',
+        'ri:dashboard-3-line',
+        '/reports',
         reportView
       ),
-      directory('transactions', 'TransactionReportGroup', '交易報表', 'ri:exchange-dollar-line', [
-        page(
-          'bets',
-          'BetStatisticsReport',
-          '注單統計',
-          'ri:file-list-3-line',
-          '/report-bets',
-          reportView
-        ),
-        page(
-          'records',
-          'TransactionStatisticsReport',
-          '交易統計',
-          'ri:exchange-dollar-line',
-          '/report-transactions',
-          reportView
-        )
-      ]),
+      page(
+        'games',
+        'GameReport',
+        '遊戲報表',
+        'ri:gamepad-line',
+        '/report-game-performance',
+        reportView
+      ),
+      page('agents', 'AgentReport', '代理報表', 'ri:node-tree', '/report-agents', reportView),
+      page(
+        'merchants',
+        'MerchantReport',
+        '商戶報表',
+        'ri:store-2-line',
+        '/report-merchants',
+        reportView
+      ),
       page(
         'jackpots',
-        'JackpotReports',
+        'JackpotReport',
         '獎池報表',
         'ri:funds-box-line',
         '/report-jackpots',
         reportView
-      ),
-      directory('settlements', 'SettlementReportGroup', '結算報表', 'ri:calculator-line', [
-        page(
-          'merchants',
-          'MerchantSettlementReport',
-          '商戶結算',
-          'ri:store-2-line',
-          '/report-merchant-settlements',
-          reportView
-        ),
-        page(
-          'agents',
-          'AgentSettlementReport',
-          '代理結算',
-          'ri:node-tree',
-          '/report-agent-settlements',
-          reportView
-        )
-      ])
+      )
     ]
   },
   {
-    path: '/finance-settings',
-    name: 'FinanceSettings',
+    path: '/platform/exchange-rates',
+    name: 'PlatformExchangeRateManagement',
     component: '/index/index',
-    redirect: '/finance-settings/currencies/data',
+    redirect: '/platform/exchange-rates/currencies',
     meta: {
-      title: '財務設定',
-      icon: 'ri:money-dollar-circle-line',
-      menuGroup: '財務管理',
+      title: '匯率管理',
+      icon: 'ri:exchange-funds-line',
+      menuGroup: '平台管理',
       roles
     },
     children: [
-      directory('currencies', 'CurrencyManagement', '幣別管理', 'ri:currency-line', [
-        page(
-          'data',
-          'CurrencyData',
-          '幣別資料',
-          'ri:database-2-line',
-          '/finance-currency-data',
-          '/game-provider/finance-settings/currencies/index'
-        ),
-        page(
-          'transaction',
-          'TransactionCurrencies',
-          '交易幣別',
-          'ri:exchange-dollar-line',
-          '/finance-transaction-currencies',
-          '/game-provider/finance-settings/currencies/index'
-        ),
-        page(
-          'settlement',
-          'SettlementCurrencies',
-          '結算幣別',
-          'ri:calculator-line',
-          '/finance-settlement-currencies',
-          '/game-provider/finance-settings/currencies/index'
-        ),
-        page(
-          'precision',
-          'CurrencyPrecision',
-          '精度設定',
-          'ri:equalizer-2-line',
-          '/finance-currency-precision',
-          '/game-provider/finance-settings/currencies/index'
-        )
-      ]),
-      directory('exchange-rates', 'ExchangeRateManagement', '匯率管理', 'ri:exchange-funds-line', [
-        page(
-          'daily',
-          'DailyExchangeRates',
-          '每日匯率',
-          'ri:calendar-line',
-          '/finance-rates-daily',
-          '/game-provider/finance-settings/exchange-rates/index'
-        ),
-        page(
-          'sources',
-          'ExchangeRateSources',
-          '匯率來源',
-          'ri:links-line',
-          '/finance-rate-sources',
-          '/game-provider/finance-settings/exchange-rates/index'
-        ),
-        page(
-          'adjustments',
-          'ExchangeRateAdjustments',
-          '匯率調整',
-          'ri:edit-box-line',
-          '/finance-rate-adjustments',
-          '/game-provider/finance-settings/exchange-rates/index'
-        ),
-        page(
-          'history',
-          'ExchangeRateHistory',
-          '歷史匯率',
-          'ri:history-line',
-          '/finance-rate-history',
-          '/game-provider/finance-settings/exchange-rates/index'
-        ),
-        page(
-          'alerts',
-          'ExchangeRateAlerts',
-          '匯率預警',
-          'ri:alarm-warning-line',
-          '/finance-rate-alerts',
-          '/game-provider/finance-settings/exchange-rates/index'
-        ),
-        page(
-          'logs',
-          'ExchangeRateLogs',
-          '更新紀錄',
-          'ri:file-history-line',
-          '/finance-rate-logs',
-          '/game-provider/finance-settings/exchange-rates/index'
-        )
-      ]),
-      directory('settlement', 'SettlementSettings', '結算設定', 'ri:settings-4-line', [
-        page(
-          'default-currency',
-          'DefaultSettlementCurrency',
-          '預設結算幣別',
-          'ri:currency-line',
-          '/finance-default-settlement-currency',
-          '/game-provider/finance-settings/settlement/index'
-        ),
-        page(
-          'cycles',
-          'SettlementCycles',
-          '結算週期',
-          'ri:calendar-check-line',
-          '/finance-settlement-cycles',
-          '/game-provider/finance-settings/settlement/index'
-        ),
-        page(
-          'rate-rules',
-          'SettlementRateRules',
-          '匯率取值規則',
-          'ri:filter-3-line',
-          '/finance-settlement-rate-rules',
-          '/game-provider/finance-settings/settlement/index'
-        ),
-        page(
-          'precision',
-          'SettlementPrecision',
-          '金額精度',
-          'ri:equalizer-2-line',
-          '/finance-settlement-precision',
-          '/game-provider/finance-settings/settlement/index'
-        ),
-        page(
-          'rounding',
-          'SettlementRounding',
-          '捨入規則',
-          'ri:function-line',
-          '/finance-settlement-rounding',
-          '/game-provider/finance-settings/settlement/index'
-        )
-      ])
+      page(
+        'currencies',
+        'PlatformCurrencyManagement',
+        '幣別管理',
+        'ri:currency-line',
+        '/platform-currency-management',
+        '/game-provider/finance-settings/currencies/index'
+      ),
+      page(
+        'settings',
+        'PlatformExchangeRateSettings',
+        '匯率設定',
+        'ri:equalizer-2-line',
+        '/platform-exchange-rate-settings',
+        '/game-provider/finance-settings/exchange-rates/index'
+      ),
+      page(
+        'history',
+        'PlatformExchangeRateHistory',
+        '匯率歷史',
+        'ri:history-line',
+        '/platform-exchange-rate-history',
+        '/game-provider/finance-settings/exchange-rates/index'
+      )
     ]
   },
   {
@@ -799,43 +601,27 @@ export const gameProviderRoutes: AppRouteRecord[] = [
     children: [
       page(
         'accounts',
-        'PlatformAccounts',
-        '後台帳號',
+        'PlatformPersonnel',
+        '人員管理',
         'ri:user-settings-line',
         '/platform-accounts',
         '/game-provider/platform/access/index'
       ),
       page(
         'roles',
-        'PlatformRoles',
-        '角色管理',
+        'PlatformRolePermissions',
+        '角色權限管理',
         'ri:admin-line',
         '/platform-roles',
         '/game-provider/platform/access/index'
       ),
       page(
-        'permissions',
-        'PlatformPermissions',
-        '操作權限',
-        'ri:key-2-line',
-        '/platform-permissions',
-        '/game-provider/platform/access/index'
-      ),
-      page(
-        'sensitive',
-        'PlatformSensitivePermissions',
-        '敏感權限',
-        'ri:shield-keyhole-line',
-        '/platform-sensitive-permissions',
-        '/game-provider/platform/access/index'
-      ),
-      page(
-        'data-scopes',
-        'PlatformDataScopes',
-        '資料範圍',
-        'ri:focus-3-line',
-        '/platform-data-scopes',
-        '/game-provider/platform/access/index'
+        'logs',
+        'PlatformOperationLogs',
+        '操作日誌',
+        'ri:file-list-3-line',
+        '/platform-operation-logs',
+        '/game-provider/platform/logs/index'
       )
     ]
   },
@@ -931,17 +717,9 @@ export const gameProviderRoutes: AppRouteRecord[] = [
     path: '/platform/logs',
     name: 'SystemLogManagement',
     component: '/index/index',
-    redirect: '/platform/logs/operations',
+    redirect: '/platform/logs/logins',
     meta: { title: '系統紀錄', icon: 'ri:file-history-line', menuGroup: '平台管理', roles },
     children: [
-      page(
-        'operations',
-        'PlatformOperationLogs',
-        '操作紀錄',
-        'ri:file-list-3-line',
-        '/platform-operation-logs',
-        '/game-provider/platform/logs/index'
-      ),
       page(
         'logins',
         'PlatformLoginLogs',

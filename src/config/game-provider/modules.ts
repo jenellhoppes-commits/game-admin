@@ -478,6 +478,13 @@ Object.assign(businessModuleDefinitions, {
     '按商戶與結算週期核對交易、GGR、費率與差異。',
     '建立對帳'
   ),
+  '/supplier-reconciliation': skeletonModule(
+    '/finance/reconciliation/suppliers',
+    '供應商對帳',
+    '對帳／結算',
+    '按遊戲供應商與結算週期核對投注、派彩、分潤與實付金額。',
+    '建立對帳'
+  ),
   '/agent-reconciliation': skeletonModule(
     '/finance/agent-reconciliation',
     '代理對帳',
@@ -562,56 +569,11 @@ const expandedSkeletonModules = [
   ['/report-transactions', '/reports/transactions/records', '交易統計', '交易報表'],
   ['/report-merchant-settlements', '/reports/settlements/merchants', '商戶結算', '結算報表'],
   ['/report-agent-settlements', '/reports/settlements/agents', '代理結算', '結算報表'],
-  ['/finance-currency-data', '/finance-settings/currencies/data', '幣別資料', '幣別管理'],
-  [
-    '/finance-transaction-currencies',
-    '/finance-settings/currencies/transaction',
-    '交易幣別',
-    '幣別管理'
-  ],
-  [
-    '/finance-settlement-currencies',
-    '/finance-settings/currencies/settlement',
-    '結算幣別',
-    '幣別管理'
-  ],
-  ['/finance-currency-precision', '/finance-settings/currencies/precision', '精度設定', '幣別管理'],
-  ['/finance-rates-daily', '/finance-settings/exchange-rates/daily', '每日匯率', '匯率管理'],
-  ['/finance-rate-sources', '/finance-settings/exchange-rates/sources', '匯率來源', '匯率管理'],
-  [
-    '/finance-rate-adjustments',
-    '/finance-settings/exchange-rates/adjustments',
-    '匯率調整',
-    '匯率管理'
-  ],
-  ['/finance-rate-history', '/finance-settings/exchange-rates/history', '歷史匯率', '匯率管理'],
-  ['/finance-rate-alerts', '/finance-settings/exchange-rates/alerts', '匯率預警', '匯率管理'],
-  ['/finance-rate-logs', '/finance-settings/exchange-rates/logs', '更新紀錄', '匯率管理'],
-  [
-    '/finance-default-settlement-currency',
-    '/finance-settings/settlement/default-currency',
-    '預設結算幣別',
-    '結算設定'
-  ],
-  ['/finance-settlement-cycles', '/finance-settings/settlement/cycles', '結算週期', '結算設定'],
-  [
-    '/finance-settlement-rate-rules',
-    '/finance-settings/settlement/rate-rules',
-    '匯率取值規則',
-    '結算設定'
-  ],
-  [
-    '/finance-settlement-precision',
-    '/finance-settings/settlement/precision',
-    '金額精度',
-    '結算設定'
-  ],
-  ['/finance-settlement-rounding', '/finance-settings/settlement/rounding', '捨入規則', '結算設定'],
-  ['/platform-accounts', '/platform/access/accounts', '後台帳號', '帳號與權限'],
-  ['/platform-roles', '/platform/access/roles', '角色管理', '帳號與權限'],
-  ['/platform-permissions', '/platform/access/permissions', '操作權限', '帳號與權限'],
-  ['/platform-sensitive-permissions', '/platform/access/sensitive', '敏感權限', '帳號與權限'],
-  ['/platform-data-scopes', '/platform/access/data-scopes', '資料範圍', '帳號與權限'],
+  ['/platform-currency-management', '/platform/exchange-rates/currencies', '幣別管理', '匯率管理'],
+  ['/platform-exchange-rate-settings', '/platform/exchange-rates/settings', '匯率設定', '匯率管理'],
+  ['/platform-exchange-rate-history', '/platform/exchange-rates/history', '匯率歷史', '匯率管理'],
+  ['/platform-accounts', '/platform/access/accounts', '人員管理', '帳號與權限'],
+  ['/platform-roles', '/platform/access/roles', '角色權限管理', '帳號與權限'],
   ['/platform-languages', '/platform/locales/languages', '語系管理', '語系與地區'],
   ['/platform-regions', '/platform/locales/regions', '國家／地區', '語系與地區'],
   ['/platform-timezones', '/platform/locales/timezones', '時區管理', '語系與地區'],
@@ -619,7 +581,7 @@ const expandedSkeletonModules = [
   ['/platform-notification-logs', '/platform/notifications/logs', '通知紀錄', '通知管理'],
   ['/platform-basic-settings', '/platform/parameters/basic', '系統基本設定', '系統參數'],
   ['/platform-login-security', '/platform/parameters/login-security', '登入安全', '系統參數'],
-  ['/platform-operation-logs', '/platform/logs/operations', '操作紀錄', '系統紀錄'],
+  ['/platform-operation-logs', '/platform/access/logs', '操作日誌', '帳號與權限'],
   ['/platform-login-logs', '/platform/logs/logins', '登入紀錄', '系統紀錄'],
   ['/platform-approval-logs', '/platform/logs/approvals', '審核紀錄', '系統紀錄'],
   ['/platform-error-logs', '/platform/logs/errors', '系統異常紀錄', '系統紀錄']

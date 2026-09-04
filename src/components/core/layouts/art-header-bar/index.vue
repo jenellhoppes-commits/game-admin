@@ -93,37 +93,6 @@
           </div>
         </div>
 
-        <!-- 全屏按钮 -->
-        <ArtIconButton
-          v-if="shouldShowFullscreen"
-          :icon="isFullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-fill'"
-          :class="[!isFullscreen ? 'full-screen-btn' : 'exit-full-screen-btn', 'ml-3']"
-          class="max-md:!hidden"
-          @click="toggleFullScreen"
-        />
-
-        <!-- 国际化按钮 -->
-        <ElDropdown
-          @command="changeLanguage"
-          popper-class="langDropDownStyle"
-          v-if="shouldShowLanguage"
-        >
-          <ArtIconButton icon="ri:translate-2" class="language-btn text-[19px]" />
-          <template #dropdown>
-            <ElDropdownMenu>
-              <div v-for="item in languageOptions" :key="item.value" class="lang-btn-item">
-                <ElDropdownItem
-                  :command="item.value"
-                  :class="{ 'is-selected': locale === item.value }"
-                >
-                  <span class="menu-txt">{{ item.label }}</span>
-                  <ArtSvgIcon icon="ri:check-fill" v-if="locale === item.value" />
-                </ElDropdownItem>
-              </div>
-            </ElDropdownMenu>
-          </template>
-        </ElDropdown>
-
         <!-- 通知按钮 -->
         <ArtIconButton
           v-if="shouldShowNotification"
@@ -133,42 +102,6 @@
         >
           <div class="absolute top-2 right-2 size-1.5 !bg-danger rounded-full"></div>
         </ArtIconButton>
-
-        <!-- 聊天按钮 -->
-        <ArtIconButton
-          v-if="shouldShowChat"
-          icon="ri:message-3-line"
-          class="chat-button relative"
-          @click="openChat"
-        >
-          <div class="breathing-dot absolute top-2 right-2 size-1.5 !bg-success rounded-full"></div>
-        </ArtIconButton>
-
-        <!-- 设置按钮 -->
-        <div v-if="shouldShowSettings">
-          <ElPopover :visible="showSettingGuide" placement="bottom-start" :width="190" :offset="0">
-            <template #reference>
-              <div class="flex-cc">
-                <ArtIconButton icon="ri:settings-line" class="setting-btn" @click="openSetting" />
-              </div>
-            </template>
-            <template #default>
-              <p
-                >{{ $t('topBar.guide.title')
-                }}<span :style="{ color: systemThemeColor }"> {{ $t('topBar.guide.theme') }} </span
-                >、 <span :style="{ color: systemThemeColor }"> {{ $t('topBar.guide.menu') }} </span
-                >{{ $t('topBar.guide.description') }}
-              </p>
-            </template>
-          </ElPopover>
-        </div>
-
-        <!-- 主题切换按钮 -->
-        <ArtIconButton
-          v-if="shouldShowThemeToggle"
-          @click="themeAnimation"
-          :icon="isDark ? 'ri:sun-fill' : 'ri:moon-line'"
-        />
 
         <!-- 用户头像、菜单 -->
         <ArtUserMenu />
@@ -184,18 +117,14 @@
 </template>
 
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n'
   import { useRouter } from 'vue-router'
-  import { useFullscreen, useWindowSize } from '@vueuse/core'
-  import { LanguageEnum, MenuTypeEnum } from '@/enums/appEnum'
+  import { useWindowSize } from '@vueuse/core'
+  import { MenuTypeEnum } from '@/enums/appEnum'
   import { useSettingStore } from '@/store/modules/setting'
-  import { useUserStore } from '@/store/modules/user'
   import { useMenuStore } from '@/store/modules/menu'
   import { useApprovalCenterStore } from '@/store/modules/approvalCenter'
   import AppConfig from '@/config'
-  import { languageOptions } from '@/locales'
   import { mittBus } from '@/utils/sys'
-  import { themeAnimation } from '@/utils/ui/animation'
   import { useCommon } from '@/hooks/core/useCommon'
   import { useHeaderBar } from '@/hooks/core/useHeaderBar'
   import ArtUserMenu from './widget/ArtUserMenu.vue'
@@ -206,11 +135,9 @@
   const isWindows = navigator.userAgent.includes('Windows')
 
   const router = useRouter()
-  const { locale } = useI18n()
   const { width } = useWindowSize()
 
   const settingStore = useSettingStore()
-  const userStore = useUserStore()
   const menuStore = useMenuStore()
   const approvalStore = useApprovalCenterStore()
 
@@ -221,19 +148,11 @@
     shouldShowFastEnter,
     shouldShowBreadcrumb,
     shouldShowGlobalSearch,
-    shouldShowFullscreen,
     shouldShowNotification,
-    shouldShowChat,
-    shouldShowLanguage,
-    shouldShowSettings,
-    shouldShowThemeToggle,
     fastEnterMinWidth: headerBarFastEnterMinWidth
   } = useHeaderBar()
 
-  const { menuOpen, systemThemeColor, showSettingGuide, menuType, isDark, tabStyle } =
-    storeToRefs(settingStore)
-
-  const { language } = storeToRefs(userStore)
+  const { menuOpen, menuType, tabStyle } = storeToRefs(settingStore)
   const { menuList } = storeToRefs(menuStore)
 
   const showNotice = ref(false)
@@ -245,23 +164,13 @@
   const isTopMenu = computed(() => menuType.value === MenuTypeEnum.TOP)
   const isTopLeftMenu = computed(() => menuType.value === MenuTypeEnum.TOP_LEFT)
 
-  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
-
   onMounted(() => {
-    initLanguage()
     document.addEventListener('click', bodyCloseNotice)
   })
 
   onUnmounted(() => {
     document.removeEventListener('click', bodyCloseNotice)
   })
-
-  /**
-   * 切换全屏状态
-   */
-  const toggleFullScreen = (): void => {
-    toggleFullscreen()
-  }
 
   /**
    * 切换菜单显示/隐藏状态
@@ -288,36 +197,6 @@
     setTimeout(() => {
       refresh()
     }, time)
-  }
-
-  /**
-   * 初始化语言设置
-   */
-  const initLanguage = (): void => {
-    locale.value = language.value
-  }
-
-  /**
-   * 切换系统语言
-   * @param {LanguageEnum} lang - 目标语言类型
-   */
-  const changeLanguage = (lang: LanguageEnum): void => {
-    if (locale.value === lang) return
-    locale.value = lang
-    userStore.setLanguage(lang)
-    reload(50)
-  }
-
-  /**
-   * 打开设置面板
-   */
-  const openSetting = (): void => {
-    mittBus.emit('openSetting')
-
-    // 隐藏设置引导提示
-    if (showSettingGuide.value) {
-      settingStore.hideSettingGuide()
-    }
   }
 
   /**
@@ -350,13 +229,6 @@
    */
   const visibleNotice = (): void => {
     showNotice.value = !showNotice.value
-  }
-
-  /**
-   * 打开聊天窗口
-   */
-  const openChat = (): void => {
-    mittBus.emit('openChat')
   }
 </script>
 

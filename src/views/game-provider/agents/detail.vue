@@ -510,6 +510,7 @@
   import { ElMessage } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import type {
     AgentCommercialTerm,
     AgentRecord,
@@ -524,6 +525,7 @@
   const route = useRoute()
   const router = useRouter()
   const store = useBusinessPartnerStore()
+  const financeSettingsStore = useFinanceSettingsStore()
   const { width } = useWindowSize()
   const descriptionColumns = computed(() => (width.value < 720 ? 1 : 2))
   const drawerSize = computed(() => (width.value < 640 ? '100%' : '560px'))
@@ -614,7 +616,9 @@
   const termActivateVisible = ref(false)
   const basicFormRef = ref<FormInstance>()
   const termFormRef = ref<FormInstance>()
-  const currencies = ['USDT', 'USD', 'TWD', 'EUR', 'JPY', 'SGD', 'THB', 'MYR', 'VND']
+  const currencies = computed(() =>
+    financeSettingsStore.settlementCurrencies.map((item) => item.code)
+  )
   const basicForm = reactive({
     name: '',
     contact: '',

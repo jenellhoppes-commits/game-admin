@@ -1,4 +1,4 @@
-<!-- 用户菜单 -->
+<!-- 使用者選單 -->
 <template>
   <ElPopover
     ref="userMenuPopover"
@@ -9,51 +9,68 @@
     trigger="hover"
     :show-arrow="false"
     popper-class="user-menu-popover"
-    popper-style="padding: 5px 16px;"
   >
     <template #reference>
-      <img
-        class="size-8.5 mr-5 c-p rounded-full max-sm:w-6.5 max-sm:h-6.5 max-sm:mr-[16px]"
-        src="@imgs/user/avatar.webp"
-        alt="avatar"
-      />
+      <img class="user-menu-avatar-trigger" src="@imgs/user/avatar.webp" alt="avatar" />
     </template>
+
     <template #default>
-      <div class="pt-3">
-        <div class="flex-c pb-1 px-0">
-          <img
-            class="w-10 h-10 mr-3 ml-0 overflow-hidden rounded-full float-left"
-            src="@imgs/user/avatar.webp"
-          />
-          <div class="w-[calc(100%-60px)] h-full">
-            <span class="block text-sm font-medium text-g-800 truncate">{{
-              userInfo.userName
-            }}</span>
-            <span class="block mt-0.5 text-xs text-g-500 truncate">{{ userInfo.email }}</span>
+      <div class="user-menu-panel">
+        <div class="user-profile">
+          <img class="user-profile__avatar" src="@imgs/user/avatar.webp" alt="" />
+          <div class="user-profile__content">
+            <span class="user-profile__name">{{ userInfo.userName }}</span>
+            <span class="user-profile__email">{{ userInfo.email }}</span>
           </div>
         </div>
-        <ul class="py-4 mt-3 border-t border-g-300/80">
-          <li class="btn-item" @click="goPage('/system/user-center')">
-            <ArtSvgIcon icon="ri:user-3-line" />
-            <span>{{ $t('topBar.user.userCenter') }}</span>
-          </li>
-          <li class="btn-item" @click="toDocs()">
-            <ArtSvgIcon icon="ri:book-2-line" />
-            <span>{{ $t('topBar.user.docs') }}</span>
-          </li>
-          <li class="btn-item" @click="toGithub()">
-            <ArtSvgIcon icon="ri:github-line" />
-            <span>{{ $t('topBar.user.github') }}</span>
-          </li>
-          <li class="btn-item" @click="lockScreen()">
-            <ArtSvgIcon icon="ri:lock-line" />
-            <span>{{ $t('topBar.user.lockScreen') }}</span>
-          </li>
-          <div class="w-full h-px my-2 bg-g-300/80"></div>
-          <div class="log-out c-p" @click="loginOut">
-            {{ $t('topBar.user.logout') }}
+
+        <div class="menu-section menu-section--account">
+          <button class="menu-item" type="button" @click="goPage('/platform/access/accounts')">
+            <ArtSvgIcon icon="ri:user-settings-line" />
+            <span>帳號與權限</span>
+            <ArtSvgIcon class="menu-item__arrow" icon="ri:arrow-right-s-line" />
+          </button>
+        </div>
+
+        <div class="menu-section menu-section--preferences">
+          <p class="menu-section__title">顯示偏好</p>
+
+          <button class="menu-item" type="button" @click="toggleThemePreference">
+            <ArtSvgIcon :icon="isDark ? 'ri:sun-line' : 'ri:moon-line'" />
+            <span>{{ isDark ? '切換淺色模式' : '切換深色模式' }}</span>
+          </button>
+
+          <button class="menu-item" type="button" @click="toggleFullScreen">
+            <ArtSvgIcon :icon="isFullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" />
+            <span>{{ isFullscreen ? '退出全螢幕' : '全螢幕顯示' }}</span>
+          </button>
+
+          <div class="menu-item menu-item--language">
+            <ArtSvgIcon icon="ri:translate-2" />
+            <span>介面語言</span>
+            <ElSelect
+              v-model="locale"
+              class="language-select"
+              popper-class="user-menu-language-popper"
+              :teleported="false"
+              @change="changeLanguage"
+            >
+              <ElOption
+                v-for="item in menuLanguageOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </ElSelect>
           </div>
-        </ul>
+        </div>
+
+        <div class="menu-section menu-section--logout">
+          <button class="menu-item menu-item--danger" type="button" @click="loginOut">
+            <ArtSvgIcon icon="ri:logout-box-r-line" />
+            <span>登出</span>
+          </button>
+        </div>
       </div>
     </template>
   </ElPopover>
@@ -62,52 +79,50 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import { useRouter } from 'vue-router'
+  import { useFullscreen } from '@vueuse/core'
   import { ElMessageBox } from 'element-plus'
   import { useUserStore } from '@/store/modules/user'
-  import { WEB_LINKS } from '@/utils/constants'
-  import { mittBus } from '@/utils/sys'
+  import { useSettingStore } from '@/store/modules/setting'
+  import { languageOptions } from '@/locales'
+  import { LanguageEnum } from '@/enums/appEnum'
+  import { themeAnimation } from '@/utils/ui/animation'
 
   defineOptions({ name: 'ArtUserMenu' })
 
   const router = useRouter()
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const userStore = useUserStore()
-
+  const settingStore = useSettingStore()
   const { getUserInfo: userInfo } = storeToRefs(userStore)
+  const { isDark } = storeToRefs(settingStore)
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
   const userMenuPopover = ref()
 
-  /**
-   * 页面跳转
-   * @param {string} path - 目标路径
-   */
+  const menuLanguageOptions = languageOptions.map((item) => ({
+    ...item,
+    label: item.value === LanguageEnum.ZH ? '繁體中文' : item.label
+  }))
+
   const goPage = (path: string): void => {
+    closeUserMenu()
     router.push(path)
   }
 
-  /**
-   * 打开文档页面
-   */
-  const toDocs = (): void => {
-    window.open(WEB_LINKS.DOCS)
+  const toggleThemePreference = (event: MouseEvent): void => {
+    closeUserMenu()
+    themeAnimation(event)
   }
 
-  /**
-   * 打开 GitHub 页面
-   */
-  const toGithub = (): void => {
-    window.open(WEB_LINKS.GITHUB)
+  const toggleFullScreen = (): void => {
+    toggleFullscreen()
   }
 
-  /**
-   * 打开锁屏功能
-   */
-  const lockScreen = (): void => {
-    mittBus.emit('openLockScreen')
+  const changeLanguage = (lang: LanguageEnum): void => {
+    if (userStore.language === lang) return
+    userStore.setLanguage(lang)
+    locale.value = lang
   }
 
-  /**
-   * 用户登出确认
-   */
   const loginOut = (): void => {
     closeUserMenu()
     setTimeout(() => {
@@ -121,47 +136,212 @@
     }, 200)
   }
 
-  /**
-   * 关闭用户菜单弹出层
-   */
   const closeUserMenu = (): void => {
     setTimeout(() => {
-      userMenuPopover.value.hide()
+      userMenuPopover.value?.hide()
     }, 100)
   }
 </script>
 
-<style scoped>
-  @reference '@styles/core/tailwind.css';
+<style scoped lang="scss">
+  :global(.user-menu-popover.el-popover.el-popper) {
+    padding: 0 !important;
+    overflow: hidden;
+    background: var(--default-box-color) !important;
+    border: 1px solid var(--art-gray-300) !important;
+    border-radius: 9px !important;
+    box-shadow: 0 14px 30px rgb(0 0 0 / 24%) !important;
+  }
 
-  @layer components {
-    .btn-item {
-      @apply flex items-center p-2 mb-3 select-none rounded-md cursor-pointer last:mb-0;
+  :global(.dark .user-menu-popover.el-popover.el-popper) {
+    background: #1b1b1e !important;
+  }
 
-      span {
-        @apply text-sm;
-      }
+  .user-menu-avatar-trigger {
+    width: 34px;
+    height: 34px;
+    margin-right: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    object-fit: cover;
+    border-radius: 50%;
+  }
 
-      .art-svg-icon {
-        @apply mr-2 text-base;
-      }
+  .user-menu-panel {
+    color: var(--art-gray-900);
+  }
 
-      &:hover {
-        background-color: var(--art-gray-200);
-      }
+  .user-profile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 62px;
+    padding: 12px 16px 10px;
+  }
+
+  .user-profile__avatar {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  .user-profile__content {
+    min-width: 0;
+  }
+
+  .user-profile__name,
+  .user-profile__email {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .user-profile__name {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: var(--art-gray-900);
+  }
+
+  .user-profile__email {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--art-gray-500);
+  }
+
+  .menu-section {
+    padding: 8px 12px;
+  }
+
+  .menu-section--account,
+  .menu-section--preferences {
+    position: relative;
+  }
+
+  .user-profile::after,
+  .menu-section--account::after,
+  .menu-section--preferences::after {
+    position: absolute;
+    right: 16px;
+    bottom: 0;
+    left: 16px;
+    height: 1px;
+    content: '';
+    background: var(--art-gray-300);
+  }
+
+  .menu-section--preferences {
+    padding-top: 10px;
+    padding-bottom: 8px;
+  }
+
+  .menu-section--logout {
+    padding-top: 8px;
+    padding-bottom: 12px;
+  }
+
+  .menu-section__title {
+    padding: 0 12px 6px;
+    margin: 0;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--art-gray-500);
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--art-gray-900);
+    text-align: left;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease;
+
+    :deep(.art-svg-icon) {
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      margin-right: 10px;
+      font-size: 16px;
+      color: var(--art-gray-700);
+    }
+
+    &:hover {
+      color: var(--art-gray-900);
+      background: var(--art-gray-200);
     }
   }
 
-  .log-out {
-    @apply py-1.5
-    mt-5
-    text-xs
-    text-center
-    border
-    border-g-400
-    rounded-md
-    transition-all
-    duration-200
-    hover:shadow-xl;
+  .menu-item__arrow {
+    margin-right: 0 !important;
+    margin-left: auto;
+    color: var(--art-gray-500) !important;
+  }
+
+  .menu-item--language {
+    cursor: default;
+
+    &:hover {
+      background: transparent;
+    }
+  }
+
+  .language-select {
+    width: 104px;
+    margin-left: auto;
+
+    :deep(.el-select__wrapper) {
+      min-height: 26px;
+      padding: 2px 9px;
+      background: transparent;
+      border-radius: 6px;
+      box-shadow: 0 0 0 1px var(--art-gray-400) inset !important;
+    }
+
+    :deep(.el-select__selected-item) {
+      font-size: 12px;
+      color: var(--art-gray-800);
+    }
+
+    :deep(.el-select__caret) {
+      font-size: 13px;
+      color: var(--art-gray-500);
+    }
+  }
+
+  .menu-item--danger {
+    color: var(--el-color-danger);
+
+    :deep(.art-svg-icon) {
+      color: var(--el-color-danger);
+    }
+
+    &:hover {
+      color: var(--el-color-danger);
+      background: color-mix(in srgb, var(--el-color-danger) 10%, transparent);
+    }
+  }
+
+  @media screen and (width <= 640px) {
+    .user-menu-avatar-trigger {
+      width: 26px;
+      height: 26px;
+      margin-right: 16px;
+    }
   }
 </style>

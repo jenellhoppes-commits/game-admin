@@ -246,12 +246,14 @@
   import type { FormInstance, FormRules } from 'element-plus'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import type { AgentLevel, SettlementBasis, SettlementCycle } from '@/types/game-provider'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
 
   const route = useRoute()
   const router = useRouter()
   const store = useBusinessPartnerStore()
+  const financeSettingsStore = useFinanceSettingsStore()
   const formRef = ref<FormInstance>()
   const submitting = ref(false)
   const submitError = ref('')
@@ -259,7 +261,9 @@
   const createdAgentId = ref('')
   const allowLeave = ref(false)
   const baseline = ref('')
-  const currencies = ['USDT', 'USD', 'TWD', 'EUR', 'JPY', 'SGD', 'THB', 'MYR', 'VND']
+  const currencies = computed(() =>
+    financeSettingsStore.settlementCurrencies.map((item) => item.code)
+  )
   const presetParent = computed(() => store.findAgent(String(route.query.parentId || '')))
   const form = reactive({
     code: '',

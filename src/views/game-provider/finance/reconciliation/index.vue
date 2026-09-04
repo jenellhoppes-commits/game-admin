@@ -1,14 +1,6 @@
 <template>
   <div class="finance-page">
-    <AppPageHeader
-      :title="isMerchant ? '商戶對帳' : '代理對帳'"
-      eyebrow="對帳／結算"
-      :description="
-        isMerchant
-          ? '按商戶線路與交易幣別核對投注、派彩、獎池及應結金額。'
-          : '彙總旗下商戶已確認結果，產生代理層級對帳資料。'
-      "
-    >
+    <AppPageHeader :title="pageCopy.title" eyebrow="對帳／結算" :description="pageCopy.description">
       <template #actions>
         <ElButton @click="refresh">重新整理</ElButton>
         <ElButton @click="ElMessage.success('已建立匯出工作')">匯出</ElButton>
@@ -37,11 +29,7 @@
     <ElCard class="filter-card" shadow="never">
       <ElForm :model="filters" inline>
         <ElFormItem label="關鍵字">
-          <ElInput
-            v-model="filters.keyword"
-            clearable
-            :placeholder="isMerchant ? '商戶、線路或對帳編號' : '代理或對帳編號'"
-          />
+          <ElInput v-model="filters.keyword" clearable :placeholder="pageCopy.placeholder" />
         </ElFormItem>
         <ElFormItem label="對帳期間">
           <ElSelect v-model="filters.period" clearable placeholder="全部期間">
@@ -69,7 +57,7 @@
     <ElCard class="table-card" shadow="never">
       <div class="table-toolbar">
         <div
-          ><strong>{{ isMerchant ? '商戶對帳清單' : '代理對帳清單' }}</strong
+          ><strong>{{ pageCopy.tableTitle }}</strong
           ><span>共 {{ filteredRows.length }} 筆</span></div
         >
         <span class="hint">金額依各筆結算幣別顯示</span>
@@ -78,12 +66,19 @@
         <ElTableColumn label="對帳資料" min-width="230" fixed="left">
           <template #default="scope">
             <button class="primary-link" type="button" @click="openDetail(scope.row.id)">
-              <strong>{{ isMerchant ? scope.row.merchantName : scope.row.agentName }}</strong>
+              <strong>{{ recordName(scope.row) }}</strong>
               <small>{{ scope.row.id }} · {{ scope.row.period }}</small>
             </button>
           </template>
         </ElTableColumn>
         <ElTableColumn v-if="isMerchant" label="商戶線路" prop="lineUid" min-width="180" />
+        <ElTableColumn
+          v-else-if="isSupplier"
+          label="遊戲數"
+          prop="gameCount"
+          width="90"
+          align="right"
+        />
         <ElTableColumn v-else label="商戶數" prop="merchantCount" width="90" align="right" />
         <ElTableColumn label="投注筆數" prop="betCount" width="110" align="right" />
         <ElTableColumn label="有效投注" min-width="145" align="right">
@@ -151,6 +146,29 @@
   const router = useRouter()
   const store = useFinanceCenterStore()
   const isMerchant = computed(() => route.name === 'MerchantReconciliation')
+  const isSupplier = computed(() => route.name === 'SupplierReconciliation')
+  const pageCopy = computed(() =>
+    isSupplier.value
+      ? {
+          title: '供應商對帳',
+          description: '按遊戲供應商核對投注、派彩、分潤與最終實付金額。',
+          placeholder: '供應商或對帳編號',
+          tableTitle: '供應商對帳清單'
+        }
+      : isMerchant.value
+        ? {
+            title: '商戶對帳',
+            description: '按商戶線路與交易幣別核對投注、派彩、獎池及應結金額。',
+            placeholder: '商戶、線路或對帳編號',
+            tableTitle: '商戶對帳清單'
+          }
+        : {
+            title: '代理對帳',
+            description: '彙總旗下商戶已確認結果，產生代理層級對帳資料。',
+            placeholder: '代理或對帳編號',
+            tableTitle: '代理對帳清單'
+          }
+  )
   const filters = reactive({ keyword: '', period: '', status: '' })
   const pagination = reactive({ current: 1, size: 10 })
   const statusOptions: FinanceReconciliationStatus[] = [
@@ -162,14 +180,21 @@
     'Cancelled'
   ]
   const records = computed(() =>
-    isMerchant.value ? store.merchantReconciliations : store.agentReconciliations
+    isSupplier.value
+      ? store.supplierReconciliations
+      : isMerchant.value
+        ? store.merchantReconciliations
+        : store.agentReconciliations
   )
   const filteredRows = computed(() =>
     records.value.filter((record) => {
-      const searchable =
-        isMerchant.value && 'merchantName' in record
-          ? `${record.id} ${record.merchantName} ${record.merchantCode} ${record.lineUid}`
-          : `${record.id} ${record.agentName} ${'agentCode' in record ? record.agentCode : ''}`
+      const searchable = `${record.id} ${recordName(record)} ${
+        'merchantCode' in record
+          ? `${record.merchantCode} ${record.lineUid}`
+          : 'supplierCode' in record
+            ? record.supplierCode
+            : record.agentCode
+      }`
       return (
         (!filters.keyword || searchable.toLowerCase().includes(filters.keyword.toLowerCase())) &&
         (!filters.period || record.period === filters.period) &&
@@ -196,8 +221,16 @@
     pagination.current = 1
   }
   const refresh = () => ElMessage.success('對帳資料已更新')
+  const recordName = (record: (typeof records.value)[number]) =>
+    'supplierName' in record
+      ? record.supplierName
+      : 'merchantName' in record
+        ? record.merchantName
+        : record.agentName
   const openDetail = (id: string) =>
-    router.push(`/finance/reconciliation/${isMerchant.value ? 'merchants' : 'agents'}/${id}`)
+    router.push(
+      `/finance/reconciliation/${isSupplier.value ? 'suppliers' : isMerchant.value ? 'merchants' : 'agents'}/${id}`
+    )
   const openDifferences = (id: string) =>
     router.push({ path: '/finance/reconciliation/differences', query: { reconciliationId: id } })
   const money = (value: number, currency: string) =>

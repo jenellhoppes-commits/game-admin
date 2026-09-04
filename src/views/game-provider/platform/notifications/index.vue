@@ -507,7 +507,7 @@
     const routeMap: Record<PlatformNotificationEventType, string> = {
       'Risk Alert': '/risk/alerts',
       'Approval Pending': '/approvals/pending',
-      'Exchange Rate Alert': '/finance-settings/exchange-rates/alerts',
+      'Exchange Rate Alert': '/platform/exchange-rates/settings',
       'Settlement Status': '/finance/settlement/batches',
       'Account Security': '/platform/access/accounts',
       'System Error': '/platform/logs/errors'

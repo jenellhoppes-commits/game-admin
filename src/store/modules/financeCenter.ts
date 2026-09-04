@@ -19,7 +19,8 @@ import type {
   SettlementAdjustmentRecord,
   SettlementBatchRecord,
   SettlementCycle,
-  SettlementExchangeSnapshot
+  SettlementExchangeSnapshot,
+  SupplierReconciliationRecord
 } from '@/types/game-provider'
 
 const formatNow = () => {
@@ -29,14 +30,43 @@ const formatNow = () => {
 }
 
 let roundMoney = (value: number) => Number(value.toFixed(2))
-let getExchangeRate = defaultExchangeRate
+let getExchangeRate: (from: string, to: string, date?: string) => number = defaultExchangeRate
+let getExchangeRateSnapshotIds: (from: string, to: string, date?: string) => string[] = () => []
+let resolveExchangeRate: (
+  from: string,
+  to: string,
+  date?: string
+) =>
+  | {
+      ok: true
+      rate: number
+      rateDate?: string
+      snapshotIds: string[]
+      missingCurrencies: string[]
+    }
+  | { ok: false; snapshotIds: string[]; missingCurrencies: string[]; message: string } = (
+  from,
+  to,
+  date
+) => {
+  const rate = defaultExchangeRate(from, to)
+  return Number.isFinite(rate)
+    ? { ok: true, rate, rateDate: date, snapshotIds: [], missingCurrencies: [] }
+    : { ok: false, snapshotIds: [], missingCurrencies: [from, to], message: '缺少匯率' }
+}
 let getExchangeRateSource = () => '平台每日匯率'
 let getAmountPrecision = () => 2
 let getRoundingRule: () => FinanceCalculationSnapshot['roundingRule'] = () => '四捨五入'
 
+const periodEndDate = (period: string) => {
+  const [year, month] = period.split('-').map(Number)
+  const lastDay = new Date(year, month, 0).getDate()
+  return `${period}-${String(lastDay).padStart(2, '0')}`
+}
+
 const periodRange = (period: string) => ({
   periodStart: `${period}-01 00:00:00`,
-  periodEnd: `${period}-${period === '2026-08' ? '31' : '31'} 23:59:59`
+  periodEnd: `${periodEndDate(period)} 23:59:59`
 })
 
 const buildSnapshot = (
@@ -51,10 +81,15 @@ const buildSnapshot = (
   ratePercent,
   transactionCurrency,
   settlementCurrency,
-  exchangeRate: getExchangeRate(transactionCurrency, settlementCurrency),
+  exchangeRate: getExchangeRate(transactionCurrency, settlementCurrency, periodEndDate(period)),
   exchangeRateSource:
     transactionCurrency === settlementCurrency ? '同幣別' : getExchangeRateSource(),
-  exchangeRateTime: `${period}-31 23:59:59`,
+  exchangeRateSnapshotIds: getExchangeRateSnapshotIds(
+    transactionCurrency,
+    settlementCurrency,
+    periodEndDate(period)
+  ),
+  exchangeRateTime: `${periodEndDate(period)} 23:59:59`,
   amountPrecision: getAmountPrecision(),
   roundingRule: getRoundingRule(),
   formulaVersion: 'SETTLEMENT-V1.2',
@@ -67,6 +102,8 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
   const transactionStore = useTransactionCenterStore()
   const financeSettingsStore = useFinanceSettingsStore()
   getExchangeRate = financeSettingsStore.getExchangeRate
+  getExchangeRateSnapshotIds = financeSettingsStore.getExchangeRateSnapshotIds
+  resolveExchangeRate = financeSettingsStore.resolveExchangeRate
   roundMoney = financeSettingsStore.roundSettlementAmount
   getExchangeRateSource = () =>
     financeSettingsStore.sources.find(
@@ -91,7 +128,11 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
             settlementBasis === 'GGR' ? ggr : settlementBasis === 'Valid Bet' ? validBet : betAmount
           const adjustmentAmount = seed % 7 === 0 ? 1250 : 0
           const settlementCurrency = term?.settlementCurrency ?? merchant.settlementCurrency
-          const exchangeRate = getExchangeRate(line.currency, settlementCurrency)
+          const exchangeRate = getExchangeRate(
+            line.currency,
+            settlementCurrency,
+            periodEndDate(period)
+          )
           const hasDifference = periodIndex === 0 && seed % 3 === 0
           const status: FinanceReconciliationStatus =
             periodIndex === 1 ? 'Locked' : hasDifference ? 'Difference' : 'Pending Confirmation'
@@ -136,7 +177,13 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
             createdAt: periodIndex === 1 ? '2026-08-01 02:00' : '2026-09-01 02:00',
             updatedAt: periodIndex === 1 ? '2026-08-03 16:20' : '2026-09-03 09:30',
             confirmedAt: periodIndex === 1 ? '2026-08-02 14:10' : undefined,
-            lockedAt: periodIndex === 1 ? '2026-08-03 16:20' : undefined
+            lockedAt: periodIndex === 1 ? '2026-08-03 16:20' : undefined,
+            actualSettlementAmount:
+              periodIndex === 1
+                ? roundMoney(baseValue * (ratePercent / 100) * exchangeRate + adjustmentAmount)
+                : undefined,
+            roundingAdjustment: periodIndex === 1 ? 0 : undefined,
+            confirmationNote: periodIndex === 1 ? '已依實際入帳金額完成確認' : undefined
           }
         })
       )
@@ -236,7 +283,8 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
             included.reduce(
               (total, record) =>
                 total +
-                Number(record[field] || 0) * getExchangeRate(record.currency, settlementCurrency),
+                Number(record[field] || 0) *
+                  getExchangeRate(record.currency, settlementCurrency, periodEndDate(period)),
               0
             )
           )
@@ -297,12 +345,94 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
           createdAt: periodIndex === 1 ? '2026-08-01 03:00' : '2026-09-01 03:00',
           updatedAt: periodIndex === 1 ? '2026-08-03 17:20' : '2026-09-03 10:00',
           confirmedAt: periodIndex === 1 ? '2026-08-02 15:00' : undefined,
-          lockedAt: periodIndex === 1 ? '2026-08-03 17:20' : undefined
+          lockedAt: periodIndex === 1 ? '2026-08-03 17:20' : undefined,
+          actualSettlementAmount:
+            periodIndex === 1 ? roundMoney(baseValue * (ratePercent / 100)) : undefined,
+          roundingAdjustment: periodIndex === 1 ? 0 : undefined,
+          confirmationNote: periodIndex === 1 ? '旗下商戶款項彙總已確認' : undefined
         }
       })
     )
 
   const agentReconciliations = ref<AgentReconciliationRecord[]>(buildAgentReconciliations())
+
+  const supplierSeeds = [
+    { id: 'SUP-001', code: 'EVO', name: 'Evolution', gameCount: 18, rate: 12.5 },
+    { id: 'SUP-002', code: 'PGS', name: 'PG Soft', gameCount: 42, rate: 10.8 },
+    { id: 'SUP-003', code: 'JILI', name: 'JILI Games', gameCount: 36, rate: 11.2 },
+    { id: 'SUP-004', code: 'PRAG', name: 'Pragmatic Play', gameCount: 51, rate: 13 }
+  ]
+  const supplierReconciliations = ref<SupplierReconciliationRecord[]>(
+    supplierSeeds.flatMap((supplier, supplierIndex) =>
+      ['2026-08', '2026-07'].map((period, periodIndex) => {
+        const betAmount = 9200000 + supplierIndex * 1380000 + periodIndex * 310000
+        const validBet = roundMoney(betAmount * (0.91 + supplierIndex * 0.004))
+        const payoutAmount = roundMoney(betAmount * (0.935 + supplierIndex * 0.003))
+        const ggr = roundMoney(betAmount - payoutAmount)
+        const exchangeRate = getExchangeRate('USD', 'USDT', periodEndDate(period))
+        const initialSettlementAmount = roundMoney(ggr * (supplier.rate / 100) * exchangeRate)
+        const hasDifference = periodIndex === 0 && supplierIndex === 0
+        return {
+          id: `SRC-${period.replace('-', '')}-${String(supplierIndex + 1).padStart(4, '0')}`,
+          period,
+          ...periodRange(period),
+          supplierId: supplier.id,
+          supplierCode: supplier.code,
+          supplierName: supplier.name,
+          gameCount: supplier.gameCount,
+          currency: 'USD',
+          memberCount: 1800 + supplierIndex * 260,
+          betCount: 16800 + supplierIndex * 2100,
+          betAmount,
+          validBet,
+          payoutAmount,
+          jackpotContribution: roundMoney(betAmount * 0.003),
+          jackpotPayout: supplierIndex % 2 ? 0 : 68000,
+          cancelledAmount: 4800 + supplierIndex * 350,
+          refundAmount: 2600 + supplierIndex * 280,
+          ggr,
+          initialSettlementAmount,
+          adjustmentAmount: 0,
+          finalSettlementAmount: initialSettlementAmount,
+          differenceCount: hasDifference ? 1 : 0,
+          unresolvedDifferenceCount: hasDifference ? 1 : 0,
+          status:
+            periodIndex === 1 ? 'Locked' : hasDifference ? 'Difference' : 'Pending Confirmation',
+          snapshot: buildSnapshot('GGR', supplier.rate, 'USD', 'USDT', period, periodIndex === 1),
+          createdAt: periodIndex === 1 ? '2026-08-01 01:30' : '2026-09-01 01:30',
+          updatedAt: periodIndex === 1 ? '2026-08-03 15:10' : '2026-09-03 09:10',
+          confirmedAt: periodIndex === 1 ? '2026-08-02 13:40' : undefined,
+          lockedAt: periodIndex === 1 ? '2026-08-03 15:10' : undefined,
+          actualSettlementAmount: periodIndex === 1 ? initialSettlementAmount : undefined,
+          roundingAdjustment: periodIndex === 1 ? 0 : undefined,
+          confirmationNote: periodIndex === 1 ? '供應商帳單與實付金額已確認' : undefined
+        }
+      })
+    )
+  )
+
+  differences.value.unshift({
+    id: 'DIF-SUP-000001',
+    reconciliationType: 'Supplier',
+    reconciliationId: 'SRC-202608-0001',
+    period: '2026-08',
+    supplierId: 'SUP-001',
+    supplierName: 'Evolution',
+    agentId: '',
+    agentName: '',
+    type: 'Fee',
+    systemValue: 284560.42,
+    partnerValue: 284558,
+    differenceAmount: 2.42,
+    currency: 'USDT',
+    status: 'Open',
+    description: '供應商帳單尾數與平台計算結果不同，待確認實付金額。',
+    relatedBetIds: [],
+    relatedTransactionIds: [],
+    detectedAt: '2026-09-01 09:10',
+    dueAt: '2026-09-05 18:00',
+    updatedAt: '2026-09-03 09:10'
+  })
 
   const settlementCurrencyList = Array.from(
     new Set(
@@ -425,9 +555,14 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
           batchId: batch.id,
           fromCurrency,
           toCurrency,
-          rate: getExchangeRate(fromCurrency, toCurrency),
+          rate: getExchangeRate(fromCurrency, toCurrency, periodEndDate(batch.period)),
           source: fromCurrency === toCurrency ? '同幣別' : getExchangeRateSource(),
-          rateTime: '2026-07-31 23:59:59',
+          sourceRateSnapshotIds: getExchangeRateSnapshotIds(
+            fromCurrency,
+            toCurrency,
+            periodEndDate(batch.period)
+          ),
+          rateTime: `${periodEndDate(batch.period)} 23:59:59`,
           status: 'Locked' as const,
           lockedBy: 'Finance Scheduler',
           lockedAt: '2026-08-01 04:00'
@@ -499,6 +634,28 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
   settlementBatches.value.forEach((batch) => refreshBatchTotals(batch.id))
 
   const actionLogs = ref<FinanceActionLog[]>([
+    ...supplierReconciliations.value.map((record, index) => ({
+      id: `FLOG-SUP-${String(index + 1).padStart(4, '0')}`,
+      entityType: 'Supplier Reconciliation' as const,
+      entityId: record.id,
+      action: '產生供應商對帳',
+      before: '無',
+      after: record.status,
+      reason: '依供應商合約與結算週期彙總遊戲帳務',
+      operator: 'Finance Scheduler',
+      time: record.createdAt
+    })),
+    ...agentReconciliations.value.slice(0, 12).map((record, index) => ({
+      id: `FLOG-AGT-${String(index + 1).padStart(4, '0')}`,
+      entityType: 'Agent Reconciliation' as const,
+      entityId: record.id,
+      action: '產生代理對帳',
+      before: '無',
+      after: record.status,
+      reason: '彙總旗下商戶已確認對帳結果',
+      operator: 'Finance Scheduler',
+      time: record.createdAt
+    })),
     ...merchantReconciliations.value.slice(0, 24).map((record, index) => ({
       id: `FLOG-${String(index + 1).padStart(6, '0')}`,
       entityType: 'Merchant Reconciliation' as const,
@@ -542,6 +699,8 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     merchantReconciliations.value.find((record) => record.id === id)
   const findAgentReconciliation = (id: string) =>
     agentReconciliations.value.find((record) => record.id === id)
+  const findSupplierReconciliation = (id: string) =>
+    supplierReconciliations.value.find((record) => record.id === id)
   const findDifference = (id: string) => differences.value.find((record) => record.id === id)
   const getDifferences = (reconciliationId: string) =>
     differences.value.filter((record) => record.reconciliationId === reconciliationId)
@@ -640,7 +799,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
         (currency) => currency.code === payload.settlementCurrency
       )
     ) {
-      return { ok: false, message: '此幣別未啟用為結算幣別，請先至財務設定開啟。' }
+      return { ok: false, message: '此幣別未啟用為結算幣別，請先至平台管理的幣別管理開啟。' }
     }
     const usedMerchantIds = new Set(merchantStatements.value.map((item) => item.reconciliationId))
     const usedAgentIds = new Set(agentStatements.value.map((item) => item.reconciliationId))
@@ -660,6 +819,26 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     )
     if (!eligibleMerchants.length && !eligibleAgents.length) {
       return { ok: false, message: '目前沒有符合期間、幣別且尚未納入批次的已確認對帳。' }
+    }
+    const rateDate = periodEndDate(payload.period)
+    const requiredPairs = Array.from(
+      new Set(
+        eligibleMerchants.map(
+          (record) => `${record.currency}-${record.snapshot.settlementCurrency}`
+        )
+      )
+    )
+    const unresolvedRate = requiredPairs
+      .map((pair) => {
+        const [fromCurrency, toCurrency] = pair.split('-')
+        return resolveExchangeRate(fromCurrency, toCurrency, rateDate)
+      })
+      .find((result) => !result.ok)
+    if (unresolvedRate && !unresolvedRate.ok) {
+      return {
+        ok: false,
+        message: `${unresolvedRate.message} 請先至匯率管理完成當日匯率鎖定。`
+      }
     }
     const id = `STB-${payload.period.replace('-', '')}-${String(settlementBatches.value.length + 1).padStart(3, '0')}`
     const now = formatNow()
@@ -725,26 +904,28 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
         createdAt: now
       })
     )
-    const pairs = Array.from(
-      new Set(
-        eligibleMerchants.map(
-          (record) => `${record.currency}-${record.snapshot.settlementCurrency}`
-        )
-      )
-    )
-    pairs.forEach((pair, index) => {
+    requiredPairs.forEach((pair, index) => {
       const [fromCurrency, toCurrency] = pair.split('-')
+      const resolved = resolveExchangeRate(fromCurrency, toCurrency, rateDate)
+      if (!resolved.ok) return
       exchangeSnapshots.value.unshift({
         id: `FXS-${String(exchangeSnapshots.value.length + index + 1).padStart(5, '0')}`,
         batchId: id,
         fromCurrency,
         toCurrency,
-        rate: getExchangeRate(fromCurrency, toCurrency),
+        rate: resolved.rate,
         source: fromCurrency === toCurrency ? '同幣別' : getExchangeRateSource(),
-        rateTime: `${payload.period}-31 23:59:59`,
+        sourceRateSnapshotIds: resolved.snapshotIds,
+        rateTime: `${rateDate} 23:59:59`,
         status: 'Locked',
         lockedBy: 'Super Admin',
         lockedAt: now
+      })
+      resolved.snapshotIds.forEach((snapshotId) => {
+        const dailyRate = financeSettingsStore.dailyRates.find((item) => item.id === snapshotId)
+        if (!dailyRate) return
+        dailyRate.settlementUsed = true
+        dailyRate.settlementIds = [...new Set([...(dailyRate.settlementIds || []), id])]
       })
     })
     refreshBatchTotals(id)
@@ -915,9 +1096,60 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     return true
   }
 
-  const confirmMerchant = (id: string) => {
+  const applyActualAmount = (
+    record: MerchantReconciliationRecord | AgentReconciliationRecord | SupplierReconciliationRecord,
+    reconciliationType: ReconciliationDifferenceRecord['reconciliationType'],
+    actualAmount: number,
+    note: string
+  ) => {
+    if (!Number.isFinite(actualAmount) || actualAmount < 0) return false
+    const expectedAmount = record.finalSettlementAmount
+    const roundingAdjustment = roundMoney(actualAmount - expectedAmount)
+    if (roundingAdjustment !== 0 && !note.trim()) return false
+    record.actualSettlementAmount = actualAmount
+    record.roundingAdjustment = roundingAdjustment
+    record.confirmationNote = note.trim()
+    record.adjustmentAmount = roundMoney(record.adjustmentAmount + roundingAdjustment)
+    record.finalSettlementAmount = actualAmount
+    if (roundingAdjustment !== 0) {
+      differences.value.unshift({
+        id: `DIF-ROUND-${String(differences.value.length + 1).padStart(6, '0')}`,
+        reconciliationType,
+        reconciliationId: record.id,
+        period: record.period,
+        merchantId: 'merchantId' in record ? record.merchantId : undefined,
+        merchantName: 'merchantName' in record ? record.merchantName : undefined,
+        supplierId: 'supplierId' in record ? record.supplierId : undefined,
+        supplierName: 'supplierName' in record ? record.supplierName : undefined,
+        agentId: 'agentId' in record ? record.agentId : '',
+        agentName: 'agentName' in record ? record.agentName : '',
+        lineUid: 'lineUid' in record ? record.lineUid : undefined,
+        type: 'Other',
+        systemValue: expectedAmount,
+        partnerValue: actualAmount,
+        differenceAmount: roundingAdjustment,
+        currency: record.snapshot.settlementCurrency,
+        status: 'Resolved',
+        assignee: 'Super Admin',
+        description: '確認對帳時依實收／實付金額建立尾差調整。',
+        resolution: note.trim(),
+        resolutionType: 'Create Adjustment',
+        relatedBetIds: [],
+        relatedTransactionIds: [],
+        detectedAt: formatNow(),
+        dueAt: formatNow(),
+        updatedAt: formatNow()
+      })
+      record.differenceCount += 1
+    }
+    return true
+  }
+
+  const confirmMerchant = (id: string, actualAmount?: number, note = '') => {
     const record = findMerchantReconciliation(id)
     if (!record || record.unresolvedDifferenceCount > 0 || record.status === 'Locked') return false
+    if (!applyActualAmount(record, 'Merchant', actualAmount ?? record.finalSettlementAmount, note))
+      return false
     const before = record.status
     record.status = 'Confirmed'
     record.confirmedAt = formatNow()
@@ -956,7 +1188,10 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     difference.resolution = resolution
     difference.updatedAt = formatNow()
     if (resolutionType === 'Create Adjustment') {
-      const parent = findMerchantReconciliation(difference.reconciliationId)
+      const parent =
+        findMerchantReconciliation(difference.reconciliationId) ||
+        findAgentReconciliation(difference.reconciliationId) ||
+        findSupplierReconciliation(difference.reconciliationId)
       if (parent) {
         parent.adjustmentAmount = roundMoney(parent.adjustmentAmount + difference.differenceAmount)
         parent.finalSettlementAmount = roundMoney(
@@ -970,7 +1205,11 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
   }
 
   function syncDifferenceCount(reconciliationId: string) {
-    const parent = findMerchantReconciliation(reconciliationId)
+    const merchantParent = findMerchantReconciliation(reconciliationId)
+    const parent =
+      merchantParent ||
+      findAgentReconciliation(reconciliationId) ||
+      findSupplierReconciliation(reconciliationId)
     if (!parent) return
     parent.unresolvedDifferenceCount = getDifferences(reconciliationId).filter(
       (item) => !['Resolved', 'Accepted', 'Closed'].includes(item.status)
@@ -979,7 +1218,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
       parent.status = 'Pending Confirmation'
     }
     parent.updatedAt = formatNow()
-    refreshAgent(parent.agentId, parent.period)
+    if (merchantParent) refreshAgent(merchantParent.agentId, merchantParent.period)
   }
 
   function refreshAgent(agentId: string, period: string) {
@@ -997,11 +1236,13 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     record.updatedAt = formatNow()
   }
 
-  const confirmAgent = (id: string) => {
+  const confirmAgent = (id: string, actualAmount?: number, note = '') => {
     const record = findAgentReconciliation(id)
     if (!record || record.status === 'Locked' || record.unresolvedDifferenceCount > 0) return false
     const included = getIncludedMerchantReconciliations(record)
     if (included.some((item) => !['Confirmed', 'Locked'].includes(item.status))) return false
+    if (!applyActualAmount(record, 'Agent', actualAmount ?? record.finalSettlementAmount, note))
+      return false
     const before = record.status
     record.status = 'Confirmed'
     record.confirmedAt = formatNow()
@@ -1017,9 +1258,30 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     return true
   }
 
+  const confirmSupplier = (id: string, actualAmount?: number, note = '') => {
+    const record = findSupplierReconciliation(id)
+    if (!record || record.status === 'Locked' || record.unresolvedDifferenceCount > 0) return false
+    if (!applyActualAmount(record, 'Supplier', actualAmount ?? record.finalSettlementAmount, note))
+      return false
+    const before = record.status
+    record.status = 'Confirmed'
+    record.confirmedAt = formatNow()
+    record.updatedAt = record.confirmedAt
+    addLog(
+      'Supplier Reconciliation',
+      id,
+      '確認供應商對帳',
+      before,
+      record.status,
+      record.confirmationNote || '帳務與實付金額均已確認'
+    )
+    return true
+  }
+
   return {
     merchantReconciliations,
     agentReconciliations,
+    supplierReconciliations,
     differences,
     actionLogs,
     settlementBatches,
@@ -1030,6 +1292,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     unresolvedDifferences,
     findMerchantReconciliation,
     findAgentReconciliation,
+    findSupplierReconciliation,
     findDifference,
     getDifferences,
     getLogs,
@@ -1053,6 +1316,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     recalculateMerchant,
     confirmMerchant,
     confirmAgent,
+    confirmSupplier,
     updateDifference,
     resolveDifference
   }

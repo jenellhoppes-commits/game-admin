@@ -238,16 +238,20 @@
   import type { JackpotType } from '@/types/game-provider'
   import { useJackpotCenterStore } from '@/store/modules/jackpotCenter'
   import { useGameCatalogStore } from '@/store/modules/gameCatalog'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
 
   defineOptions({ name: 'JackpotCreate' })
   const router = useRouter()
   const store = useJackpotCenterStore()
   const gameStore = useGameCatalogStore()
+  const financeSettingsStore = useFinanceSettingsStore()
   const { width } = useWindowSize()
   const activeStep = ref(0)
   const descriptionColumns = computed(() => (width.value < 760 ? 1 : 2))
-  const currencies = ['USD', 'TWD', 'USDT', 'JPY', 'EUR', 'THB', 'SGD', 'HKD']
+  const currencies = computed(() =>
+    financeSettingsStore.transactionCurrencies.map((item) => item.code)
+  )
   const form = reactive({
     code: '',
     nameZh: '',

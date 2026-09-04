@@ -1,13 +1,13 @@
 <template>
   <div class="page">
     <AppPageHeader
-      :title="copy.title"
-      eyebrow="財務設定 · 幣別管理"
-      :description="copy.description"
+      title="幣別管理"
+      eyebrow="平台管理 · 匯率管理"
+      description="統一建立平台幣別；新增時預設可作為投注幣別，並在同一頁設定結算用途與金額精度。"
     >
       <template #actions>
         <ElButton @click="ElMessage.success('幣別設定已匯出')">匯出</ElButton>
-        <ElButton v-if="mode === 'data'" type="primary" @click="openEdit()">新增幣別</ElButton>
+        <ElButton type="primary" @click="openEdit()">新增幣別</ElButton>
       </template>
     </AppPageHeader>
 
@@ -17,7 +17,7 @@
         ><small>平台幣別主檔</small></div
       >
       <div
-        ><span>交易幣別</span><strong>{{ store.transactionCurrencies.length }}</strong
+        ><span>投注幣別</span><strong>{{ store.transactionCurrencies.length }}</strong
         ><small>可建立商戶線路</small></div
       >
       <div
@@ -30,7 +30,12 @@
       >
     </div>
 
-    <ElAlert v-if="mode !== 'data'" :title="copy.rule" type="info" :closable="false" show-icon />
+    <ElAlert
+      title="只有在此處新增並啟用的幣別，才能進入匯率設定；停用投注用途不會改寫既有注單。"
+      type="info"
+      :closable="false"
+      show-icon
+    />
     <ElCard shadow="never" class="filter-card">
       <ElForm inline>
         <ElFormItem label="關鍵字"
@@ -50,8 +55,7 @@
     <ElCard shadow="never" class="table-card">
       <div class="toolbar"
         ><div
-          ><strong>{{ copy.tableTitle }}</strong
-          ><span>共 {{ rows.length }} 筆</span></div
+          ><strong>平台幣別清單</strong><span>共 {{ rows.length }} 筆</span></div
         ><span>更新會同步影響後續可選項目</span></div
       >
       <ElTable :data="rows" border row-key="code">
@@ -67,30 +71,28 @@
           ></ElTableColumn
         >
         <ElTableColumn prop="numericCode" label="ISO 數字碼" width="120" />
-        <ElTableColumn v-if="mode === 'data'" label="交易／結算" min-width="180"
-          ><template #default="scope"
-            ><ElTag :type="scope.row.transactionEnabled ? 'success' : 'info'" effect="plain"
-              >交易</ElTag
-            ><ElTag :type="scope.row.settlementEnabled ? 'success' : 'info'" effect="plain"
-              >結算</ElTag
-            ></template
-          ></ElTableColumn
-        >
-        <ElTableColumn v-if="mode === 'transaction'" label="交易幣別" width="150" align="center"
+        <ElTableColumn label="幣別類型" width="120">
+          <template #default="scope">
+            <ElTag :type="scope.row.currencyType === 'System' ? 'warning' : 'info'" effect="plain">
+              {{ currencyTypeLabel(scope.row.currencyType) }}
+            </ElTag>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="投注幣別" width="120" align="center"
           ><template #default="scope"
             ><ElSwitch
               :model-value="scope.row.transactionEnabled"
-              :disabled="scope.row.status !== 'Active'"
+              :disabled="scope.row.status !== 'Active' || scope.row.code === 'USDT'"
               @change="toggle(scope.row.code, 'transactionEnabled', $event)" /></template
         ></ElTableColumn>
-        <ElTableColumn v-if="mode === 'settlement'" label="結算幣別" width="150" align="center"
+        <ElTableColumn label="結算幣別" width="120" align="center"
           ><template #default="scope"
             ><ElSwitch
               :model-value="scope.row.settlementEnabled"
-              :disabled="scope.row.status !== 'Active'"
+              :disabled="scope.row.status !== 'Active' || scope.row.code === 'USDT'"
               @change="toggle(scope.row.code, 'settlementEnabled', $event)" /></template
         ></ElTableColumn>
-        <ElTableColumn v-if="mode === 'precision'" label="小數位數" width="180"
+        <ElTableColumn label="顯示小數位" width="165"
           ><template #default="scope"
             ><ElInputNumber
               :model-value="scope.row.decimalPlaces"
@@ -99,11 +101,8 @@
               controls-position="right"
               @change="updatePrecision(scope.row.code, $event)" /></template
         ></ElTableColumn>
-        <ElTableColumn v-if="mode === 'precision'" label="最小金額單位" min-width="160"
+        <ElTableColumn label="最小金額單位" min-width="140"
           ><template #default="scope">{{ scope.row.minimumUnit }}</template></ElTableColumn
-        >
-        <ElTableColumn v-if="mode !== 'precision'" label="小數位數" width="110" align="center"
-          ><template #default="scope">{{ scope.row.decimalPlaces }}</template></ElTableColumn
         >
         <ElTableColumn label="狀態" width="100"
           ><template #default="scope"
@@ -113,7 +112,7 @@
           ></ElTableColumn
         >
         <ElTableColumn prop="updatedAt" label="更新時間" min-width="160" />
-        <ElTableColumn v-if="mode === 'data'" label="操作" width="90" fixed="right"
+        <ElTableColumn label="操作" width="90" fixed="right"
           ><template #default="scope"
             ><ElButton link type="primary" @click="openEdit(scope.row)">編輯</ElButton></template
           ></ElTableColumn
@@ -121,7 +120,11 @@
       </ElTable>
     </ElCard>
 
-    <ElDialog v-model="dialogVisible" title="編輯幣別" width="min(520px, 92vw)">
+    <ElDialog
+      v-model="dialogVisible"
+      :title="editingCode ? '編輯幣別' : '新增幣別'"
+      width="min(560px, 92vw)"
+    >
       <ElForm label-position="top">
         <div class="form-grid"
           ><ElFormItem label="幣別代碼"
@@ -132,8 +135,28 @@
           ><ElFormItem label="符號"><ElInput v-model="form.symbol" /></ElFormItem
           ><ElFormItem label="ISO 數字碼"><ElInput v-model="form.numericCode" /></ElFormItem
         ></div>
+        <ElFormItem label="幣別類型">
+          <ElRadioGroup v-model="form.currencyType" :disabled="editingCode === 'USDT'">
+            <ElRadioButton value="Fiat">法定幣</ElRadioButton>
+            <ElRadioButton value="Crypto">加密幣</ElRadioButton>
+            <ElRadioButton value="System">系統幣</ElRadioButton>
+          </ElRadioGroup>
+        </ElFormItem>
+        <div class="form-grid"
+          ><ElFormItem label="用途"
+            ><div class="purpose-options"
+              ><ElCheckbox v-model="form.transactionEnabled" :disabled="editingCode === 'USDT'"
+                >可作為投注幣別</ElCheckbox
+              ><ElCheckbox v-model="form.settlementEnabled" :disabled="editingCode === 'USDT'"
+                >可作為結算幣別</ElCheckbox
+              ></div
+            ></ElFormItem
+          ><ElFormItem label="顯示小數位"
+            ><ElInputNumber v-model="form.decimalPlaces" :min="0" :max="8" class="full"
+          /></ElFormItem>
+        </div>
         <ElFormItem label="狀態"
-          ><ElRadioGroup v-model="form.status"
+          ><ElRadioGroup v-model="form.status" :disabled="editingCode === 'USDT'"
             ><ElRadioButton value="Active">啟用</ElRadioButton
             ><ElRadioButton value="Inactive">停用</ElRadioButton></ElRadioGroup
           ></ElFormItem
@@ -153,8 +176,7 @@
   import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import type { CurrencyConfigRecord } from '@/types/game-provider'
 
-  defineOptions({ name: 'FinanceCurrencySettings' })
-  const route = useRoute()
+  defineOptions({ name: 'PlatformCurrencySettings' })
   const store = useFinanceSettingsStore()
   const keyword = ref('')
   const status = ref('')
@@ -165,43 +187,12 @@
     name: '',
     symbol: '',
     numericCode: '',
+    currencyType: 'Fiat' as CurrencyConfigRecord['currencyType'],
+    transactionEnabled: true,
+    settlementEnabled: false,
+    decimalPlaces: 2,
     status: 'Active' as CurrencyConfigRecord['status']
   })
-  const mode = computed(
-    () =>
-      ({
-        TransactionCurrencies: 'transaction',
-        SettlementCurrencies: 'settlement',
-        CurrencyPrecision: 'precision'
-      })[String(route.name)] || 'data'
-  )
-  const copies = {
-    data: {
-      title: '幣別資料',
-      tableTitle: '幣別主檔',
-      description: '統一管理平台使用的幣別基本資料、顯示名稱與啟用狀態。',
-      rule: ''
-    },
-    transaction: {
-      title: '交易幣別',
-      tableTitle: '交易幣別設定',
-      description: '控制商戶線路、會員錢包與遊戲交易可使用的幣別。',
-      rule: '停用後僅限制建立新的商戶線路；既有交易與歷史資料不受影響。'
-    },
-    settlement: {
-      title: '結算幣別',
-      tableTitle: '結算幣別設定',
-      description: '控制商務條件與結算批次可選用的結算幣別。',
-      rule: '已有未完成結算批次的幣別，正式環境停用前必須先完成或作廢相關批次。'
-    },
-    precision: {
-      title: '精度設定',
-      tableTitle: '幣別精度',
-      description: '設定各幣別的顯示小數位與最小金額單位。',
-      rule: '精度異動只套用新計算；歷史結算保留當時的精度快照。'
-    }
-  }
-  const copy = computed(() => copies[mode.value as keyof typeof copies])
   const rows = computed(() =>
     store.currencies.filter(
       (item) =>
@@ -213,6 +204,8 @@
   const inactiveCount = computed(
     () => store.currencies.filter((item) => item.status === 'Inactive').length
   )
+  const currencyTypeLabel = (type: CurrencyConfigRecord['currencyType']) =>
+    ({ Fiat: '法定幣', Crypto: '加密幣', System: '系統幣' })[type]
   const reset = () => {
     keyword.value = ''
     status.value = ''
@@ -222,8 +215,9 @@
     field: 'transactionEnabled' | 'settlementEnabled',
     value: string | number | boolean
   ) => {
-    store.updateCurrency(code, { [field]: Boolean(value) })
-    ElMessage.success('設定已更新')
+    const updated = store.updateCurrency(code, { [field]: Boolean(value) })
+    if (updated) ElMessage.success('設定已更新')
+    else ElMessage.warning('USDT 為系統基準幣別，不能停用必要用途')
   }
   const updatePrecision = (code: string, value: number | undefined) => {
     if (value === undefined) return
@@ -240,18 +234,43 @@
             name: row.name,
             symbol: row.symbol,
             numericCode: row.numericCode,
+            currencyType: row.currencyType,
+            transactionEnabled: row.transactionEnabled,
+            settlementEnabled: row.settlementEnabled,
+            decimalPlaces: row.decimalPlaces,
             status: row.status
           }
-        : { code: '', name: '', symbol: '', numericCode: '', status: 'Active' }
+        : {
+            code: '',
+            name: '',
+            symbol: '',
+            numericCode: '',
+            currencyType: 'Fiat',
+            transactionEnabled: true,
+            settlementEnabled: false,
+            decimalPlaces: 2,
+            status: 'Active'
+          }
     )
     dialogVisible.value = true
   }
   const save = () => {
     if (!form.code || !form.name) return ElMessage.warning('請填寫幣別代碼與名稱')
-    if (!editingCode.value) return ElMessage.info('演示版僅開放編輯既有幣別')
-    store.updateCurrency(editingCode.value, form)
+    if (!editingCode.value) {
+      if (!store.createCurrency(form)) return ElMessage.warning('幣別代碼已存在，請確認後重試')
+    } else {
+      if (
+        !store.updateCurrency(editingCode.value, {
+          ...form,
+          minimumUnit: 1 / 10 ** form.decimalPlaces
+        })
+      )
+        return ElMessage.warning('USDT 為系統基準幣別，不能停用或變更必要設定')
+    }
     dialogVisible.value = false
-    ElMessage.success('幣別資料已儲存')
+    ElMessage.success(
+      editingCode.value ? '幣別資料已儲存' : '幣別已新增並啟用為投注幣別，可建立匯率設定'
+    )
   }
 </script>
 
@@ -344,6 +363,15 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
+  }
+
+  .full {
+    width: 100%;
+  }
+
+  .purpose-options {
+    display: flex;
+    flex-direction: column;
   }
 
   @media (width <= 900px) {

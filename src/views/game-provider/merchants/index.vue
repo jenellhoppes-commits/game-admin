@@ -81,6 +81,7 @@
   import type { ColumnOption } from '@/types'
   import type { MerchantRecord, MerchantStatus, WalletMode } from '@/types/game-provider'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import EntityLink from '@/components/business/game-provider/entity-link/index.vue'
   import GameProviderStatusTag from '@/components/business/game-provider/status-tag/index.vue'
@@ -90,6 +91,7 @@
 
   const router = useRouter()
   const store = useBusinessPartnerStore()
+  const financeSettingsStore = useFinanceSettingsStore()
   const { merchants: rows } = storeToRefs(store)
   const { width } = useWindowSize()
   const isMobile = computed(() => width.value < 640)
@@ -100,7 +102,9 @@
   const impactMerchant = ref<MerchantRecord>()
   const searchForm = ref<Record<string, unknown>>({})
   const pagination = reactive({ current: 1, size: 10, total: rows.value.length })
-  const currencies = ['USDT', 'USD', 'TWD', 'SGD', 'PHP', 'THB', 'HKD', 'VND', 'MYR', 'JPY', 'EUR']
+  const currencies = computed(() =>
+    financeSettingsStore.transactionCurrencies.map((item) => item.code)
+  )
   const statusOptions = [
     { label: '草稿', value: 'Draft' },
     { label: '待審核', value: 'Pending' },
@@ -183,7 +187,7 @@
       props: {
         clearable: true,
         filterable: true,
-        options: currencies.map((value) => ({ label: value, value }))
+        options: currencies.value.map((value) => ({ label: value, value }))
       }
     },
     {

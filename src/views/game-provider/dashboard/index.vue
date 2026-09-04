@@ -214,7 +214,7 @@
         <template #header>
           <div class="section-title">
             <div><strong>匯率摘要</strong><span>已發布的最新匯率</span></div>
-            <ElButton link type="primary" @click="go('/finance-settings/exchange-rates/daily')"
+            <ElButton link type="primary" @click="go('/platform/exchange-rates/settings')"
               >匯率管理</ElButton
             >
           </div>

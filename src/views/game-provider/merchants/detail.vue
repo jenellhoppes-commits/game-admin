@@ -300,7 +300,7 @@
           <ElFormItem label="結算幣別" required
             ><ElSelect v-model="termForm.settlementCurrency" class="w-full"
               ><ElOption
-                v-for="currency in currencies"
+                v-for="currency in settlementCurrencies"
                 :key="currency"
                 :label="currency"
                 :value="currency" /></ElSelect
@@ -343,7 +343,7 @@
         <ElFormItem label="交易幣別" required>
           <ElSelect v-model="newCurrency" filterable class="w-full">
             <ElOption
-              v-for="currency in currencies"
+              v-for="currency in transactionCurrencies"
               :key="currency"
               :label="currency"
               :value="currency"
@@ -395,6 +395,7 @@
     SettlementCycle
   } from '@/types/game-provider'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import AuditTimeline from '@/components/business/game-provider/audit-timeline/index.vue'
   import MerchantLineTable from '@/components/business/game-provider/currency-account-table/index.vue'
@@ -407,6 +408,7 @@
   const router = useRouter()
   const route = useRoute()
   const store = useBusinessPartnerStore()
+  const financeSettingsStore = useFinanceSettingsStore()
   const { width } = useWindowSize()
   const merchant = computed(() => store.findMerchant(String(route.params.id)) || store.merchants[0])
   const lines = computed(() => merchant.value.lines)
@@ -419,7 +421,12 @@
   const newCurrency = ref('')
   const copySource = ref('')
   const createSandbox = ref(true)
-  const currencies = ['USD', 'TWD', 'SGD', 'PHP', 'THB', 'HKD', 'VND', 'MYR', 'JPY', 'EUR']
+  const settlementCurrencies = computed(() =>
+    financeSettingsStore.settlementCurrencies.map((item) => item.code)
+  )
+  const transactionCurrencies = computed(() =>
+    financeSettingsStore.transactionCurrencies.map((item) => item.code)
+  )
   const descriptionColumns = computed(() => (width.value < 760 ? 1 : 2))
   const termSpread = computed(
     () => merchant.value.agentTermPercent - merchant.value.merchantTermPercent
