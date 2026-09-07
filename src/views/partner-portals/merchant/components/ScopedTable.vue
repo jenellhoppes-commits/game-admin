@@ -8,13 +8,27 @@
     :is-expand="true"
     @search="search"
     @reset="reset"
-  />
+  >
+    <template #range
+      ><ElDatePicker
+        v-model="draft.range"
+        type="daterange"
+        value-format="YYYY-MM-DD"
+        :shortcuts="reportDateShortcuts"
+        :clearable="true"
+        :id="[`${controlId}-start`, `${controlId}-end`]"
+        popper-class="merchant-date-popper"
+        start-placeholder="開始日期"
+        end-placeholder="結束日期"
+    /></template>
+  </ArtSearchBar>
   <ArtTable
+    class="merchant-scoped-table"
     :data="paged"
     row-key="id"
     :show-table-header="false"
     height="auto"
-    empty-height="180px"
+    empty-height="280px"
     empty-text="沒有符合條件的資料"
     :pagination="{ current: page, size, total: filtered.length }"
     :pagination-options="{ pageSizes: [20, 50, 100] }"
@@ -30,7 +44,15 @@
       :min-width="column.width || 150"
       show-overflow-tooltip
     >
-      <template #default="{ row }">{{ display(row[column.key]) }}</template>
+      <template #default="{ row }">
+        <ElTag
+          v-if="['status', 'credentialStatus'].includes(column.key)"
+          :type="merchantStatusType(row[column.key])"
+          effect="plain"
+          >{{ display(row, column.key) }}</ElTag
+        >
+        <template v-else>{{ display(row, column.key) }}</template>
+      </template>
     </ElTableColumn>
     <ElTableColumn v-if="$slots.actions" label="操作" width="110" fixed="right"
       ><template #default="{ row }"><slot name="actions" :row="row" /></template
@@ -38,17 +60,31 @@
   </ArtTable>
 </template>
 <script setup lang="ts">
+  import { reportDateShortcuts } from '@/utils/reportDateShortcuts'
+  import { useId } from 'vue'
+  import { merchantField, merchantStatusType } from '@/utils/merchantDisplay'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
+  const settings = useFinanceSettingsStore()
   const props = defineProps<{
     rows: object[]
     columns: { key: string; label: string; width?: number }[]
     filterKeys?: string[]
+    dateKey?: string
+    initialRange?: string[]
   }>()
-  const draft = reactive<Record<string, string>>({ keyword: '' })
-  const applied = reactive<Record<string, string>>({})
+  const controlId = useId()
+  const draft = reactive<Record<string, string | string[] | null>>({
+    keyword: '',
+    range: [...(props.initialRange || [])]
+  })
+  const applied = reactive<Record<string, string | string[] | null>>({
+    range: [...(props.initialRange || [])]
+  })
   const keyword = ref('')
   const page = ref(1)
   const size = ref(20)
   const searchItems = computed(() => [
+    ...(props.dateKey ? [{ key: 'range', label: '期間（Asia/Taipei）', span: 12 }] : []),
     {
       key: 'keyword',
       label: '關鍵字',
@@ -68,7 +104,7 @@
         ]
           .filter(Boolean)
           .sort()
-          .map((value) => ({ label: value, value }))
+          .map((value) => ({ label: String(merchantField({ [key]: value }, key, () => 2)), value }))
       }
     }))
   ])
@@ -76,10 +112,17 @@
     props.rows.filter(
       (row) =>
         props.columns.some((column) =>
-          String((row as Record<string, unknown>)[column.key] ?? '')
+          `${(row as Record<string, unknown>)[column.key] ?? ''} ${display(row, column.key)}`
             .toLowerCase()
             .includes(keyword.value.toLowerCase())
         ) &&
+        (!props.dateKey ||
+          !Array.isArray(applied.range) ||
+          applied.range.length !== 2 ||
+          (String((row as Record<string, unknown>)[props.dateKey]).slice(0, 10) >=
+            applied.range[0] &&
+            String((row as Record<string, unknown>)[props.dateKey]).slice(0, 10) <=
+              applied.range[1])) &&
         (props.filterKeys || []).every(
           (key) => !applied[key] || String((row as Record<string, unknown>)[key]) === applied[key]
         )
@@ -94,21 +137,20 @@
       if ((page.value - 1) * size.value >= filtered.value.length) page.value = 1
     }
   )
-  const display = (value: unknown) =>
-    value === undefined || value === null || value === ''
-      ? '未提供'
-      : typeof value === 'boolean'
-        ? value
-          ? '是'
-          : '否'
-        : value
+  const display = (row: object, key: string) =>
+    merchantField(
+      row,
+      key,
+      (currency) => settings.currencies.find((item) => item.code === currency)?.decimalPlaces ?? 2
+    )
   function search() {
-    keyword.value = draft.keyword
-    Object.assign(applied, draft)
+    keyword.value = String(draft.keyword || '')
+    Object.assign(applied, draft, { range: Array.isArray(draft.range) ? [...draft.range] : [] })
     page.value = 1
   }
   function reset() {
     for (const key of Object.keys(draft)) draft[key] = ''
+    draft.range = []
     search()
   }
   function changeSize(value: number) {
@@ -116,3 +158,6 @@
     page.value = 1
   }
 </script>
+<style lang="scss">
+  @use '../date-picker';
+</style>

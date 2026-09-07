@@ -7,22 +7,36 @@ export interface PublishedRate {
   lockedAt?: string
 }
 
+export function latestPublishedRates<T extends PublishedRate>(rates: T[], today: string) {
+  const latest = new Map<string, T>()
+  for (const rate of rates) {
+    if (
+      rate.status !== 'Locked' ||
+      rate.fromCurrency !== 'USDT' ||
+      rate.date > today ||
+      !Number.isFinite(rate.finalRate) ||
+      rate.finalRate <= 0
+    )
+      continue
+    const previous = latest.get(rate.toCurrency)
+    if (
+      !previous ||
+      rate.date > previous.date ||
+      (rate.date === previous.date && (rate.lockedAt ?? '') > (previous.lockedAt ?? ''))
+    ) {
+      latest.set(rate.toCurrency, rate)
+    }
+  }
+  return latest
+}
+
 export function referenceConversion(
   rows: { currency: string; betAmount: number; payoutAmount: number; ggr: number }[],
   target: string,
   rates: PublishedRate[],
   today: string
 ) {
-  const latest = new Map<string, PublishedRate>()
-  for (const rate of rates) {
-    if (rate.status !== 'Locked' || rate.fromCurrency !== 'USDT' || rate.date > today ||
-      !Number.isFinite(rate.finalRate) || rate.finalRate <= 0) continue
-    const previous = latest.get(rate.toCurrency)
-    if (!previous || rate.date > previous.date ||
-      (rate.date === previous.date && (rate.lockedAt ?? '') > (previous.lockedAt ?? ''))) {
-      latest.set(rate.toCurrency, rate)
-    }
-  }
+  const latest = latestPublishedRates(rates, today)
   const missing = new Set<string>()
   const used = new Map<string, PublishedRate>()
   const amounts = { betAmount: 0, payoutAmount: 0, ggr: 0 }
@@ -44,5 +58,9 @@ export function referenceConversion(
     amounts.payoutAmount += row.payoutAmount * factor
     amounts.ggr += row.ggr * factor
   }
-  return { amounts: missing.size ? null : amounts, missing: [...missing], rates: [...used.values()] }
+  return {
+    amounts: missing.size ? null : amounts,
+    missing: [...missing],
+    rates: [...used.values()]
+  }
 }

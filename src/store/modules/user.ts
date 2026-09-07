@@ -42,6 +42,7 @@ import { setPageTitle } from '@/utils/router'
 import { resetRouterState } from '@/router/guards/beforeEach'
 import { useMenuStore } from './menu'
 import { StorageConfig } from '@/utils/storage/storage-config'
+import { useMerchantPortalStore } from './merchantPortal'
 
 /**
  * 用户状态管理
@@ -79,6 +80,12 @@ export const useUserStore = defineStore(
      * @param newInfo 新的用户信息
      */
     const setUserInfo = (newInfo: Api.Auth.UserInfo) => {
+      if (
+        info.value.userId !== newInfo.userId ||
+        JSON.stringify(info.value.roles || []) !== JSON.stringify(newInfo.roles || [])
+      ) {
+        useMerchantPortalStore().resetSession(newInfo.roles?.includes('R_MERCHANT') ?? false)
+      }
       info.value = newInfo
     }
 
@@ -141,6 +148,7 @@ export const useUserStore = defineStore(
      * 无论是否切回同一账号，都不保留前一登录阶段的工作台标签页
      */
     const logOut = (navigateToLogin = true) => {
+      useMerchantPortalStore().resetSession()
       // 保存当前用户 ID，用于下次登录时判断是否为同一用户
       const currentUserId = info.value.userId
       if (currentUserId) {

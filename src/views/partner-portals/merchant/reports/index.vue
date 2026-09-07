@@ -24,6 +24,7 @@
           type="daterange"
           :shortcuts="reportDateShortcuts"
           value-format="YYYY-MM-DD"
+          popper-class="merchant-date-popper"
           :clearable="false"
       /></template>
     </ArtSearchBar>
@@ -119,6 +120,12 @@
   import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
   import { reportDateRange, reportDateShortcuts } from '@/utils/reportDateShortcuts'
   import { ElMessage } from 'element-plus'
+  import {
+    filterMerchantReport,
+    aggregateMerchantReport,
+    formatMerchantAmount,
+    merchantReportCsv
+  } from '@/utils/merchantReporting'
   const store = useMerchantPortalStore(),
     settings = useFinanceSettingsStore(),
     route = useRoute(),
@@ -139,6 +146,7 @@
     draft.range = [route.query.start, route.query.end]
     draft.line = String(route.query.line || '')
     draft.currency = String(route.query.currency || '')
+    draft.excludeTest = route.query.excludeTest !== 'false'
     Object.assign(applied, draft, { range: [...draft.range] })
   }
   const page = ref(1),
@@ -171,61 +179,9 @@
     },
     { key: 'excludeTest', label: '排除測試會員', type: 'switch' }
   ])
-  const filtered = computed(() =>
-    store.bets.filter(
-      (item) =>
-        item.status === 'Settled' &&
-        item.time.slice(0, 10) >= applied.range[0] &&
-        item.time.slice(0, 10) <= applied.range[1] &&
-        (!applied.line || item.lineUid === applied.line) &&
-        (!applied.currency || item.currency === applied.currency) &&
-        (!applied.excludeTest || !item.test)
-    )
-  )
-  type Summary = {
-    id: string
-    name: string
-    currency: string
-    rounds: number
-    members: number
-    betAmount: number
-    payoutAmount: number
-    ggr: number
-  }
-  function aggregate(dimension: string): Summary[] {
-    const groups = new Map<string, Summary & { memberIds: Set<string>; roundIds: Set<string> }>()
-    const seen = new Set<string>()
-    for (const bet of filtered.value) {
-      if (seen.has(bet.id)) continue
-      seen.add(bet.id)
-      const entity =
-        dimension === '線路' ? bet.lineUid : dimension === '遊戲' ? bet.gameId : bet.currency
-      const id = JSON.stringify([entity, bet.currency])
-      const row = groups.get(id) || {
-        id,
-        name: dimension === '遊戲' ? bet.gameName : entity,
-        currency: bet.currency,
-        rounds: 0,
-        members: 0,
-        betAmount: 0,
-        payoutAmount: 0,
-        ggr: 0,
-        memberIds: new Set<string>(),
-        roundIds: new Set<string>()
-      }
-      row.memberIds.add(JSON.stringify([bet.lineUid, bet.memberId]))
-      row.roundIds.add(JSON.stringify([bet.lineUid, bet.gameId, bet.roundId]))
-      row.betAmount += bet.betAmount
-      row.payoutAmount += bet.payoutAmount
-      row.ggr += bet.betAmount - bet.payoutAmount
-      row.rounds = row.roundIds.size
-      row.members = row.memberIds.size
-      groups.set(id, row)
-    }
-    return [...groups.values()].map(({ memberIds: _members, roundIds: _rounds, ...row }) => row)
-  }
-  const grouped = computed(() => aggregate(applied.dimension)),
-    totals = computed(() => aggregate('幣別'))
+  const filtered = computed(() => filterMerchantReport(store.bets, applied))
+  const grouped = computed(() => aggregateMerchantReport(filtered.value, applied.dimension)),
+    totals = computed(() => aggregateMerchantReport(filtered.value, '幣別'))
   const sections = computed(() => [
     {
       title: applied.dimension + '分析',
@@ -247,13 +203,19 @@
   const precision = (currency: string) =>
     settings.currencies.find((item) => item.code === currency)?.decimalPlaces ?? 2
   const money = (value: number, currency: string) =>
-    value.toLocaleString('zh-TW', {
-      minimumFractionDigits: precision(currency),
-      maximumFractionDigits: precision(currency)
-    })
+    formatMerchantAmount(value, precision(currency))
   function search() {
     Object.assign(applied, draft, { range: [...draft.range] })
     page.value = 1
+    router.replace({
+      query: {
+        start: applied.range[0],
+        end: applied.range[1],
+        line: applied.line,
+        currency: applied.currency,
+        excludeTest: String(applied.excludeTest)
+      }
+    })
   }
   function reset() {
     Object.assign(draft, initial())
@@ -270,44 +232,17 @@
         start: applied.range[0],
         end: applied.range[1],
         line: applied.line,
-        currency: applied.currency
+        currency: applied.currency,
+        excludeTest: String(applied.excludeTest)
       }
     })
   }
   function download() {
     if (!store.lineIds.size) return ElMessage.error('沒有授權線路，不能下載')
-    const escape = (value: unknown) => `"${String(value).replaceAll('"', '""')}"`
-    const headers = [
-      '類型',
-      '維度',
-      '原幣',
-      '局數',
-      '線路會員數',
-      '投注',
-      '派彩',
-      '遊戲輸贏',
-      '開始日期',
-      '結束日期',
-      '時區'
-    ]
-    const output = [
-      ...grouped.value.map((row) => ({ ...row, kind: '列表' })),
-      ...totals.value.map((row) => ({ ...row, kind: '分幣總計' }))
-    ].map((row) => [
-      row.kind,
-      row.name,
-      row.currency,
-      row.rounds,
-      row.members,
-      ...moneyMetrics.map((metric) => row[metric.key].toFixed(precision(row.currency))),
-      ...applied.range,
-      'Asia/Taipei'
-    ])
     const url = URL.createObjectURL(
-      new Blob(
-        ['\uFEFF' + [headers, ...output].map((row) => row.map(escape).join(',')).join('\r\n')],
-        { type: 'text/csv;charset=utf-8' }
-      )
+      new Blob([merchantReportCsv(grouped.value, totals.value, applied, precision)], {
+        type: 'text/csv;charset=utf-8'
+      })
     )
     const a = document.createElement('a')
     a.href = url
@@ -317,17 +252,22 @@
     store.addLog('下載營運報表', applied.range.join('～'))
   }
 </script>
+<style lang="scss">
+  @use '../date-picker';
+</style>
 <style scoped>
   .merchant-page {
     display: grid;
     gap: 16px;
     min-width: 0;
   }
+
   .stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
   }
+
   .merchant-page :deep(.el-date-editor) {
     max-width: 100%;
   }

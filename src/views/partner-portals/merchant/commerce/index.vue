@@ -23,6 +23,12 @@
       <ElTabPane v-if="kind === 'integrations'" label="文件與測試紀錄" name="tests" />
       <ElTabPane v-if="kind === 'lines'" label="申請紀錄" name="requests" />
     </ElTabs>
+    <ElAlert v-if="kind === 'integrations' && route.query.line" type="info" :closable="false">
+      目前限定線路：{{ route.query.line }}
+      <ElButton link type="primary" @click="router.replace({ query: {} })"
+        >查看全部授權線路</ElButton
+      >
+    </ElAlert>
     <ElAlert
       v-if="kind === 'integrations'"
       title="串接中心僅供資訊與狀態查看。金鑰取得／重設流程待確認，暫未開放操作。"
@@ -45,7 +51,14 @@
           >
           <ElDescriptionsItem label="跳轉追蹤">來源尚未提供可公開的跳轉紀錄</ElDescriptionsItem>
         </ElDescriptions>
-        <ScopedTable :rows="store.integrationTests" :columns="testColumns" />
+        <ScopedTable
+          :rows="
+            store.integrationTests.filter(
+              (item) => !route.query.line || item.lineUid === route.query.line
+            )
+          "
+          :columns="testColumns"
+        />
       </template>
       <ScopedTable
         v-else-if="kind === 'lines' && tab === 'requests'"
@@ -130,7 +143,12 @@
         </template>
       </template>
     </ElDrawer>
-    <ElDialog v-if="kind === 'lines'" v-model="requestVisible" :title="form.action" width="min(560px, 94vw)">
+    <ElDialog
+      v-if="kind === 'lines'"
+      v-model="requestVisible"
+      :title="form.action"
+      width="min(560px, 94vw)"
+    >
       <ElAlert
         title="此操作只建立本地原型申請，不會修改有效設定或核發憑證。"
         type="info"
@@ -152,6 +170,7 @@
 </template>
 <script setup lang="ts">
   import { ElMessage, ElMessageBox } from 'element-plus'
+  import { merchantField } from '@/utils/merchantDisplay'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import ScopedTable from '../components/ScopedTable.vue'
   import {
@@ -159,7 +178,7 @@
     type MerchantRequestCategory
   } from '@/store/modules/merchantPortal'
   const store = useMerchantPortalStore()
-  const field = (row: object, key: string) => (row as Record<string, unknown>)[key] ?? '未提供'
+  const field = (row: object, key: string) => merchantField(row, key, () => 2)
   async function closeGame(id: string) {
     try {
       await ElMessageBox.confirm(
@@ -265,7 +284,8 @@
     router.replace({ query: { ...route.query, detail: id } })
   }
   function closeDetail() {
-    const { detail: _detail, ...query } = route.query
+    const query = { ...route.query }
+    delete query.detail
     router.replace({ query })
   }
   function request(target: string, action: string) {
@@ -287,10 +307,8 @@
     gap: 16px;
     min-width: 0;
   }
+
   .merchant-page :deep(.el-descriptions) {
     margin-bottom: 16px;
-  }
-  .merchant-page :deep(.el-form) {
-    margin-top: 16px;
   }
 </style>

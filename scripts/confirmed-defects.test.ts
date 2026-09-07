@@ -32,9 +32,11 @@ const createFinanceStore = () => {
 }
 
 const assertRetryIsRejectedWithoutMutation = (
-  role: 'Merchant' | 'Agent' | 'Supplier',
+  role: 'Merchant' | 'Agent',
   prepare: (store: ReturnType<typeof useFinanceCenterStore>) => {
-    record: ReturnType<typeof useFinanceCenterStore>['merchantReconciliations'][number]
+    record:
+      | ReturnType<typeof useFinanceCenterStore>['merchantReconciliations'][number]
+      | ReturnType<typeof useFinanceCenterStore>['agentReconciliations'][number]
     confirm: (amount: number, note: string) => boolean
   }
 ) => {
@@ -67,16 +69,10 @@ assertRetryIsRejectedWithoutMutation('Merchant', (store) => {
   }
 })
 
-assertRetryIsRejectedWithoutMutation('Supplier', (store) => {
-  const record = store.supplierReconciliations.find(
-    (item) => item.status === 'Pending Confirmation' && item.unresolvedDifferenceCount === 0
-  )
-  assert(record, '缺少可測試的供應商待確認對帳')
-  return {
-    record: record!,
-    confirm: (amount, note) => store.confirmSupplier(record!.id, amount, note)
-  }
-})
+// Supplier reconciliation was explicitly removed from the game-provider product.
+const currentFinance = createFinanceStore()
+assert(!('supplierReconciliations' in currentFinance), '不得恢復已移除的供應商對帳資料')
+assert(!('confirmSupplier' in currentFinance), '不得恢復已移除的供應商對帳操作')
 
 assertRetryIsRejectedWithoutMutation('Agent', (store) => {
   const record = store.agentReconciliations.find(

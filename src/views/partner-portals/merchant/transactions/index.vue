@@ -7,26 +7,18 @@
     <ElTabs v-if="!isMembers" v-model="mode"
       ><ElTabPane label="下注紀錄" name="bets" /><ElTabPane label="資金交易" name="transactions"
     /></ElTabs>
-    <ElForm inline label-position="top" @submit.prevent="applyDates">
-      <ElFormItem :label="isMembers ? '最後遊戲日期' : '發生日期'"
-        ><ElDatePicker
-          v-model="draftDates"
-          type="daterange"
-          value-format="YYYY-MM-DD"
-          :shortcuts="reportDateShortcuts"
-          :clearable="true"
-      /></ElFormItem>
-      <ElFormItem
-        ><ElButton type="primary" native-type="submit">查詢</ElButton
-        ><ElButton @click="resetDates">重置日期</ElButton></ElFormItem
-      >
-    </ElForm>
     <ElCard shadow="never"
       ><ScopedTable
         :key="String(isMembers) + mode"
         :rows="rows"
         :columns="columns"
-        :filter-keys="['lineUid', 'currency', 'status']"
+        :filter-keys="[
+          'lineUid',
+          'currency',
+          'status',
+          isMembers ? 'restriction' : mode === 'bets' ? 'gameName' : 'type'
+        ]"
+        :date-key="isMembers ? 'lastPlayedAt' : 'time'"
         ><template #actions="{ row }"
           ><ElButton link type="primary" @click="open(row.id)">查看</ElButton></template
         ></ScopedTable
@@ -142,15 +134,20 @@
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import ScopedTable from '../components/ScopedTable.vue'
   import { useMerchantPortalStore } from '@/store/modules/merchantPortal'
-  import { reportDateShortcuts } from '@/utils/reportDateShortcuts'
+  import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
+  import { merchantField } from '@/utils/merchantDisplay'
+  const settings = useFinanceSettingsStore()
   const store = useMerchantPortalStore(),
     route = useRoute(),
     router = useRouter()
-  const field = (row: object, key: string) => (row as Record<string, unknown>)[key] ?? '未提供'
+  const field = (row: object, key: string) =>
+    merchantField(
+      row,
+      key,
+      (currency) => settings.currencies.find((item) => item.code === currency)?.decimalPlaces ?? 2
+    )
   const isMembers = computed(() => route.path.endsWith('/members'))
   const mode = ref(route.query.mode === 'transactions' ? 'transactions' : 'bets')
-  const draftDates = ref<string[] | null>(null),
-    dates = ref<string[]>([])
   const detailTab = ref('basic'),
     reason = ref(''),
     step = ref(0),
@@ -205,15 +202,14 @@
     isMembers.value ? store.members : mode.value === 'bets' ? store.bets : store.transactions
   )
   const rows = computed(() =>
-    scoped.value.filter((item) => {
-      const time = ('time' in item ? item.time : item.lastPlayedAt).slice(0, 10)
-      return (
-        (!dates.value.length || (time >= dates.value[0] && time <= dates.value[1])) &&
-        (!route.query.line || item.lineUid === route.query.line)
-      )
-    })
+    scoped.value.filter((item) => !route.query.line || item.lineUid === route.query.line)
   )
-  const selected = computed(() => scoped.value.find((item) => item.id === route.query.detail))
+  const selected = computed(() =>
+    scoped.value.find(
+      (item) =>
+        item.id === route.query.detail && (!route.query.line || item.lineUid === route.query.line)
+    )
+  )
   const result = computed(() =>
     !isMembers.value && mode.value === 'bets' && selected.value
       ? store.getBetResult(selected.value.id)
@@ -288,15 +284,9 @@
     router.replace({ query: { ...route.query, detail: id, mode: mode.value } })
   }
   function close() {
-    const { detail: _detail, ...query } = route.query
+    const query = { ...route.query }
+    delete query.detail
     router.replace({ query })
-  }
-  function applyDates() {
-    dates.value = draftDates.value ? [...draftDates.value] : []
-  }
-  function resetDates() {
-    draftDates.value = null
-    applyDates()
   }
   function report() {
     if (!selected.value) return
@@ -320,28 +310,33 @@
     gap: 16px;
     min-width: 0;
   }
+
   .saved-board {
     display: grid;
     gap: 8px;
     max-width: 620px;
   }
+
   .saved-board > div {
     padding: 12px 4px;
-    text-align: center;
-    border: 1px solid var(--el-border-color);
-    background: var(--el-fill-color-light);
     font-size: 28px;
+    text-align: center;
+    background: var(--el-fill-color-light);
+    border: 1px solid var(--el-border-color);
     border-radius: 8px;
   }
+
   .saved-board .winning {
     border: 2px solid var(--el-color-warning);
   }
+
   .saved-board small {
     display: block;
     font-size: 12px;
   }
+
   pre {
-    white-space: pre-wrap;
     overflow-wrap: anywhere;
+    white-space: pre-wrap;
   }
 </style>

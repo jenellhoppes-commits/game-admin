@@ -22,6 +22,7 @@ export interface MerchantPortalRequest {
   status: string
   execution: string
   createdAt: string
+  expectedVersion?: string
 }
 
 export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
@@ -276,6 +277,7 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
           pools.value.some(
             (pool) =>
               pool.poolId === item.poolId &&
+              pool.currency === item.currency &&
               pool.lineUid === members.value.find((member) => member.id === item.memberId)?.lineUid
           )
       )
@@ -302,6 +304,7 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
           pools.value.some(
             (pool) =>
               pool.poolId === item.poolId &&
+              pool.currency === item.currency &&
               pool.lineUid === members.value.find((member) => member.id === item.memberId)?.lineUid
           )
       )
@@ -399,16 +402,24 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
   const logs = ref<{ id: string; time: string; action: string; target: string; result: string }[]>(
     []
   )
-  const addLog = (action: string, target: string, result = '完成') =>
+  const addLog = (
+    action: string,
+    target: string,
+    result = '完成',
+    time = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' })
+  ) =>
     logs.value.unshift({
       id: crypto.randomUUID(),
-      time: new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' }),
+      time,
       action,
       target,
       result
     })
   const submitRequest = (
-    input: Pick<MerchantPortalRequest, 'category' | 'target' | 'action' | 'proposed' | 'reason'>
+    input: Pick<
+      MerchantPortalRequest,
+      'category' | 'target' | 'action' | 'proposed' | 'reason' | 'expectedVersion'
+    >
   ) => {
     if (!merchant.value || !lineIds.value.size)
       return { ok: false, message: '沒有可用商戶或線路範圍' }
@@ -434,6 +445,13 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
     }
     if (!targets[input.category].has(input.target))
       return { ok: false, message: '對象不存在或不在授權範圍' }
+    if (input.category === '差異') {
+      const record = reconciliations.value.find((item) => item.id === input.target)
+      if (!input.expectedVersion || record?.version !== input.expectedVersion)
+        return { ok: false, message: '對帳版本已變更或未指定，請重新開啟明細後再回報' }
+      if (input.action !== (record.lockedAt ? '更正申請' : '回報對帳差異'))
+        return { ok: false, message: '對帳鎖定狀態已變更，請重新開啟明細後再回報' }
+    }
     if (!input.reason.trim() || !input.proposed.trim())
       return { ok: false, message: '請填寫目標設定及申請原因' }
     if (
@@ -461,13 +479,28 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
     const game = games.value.find((item) => item.id === gameId)
     if (!game || !game.enabled || !source.value?.lines.every((line) => lineIds.value.has(line.uid)))
       return { ok: false, message: '遊戲已關閉或沒有完整商戶範圍' }
-    business.updateMerchantGameConfiguration(
-      CURRENT_MERCHANT_ID,
-      gameId,
-      { enabled: false },
-      '商戶關閉本平台遊戲'
-    )
-    addLog('關閉本平台遊戲', gameId, '僅本商戶遊戲配置已關閉')
+    const config = business
+      .getMerchantGameConfigurations(CURRENT_MERCHANT_ID)
+      .find((item) => item.gameId === gameId)
+    if (!config) return { ok: false, message: '沒有可關閉的商戶遊戲配置' }
+    // Closing affects availability only; keep existing RTP and limit snapshots untouched.
+    const operatedAt = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' })
+    config.enabled = false
+    config.updatedAt = operatedAt
+    for (const line of sourceLines.value) {
+      const lineConfig = business
+        .getMerchantLineGameConfigurations(line.uid)
+        .find((item) => item.gameId === gameId)
+      if (lineConfig) {
+        lineConfig.enabled = false
+        lineConfig.updatedAt = operatedAt
+      }
+      line.enabledGames = business
+        .getMerchantLineGameConfigurations(line.uid)
+        .filter((item) => item.enabled).length
+      line.updatedAt = operatedAt
+    }
+    addLog('關閉本平台遊戲', gameId, '僅本商戶遊戲配置已關閉', operatedAt)
     return { ok: true, message: '已關閉本商戶平台遊戲；全域遊戲及其他商戶不受影響' }
   }
   const readNoticeIds = ref<string[]>([])
@@ -496,7 +529,7 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
       addLog('閱讀公告', id)
     }
   }
-  const staff = ref([
+  const demoStaff = () => [
     {
       id: 'MERCHANT-DEMO-ADMIN',
       name: 'NovaBet 示範管理員',
@@ -504,8 +537,18 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
       status: '示範會話',
       role: '細粒度權限待確認'
     }
-  ])
+  ]
+  const staff = ref(demoStaff())
+  // Only discard session-local prototype data; never reset shared business/history stores.
+  const resetSession = (isMerchantSession = false) => {
+    requests.value = []
+    logs.value = []
+    readNoticeIds.value = []
+    staff.value = isMerchantSession ? demoStaff() : []
+    authorizedLineUids.value = isMerchantSession ? [...DEMO_LINES] : []
+  }
   const inviteDraft = (name: string, account: string) => {
+    if (!lineIds.value.size) return { ok: false, message: '沒有可用商戶會話範圍' }
     if (!name.trim() || !account.trim()) return { ok: false, message: '請填寫姓名與帳號' }
     if (staff.value.some((item) => item.account === account.trim()))
       return { ok: false, message: '帳號已存在' }
@@ -548,6 +591,7 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
     markNoticeRead,
     staff,
     inviteDraft,
-    closePlatformGame
+    closePlatformGame,
+    resetSession
   }
 })

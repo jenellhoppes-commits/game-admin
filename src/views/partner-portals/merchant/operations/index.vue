@@ -143,11 +143,18 @@
   import ScopedTable from '../components/ScopedTable.vue'
   import { useMerchantPortalStore } from '@/store/modules/merchantPortal'
   import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
+  import { latestPublishedRates } from '@/utils/referenceConversion'
+  import { merchantField } from '@/utils/merchantDisplay'
   const store = useMerchantPortalStore(),
     settings = useFinanceSettingsStore(),
     route = useRoute(),
     router = useRouter()
-  const field = (row: object, key: string) => (row as Record<string, unknown>)[key] ?? '未提供'
+  const field = (row: object, key: string) =>
+    merchantField(
+      row,
+      key,
+      (currency) => settings.currencies.find((item) => item.code === currency)?.decimalPlaces ?? 2
+    )
   type Kind = 'rates' | 'reconciliation' | 'jackpots' | 'notifications' | 'access'
   const kind = computed<Kind>(() =>
     route.path.includes('exchange-rates') ? 'rates' : (route.path.split('/')[2] as Kind)
@@ -210,14 +217,7 @@
     month: '2-digit',
     day: '2-digit'
   }).format(new Date())
-  const currentRates = computed(() => {
-    const map = new Map<string, (typeof store.rates)[number]>()
-    for (const rate of store.rates
-      .filter((item) => item.date <= today)
-      .sort((a, b) => b.date.localeCompare(a.date)))
-      if (!map.has(rate.toCurrency)) map.set(rate.toCurrency, rate)
-    return [...map.values()]
-  })
+  const currentRates = computed(() => [...latestPublishedRates(store.rates, today).values()])
   const permissionRows = computed(() => [
     { id: 'scope', item: '商戶邊界', value: store.merchant?.code || '無可用範圍' },
     {
@@ -357,6 +357,24 @@
     store.reconciliations.find((item) => item.id === selectedId.value)
   )
   const difference = reactive({ reference: '', currency: '', amount: 0, reason: '' })
+  // Capture when opening, never silently adopt a version changed while editing.
+  const differenceVersion = ref('')
+  const differenceLocked = ref(false)
+  watch(
+    selectedId,
+    () => {
+      const record = reconciliation.value
+      differenceVersion.value = record?.version || ''
+      differenceLocked.value = Boolean(record?.lockedAt)
+      Object.assign(difference, {
+        reference: '',
+        currency: record?.currency || '',
+        amount: 0,
+        reason: ''
+      })
+    },
+    { immediate: true }
+  )
   const poolReason = ref(''),
     inviteVisible = ref(false),
     inviteForm = reactive({ name: '', account: '' })
@@ -379,6 +397,12 @@
   function reportDifference() {
     const record = reconciliation.value
     if (
+      record &&
+      (record.version !== differenceVersion.value ||
+        Boolean(record.lockedAt) !== differenceLocked.value)
+    )
+      return ElMessage.error('對帳版本或鎖定狀態已變更，請關閉並重新開啟明細後再回報')
+    if (
       !record ||
       !difference.reference.trim() ||
       !Number.isFinite(difference.amount) ||
@@ -390,7 +414,8 @@
       target: record.id,
       action: record.lockedAt ? '更正申請' : '回報對帳差異',
       reason: difference.reason,
-      proposed: JSON.stringify({ ...difference, version: record.version })
+      expectedVersion: differenceVersion.value,
+      proposed: JSON.stringify({ ...difference, version: differenceVersion.value })
     })
     ElMessage[response.ok ? 'success' : 'error'](response.message)
   }
@@ -420,12 +445,14 @@
     gap: 16px;
     min-width: 0;
   }
+
   .merchant-page :deep(.el-descriptions),
   .merchant-page :deep(.el-alert) {
     margin-bottom: 16px;
   }
+
   .content {
-    white-space: pre-wrap;
     margin: 16px 0;
+    white-space: pre-wrap;
   }
 </style>

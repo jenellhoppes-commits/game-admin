@@ -1,0 +1,58 @@
+// Shared spacing for all merchant pages, including nested list components.
+.merchant-page {
+  // The app shell supplies a minimum height; do not stretch each grid row to fill it.
+  align-content: start;
+  // Nested lists must not inherit ArtTable's full-page percentage height.
+  .merchant-scoped-table {
+    height: auto !important;
+  }
+  .art-search-bar .el-form-item__label {
+    height: auto;
+    line-height: 22px;
+    margin-bottom: 8px;
+    overflow-wrap: anywhere;
+  }
+
+  .art-search-bar .el-form-item__content,
+  .art-search-bar .el-input,
+  .art-search-bar .el-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .art-search-bar .action-column {
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .art-search-bar .action-buttons-wrapper {
+    width: 100%;
+    margin-bottom: 18px;
+  }
+
+  .el-card .art-search-bar {
+    margin-bottom: 16px;
+  }
+
+  // Commerce's dialog form spacing must not add an extra search-row gap.
+  .art-search-bar .el-form {
+    margin-top: 0;
+  }
+}
+
+// Keep unfilled actions readable without changing filled primary buttons or other portals.
+html.dark .merchant-page {
+  .el-tabs__item.is-active,
+  .el-button--default:not(
+    .el-button--primary,
+    .el-button--danger,
+    .el-button--success,
+    .el-button--warning,
+    .el-button--info,
+    .is-disabled
+  ),
+  .el-button--primary.is-link:not(.is-disabled),
+  .el-button--primary.is-plain:not(.is-disabled) {
+    color: #91b2ff;
+  }
+}
