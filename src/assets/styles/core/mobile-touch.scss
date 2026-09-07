@@ -1,0 +1,18 @@
+// Prevent double-tap zoom while retaining scrolling and pinch-to-zoom.
+html {
+  touch-action: manipulation;
+}
+
+// iOS zooms focused controls when their rendered font is smaller than 16px.
+@media (hover: none) and (pointer: coarse) {
+  input,
+  textarea,
+  select,
+  .el-input__inner,
+  .el-textarea__inner,
+  .el-select__input,
+  .el-select__selected-item,
+  .el-range-input {
+    font-size: 16px !important;
+  }
+}
