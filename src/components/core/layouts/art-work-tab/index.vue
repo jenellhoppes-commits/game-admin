@@ -47,8 +47,13 @@
           {{ item.customTitle || formatMenuTitle(item.title) }}
           <span
             v-if="list.length > 1 && !item.fixedTab"
+            role="button"
+            tabindex="0"
+            :aria-label="`關閉${item.customTitle || formatMenuTitle(item.title)}`"
             class="inline-flex flex-cc relative ml-0.5 p-1 rounded-full tad-200 hover:bg-g-200"
             @click.stop="closeWorktab('current', item.path)"
+            @keydown.enter.stop="closeWorktab('current', item.path)"
+            @keydown.space.prevent.stop="closeWorktab('current', item.path)"
           >
             <ArtSvgIcon icon="ri:close-large-fill" class="text-[10px] text-g-600" />
           </span>
@@ -61,7 +66,9 @@
     </div>
 
     <div class="flex">
-      <div
+      <button
+        type="button"
+        aria-label="開啟工作分頁選單"
         class="flex-cc art-card-xs relative top-0 size-8 leading-8 text-center c-p tad-200 hover:!bg-hover-color"
         :style="{
           borderRadius: 'calc(var(--custom-radius) / 2.5 + 0px)',
@@ -70,7 +77,7 @@
         @click="(e: MouseEvent) => showMenu(e, activeTab)"
       >
         <ArtSvgIcon icon="iconamoon:arrow-down-2-thin" class="text-2xl text-g-700" />
-      </div>
+      </button>
     </div>
 
     <ArtMenuRight

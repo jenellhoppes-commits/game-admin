@@ -8,6 +8,7 @@
       :model="modelValue"
       :label-position="labelPosition"
       v-bind="{ ...$attrs }"
+      @submit.prevent="handleSearch"
     >
       <ElRow :gutter="gutter">
         <ElCol
@@ -78,8 +79,8 @@
               <ElButton
                 v-if="showSearch"
                 type="primary"
+                native-type="submit"
                 class="search-button"
-                @click="handleSearch"
                 v-ripple
                 :disabled="disabledSearch"
               >
@@ -323,22 +324,12 @@
     return calculateResponsiveSpan(itemSpan, span.value, breakpoint)
   }
 
-  // 搜索表单清空输入时不保留空字符串，避免后续请求携带空字段。
-  const normalizeFieldValue = (value: unknown) => {
-    return value === '' ? undefined : value
-  }
-
   const getFieldValue = (key: string) => modelValue.value[key]
 
   const setFieldValue = (key: string, value: unknown) => {
-    const normalizedValue = normalizeFieldValue(value)
-
-    if (normalizedValue === undefined) {
-      delete modelValue.value[key]
-      return
-    }
-
-    modelValue.value[key] = normalizedValue
+    // Emit replacements so parent-owned and computed form models both update.
+    // Empty fields are removed only from the search payload, not the editable model.
+    modelValue.value = { ...modelValue.value, [key]: value ?? '' }
   }
 
   const isRichTextEmpty = (value: string) => {
@@ -476,10 +467,7 @@
     formInstance.value?.resetFields()
 
     // 恢复初始表单值，保留默认搜索条件而不是简单清空。
-    Object.keys(modelValue.value).forEach((key) => {
-      delete modelValue.value[key]
-    })
-    Object.assign(modelValue.value, cloneModelValue(initialModelValue.value))
+    modelValue.value = cloneModelValue(initialModelValue.value)
 
     // 触发 reset 事件
     emit('reset')

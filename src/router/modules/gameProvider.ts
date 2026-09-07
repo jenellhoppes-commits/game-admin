@@ -440,26 +440,9 @@ export const gameProviderRoutes: AppRouteRecord[] = [
     alias: '/settlements',
     name: 'FinanceCenter',
     component: '/index/index',
-    redirect: '/finance/reconciliation/suppliers',
+    redirect: '/finance/reconciliation/agents',
     meta: { title: '對帳／結算', icon: 'ri:calculator-line', menuGroup: '財務管理', roles },
     children: [
-      page(
-        'reconciliation/suppliers',
-        'SupplierReconciliation',
-        '供應商對帳',
-        'ri:gamepad-line',
-        '/supplier-reconciliation',
-        '/game-provider/finance/reconciliation/index'
-      ),
-      hiddenDetail(
-        'reconciliation/suppliers/:id',
-        'SupplierReconciliationDetail',
-        '供應商對帳詳細',
-        'ri:file-list-3-line',
-        '/supplier-reconciliation-detail',
-        '/finance/reconciliation/suppliers',
-        '/game-provider/finance/reconciliation/detail'
-      ),
       page(
         'reconciliation/agents',
         'AgentReconciliation',

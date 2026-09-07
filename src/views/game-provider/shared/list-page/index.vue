@@ -37,6 +37,7 @@
         :columns="columns"
         :loading="loading"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [20, 50, 100] }"
         height="520"
         @selection-change="selectedRows = $event"
         @pagination:size-change="handleSizeChange"
@@ -70,7 +71,7 @@
   const filteredRows = ref<BusinessRecord[]>([])
   const loading = ref(false)
   const selectedRows = ref<BusinessRecord[]>([])
-  const pagination = reactive({ current: 1, size: 10, total: 0 })
+  const pagination = reactive({ current: 1, size: 20, total: 0 })
 
   const searchItems = computed(() => [
     {

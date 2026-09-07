@@ -48,6 +48,7 @@
         :columns="columns"
         :loading="loading"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [20, 50, 100] }"
         height="560"
         row-key="id"
         @pagination:size-change="handleSizeChange"
@@ -78,7 +79,7 @@
   const loading = ref(false)
   const searchForm = ref<Record<string, unknown>>({})
   const filteredRows = ref<TransactionCenterRecord[]>([...store.transactions])
-  const pagination = reactive({ current: 1, size: 10, total: store.transactions.length })
+  const pagination = reactive({ current: 1, size: 20, total: store.transactions.length })
   const typeOptions: Array<{ label: string; value: MemberTransactionType }> = [
     { label: '投注', value: 'Bet' },
     { label: '派彩', value: 'Payout' },

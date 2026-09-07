@@ -15,7 +15,16 @@
 
       <ElScrollbar style="height: calc(100% - 135px)">
         <ul>
-          <li v-for="menu in firstLevelMenus" :key="menu.path" @click="handleMenuJump(menu, true)">
+          <li
+            v-for="menu in firstLevelMenus"
+            :key="menu.path"
+            role="menuitem"
+            tabindex="0"
+            :aria-label="$t(menu.meta.title)"
+            @click="handleMenuJump(menu, true)"
+            @keydown.enter="handleMenuJump(menu, true)"
+            @keydown.space.prevent="handleMenuJump(menu, true)"
+          >
             <ElTooltip
               class="box-item"
               effect="dark"
@@ -55,6 +64,7 @@
       <ArtIconButton
         class="switch-btn size-10"
         icon="ri:arrow-left-right-fill"
+        aria-label="切換雙欄選單模式"
         @click="toggleDualMenuMode"
       />
     </div>
@@ -112,15 +122,22 @@
       </ElScrollbar>
 
       <!-- 双列菜单右侧折叠按钮 -->
-      <div class="dual-menu-collapse-btn" v-if="isDualMenu" @click="toggleMenuVisibility">
+      <button
+        v-if="isDualMenu"
+        type="button"
+        class="dual-menu-collapse-btn"
+        :aria-label="menuOpen ? '收合雙欄選單' : '展開雙欄選單'"
+        @click="toggleMenuVisibility"
+      >
         <ArtSvgIcon
           class="text-g-500/70"
           :icon="menuOpen ? 'ri:arrow-left-wide-fill' : 'ri:arrow-right-wide-fill'"
         />
-      </div>
+      </button>
 
       <div
         class="menu-model"
+        aria-hidden="true"
         @click="toggleMenuVisibility"
         :style="{
           opacity: !menuOpen ? 0 : 1,
@@ -193,7 +210,11 @@
 
     // 如果不是顶部左侧菜单或双列菜单，直接返回完整菜单列表
     if (!isTopLeftMenu.value && !isDualMenu.value) {
-      return allMenus
+      return allMenus.flatMap((menu) => menu.path === '/agent' || menu.path === '/merchant'
+        ? (menu.children ?? []).map((item) => ({ ...item,
+            path: item.path.startsWith('/') ? item.path : `${menu.path}/${item.path}`,
+            meta: { ...item.meta, menuGroup: menu.path === '/agent' ? '代理作業' : '商戶作業' } }))
+        : [menu])
     }
 
     // 处理 iframe 路径

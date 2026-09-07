@@ -48,6 +48,7 @@
         :columns="columns"
         :loading="loading"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [20, 50, 100] }"
         height="560"
         row-key="id"
         @selection-change="selectedRows = $event"
@@ -125,7 +126,7 @@
   const loading = ref(false)
   const tagVisible = ref(false)
   const searchForm = ref<Record<string, unknown>>({})
-  const pagination = reactive({ current: 1, size: 10, total: rows.value.length })
+  const pagination = reactive({ current: 1, size: 20, total: rows.value.length })
   const tagForm = reactive<{ tag: MemberTagKind | ''; reason: string; note: string }>({
     tag: '',
     reason: '',

@@ -31,6 +31,8 @@ const symbolSeeds = [
   ['SYM08', '火焰', '🔥']
 ] as const
 
+export const formatBoardDimensions = (columns: number, rows: number) => `${columns} × ${rows}`
+
 const buildBoardStage = (
   stageId: string,
   sequence: number,
@@ -188,7 +190,7 @@ export const useTransactionCenterStore = defineStore('transactionCenterStore', (
                 offsetSeconds: 3 + stageIndex * 3,
                 type: 'Board Result' as const,
                 title: stage.label,
-                detail: `盤面 ${stage.rows}×${stage.columns}，本盤倍率 ×${stage.winMultiplier}`,
+                detail: `盤面 ${formatBoardDimensions(stage.columns, stage.rows)}，本盤倍率 ×${stage.winMultiplier}`,
                 stageId: stage.id,
                 riskAlert: anomaly && stageIndex === stages.length - 1 ? anomaly.type : undefined
               },

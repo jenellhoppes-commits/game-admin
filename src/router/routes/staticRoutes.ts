@@ -117,7 +117,7 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: '/finance/reconciliation',
     name: 'LegacyWalletReconciliation',
-    redirect: '/finance/reconciliation/suppliers',
+    redirect: '/finance/reconciliation/agents',
     meta: { title: '錢包對帳（舊）', isHideTab: true }
   },
   {

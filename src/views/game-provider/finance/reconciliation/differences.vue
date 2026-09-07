@@ -31,7 +31,7 @@
     </div>
 
     <ElCard class="filter-card" shadow="never">
-      <ElForm :model="filters" inline>
+      <ElForm :model="filters" inline @submit.prevent="applyFilters">
         <ElFormItem label="關鍵字"
           ><ElInput v-model="filters.keyword" clearable placeholder="差異、對帳或合作方"
         /></ElFormItem>
@@ -51,9 +51,7 @@
               :label="item.label"
               :value="item.value" /></ElSelect
         ></ElFormItem>
-        <ElFormItem
-          ><ElButton type="primary" @click="pagination.current = 1">查詢</ElButton></ElFormItem
-        >
+        <ElFormItem><ElButton type="primary" native-type="submit">查詢</ElButton></ElFormItem>
         <ElFormItem><ElButton @click="reset">重置</ElButton></ElFormItem>
       </ElForm>
     </ElCard>
@@ -76,10 +74,10 @@
         <ElTableColumn label="對象" min-width="210"
           ><template #default="scope"
             ><strong>{{
-              scope.row.supplierName || scope.row.merchantName || scope.row.agentName
+              scope.row.merchantName || scope.row.agentName
             }}</strong
             ><br /><small>{{
-              scope.row.lineUid || scope.row.supplierId || scope.row.agentId
+              scope.row.lineUid || scope.row.agentId
             }}</small></template
           ></ElTableColumn
         >
@@ -127,7 +125,7 @@
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
           :total="filteredRows.length"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[20, 50, 100]"
           layout="total, sizes, prev, pager, next"
       /></div>
     </ElCard>
@@ -173,9 +171,6 @@
             >
           </div>
           <ElDescriptions :column="drawerColumns" border>
-            <ElDescriptionsItem label="供應商">{{
-              currentDifference.supplierName || '—'
-            }}</ElDescriptionsItem>
             <ElDescriptionsItem label="商戶">{{
               currentDifference.merchantName || '—'
             }}</ElDescriptionsItem>
@@ -291,7 +286,7 @@
     type: '',
     status: ''
   })
-  const pagination = reactive({ current: 1, size: 10 })
+  const pagination = reactive({ current: 1, size: 20 })
   const drawerVisible = ref(Boolean(route.query.differenceId))
   const selectedId = ref(String(route.query.differenceId || ''))
   const resolveDialogVisible = ref(false)
@@ -325,7 +320,7 @@
     store.differences
       .filter((item) => {
         const searchable =
-          `${item.id} ${item.reconciliationId} ${item.supplierName || ''} ${item.merchantName || ''} ${item.agentName} ${item.lineUid || ''}`.toLowerCase()
+          `${item.id} ${item.reconciliationId} ${item.merchantName || ''} ${item.agentName} ${item.lineUid || ''}`.toLowerCase()
         return (
           (!filters.keyword || searchable.includes(filters.keyword.toLowerCase())) &&
           (!filters.type || item.type === filters.type) &&
@@ -351,6 +346,7 @@
     filters.status = status
     pagination.current = 1
   }
+  const applyFilters = () => (pagination.current = 1)
   const reset = () => {
     filters.keyword = ''
     filters.type = ''
@@ -408,9 +404,7 @@
     if (currentDifference.value)
       router.push(
         `/finance/reconciliation/${
-          currentDifference.value.reconciliationType === 'Supplier'
-            ? 'suppliers'
-            : currentDifference.value.reconciliationType === 'Merchant'
+          currentDifference.value.reconciliationType === 'Merchant'
               ? 'merchants'
               : 'agents'
         }/${currentDifference.value.reconciliationId}`

@@ -331,26 +331,6 @@ export interface AgentReconciliationRecord extends ReconciliationMetrics {
   lockedAt?: string
 }
 
-export interface SupplierReconciliationRecord extends ReconciliationMetrics {
-  id: string
-  period: string
-  periodStart: string
-  periodEnd: string
-  supplierId: string
-  supplierCode: string
-  supplierName: string
-  gameCount: number
-  currency: string
-  differenceCount: number
-  unresolvedDifferenceCount: number
-  status: FinanceReconciliationStatus
-  snapshot: FinanceCalculationSnapshot
-  createdAt: string
-  updatedAt: string
-  confirmedAt?: string
-  lockedAt?: string
-}
-
 export interface ReconciliationDailyRow {
   date: string
   betCount: number
@@ -374,13 +354,11 @@ export interface ReconciliationGameRow {
 
 export interface ReconciliationDifferenceRecord {
   id: string
-  reconciliationType: 'Supplier' | 'Merchant' | 'Agent'
+  reconciliationType: 'Merchant' | 'Agent'
   reconciliationId: string
   period: string
   merchantId?: string
   merchantName?: string
-  supplierId?: string
-  supplierName?: string
   agentId: string
   agentName: string
   lineUid?: string
@@ -406,7 +384,6 @@ export interface FinanceActionLog {
   entityType:
     | 'Merchant Reconciliation'
     | 'Agent Reconciliation'
-    | 'Supplier Reconciliation'
     | 'Difference'
     | 'Settlement Batch'
     | 'Merchant Statement'

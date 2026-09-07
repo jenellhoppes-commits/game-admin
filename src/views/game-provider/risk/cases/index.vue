@@ -97,7 +97,7 @@
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
           :total="filteredCases.length"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[20, 50, 100]"
           layout="total, sizes, prev, pager, next"
         />
       </div>
@@ -119,7 +119,7 @@
   defineOptions({ name: 'RiskCases' })
   const router = useRouter()
   const store = useRiskCenterStore()
-  const pagination = reactive({ current: 1, size: 10 })
+  const pagination = reactive({ current: 1, size: 20 })
   const searchForm = ref<Record<string, unknown>>({})
   const appliedFilters = ref<Record<string, unknown>>({})
   const categoryOptions = [

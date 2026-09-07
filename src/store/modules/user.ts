@@ -138,9 +138,9 @@ export const useUserStore = defineStore(
     /**
      * 退出登录
      * 清空所有用户相关状态并跳转到登录页
-     * 如果是同一账号重新登录，保留工作台标签页
+     * 无论是否切回同一账号，都不保留前一登录阶段的工作台标签页
      */
-    const logOut = () => {
+    const logOut = (navigateToLogin = true) => {
       // 保存当前用户 ID，用于下次登录时判断是否为同一用户
       const currentUserId = info.value.userId
       if (currentUserId) {
@@ -159,20 +159,28 @@ export const useUserStore = defineStore(
       accessToken.value = ''
       // 清空刷新令牌
       refreshToken.value = ''
-      // 注意：不清空工作台标签页，等下次登录时根据用户判断
+      // 登出即清除角色相关页签与页面缓存，避免切换入口后残留前一角色资料。
+      useWorktabStore().clearAll()
+      searchHistory.value = []
+      localStorage.removeItem('game-provider-demo-user')
+      localStorage.removeItem('agent-portal-stage2')
+      sessionStorage.removeItem('partner-portal-scope')
       // 移除iframe路由缓存
       sessionStorage.removeItem('iframeRoutes')
       // 清空主页路径
       useMenuStore().setHomePath('')
       // 重置路由状态
+      // 讓登入頁導航先完成，再移除目前角色的動態路由。
       resetRouterState(500)
       // 跳转到登录页，携带当前路由作为 redirect 参数
       const currentRoute = router.currentRoute.value
-      const redirect = currentRoute.path !== '/login' ? currentRoute.fullPath : undefined
-      router.push({
-        name: 'Login',
-        query: redirect ? { redirect } : undefined
-      })
+      const redirect = currentRoute.path !== '/auth/login' ? currentRoute.fullPath : undefined
+      if (navigateToLogin) {
+        router.push({
+          name: 'Login',
+          query: redirect ? { redirect } : undefined
+        })
+      }
     }
 
     /**
@@ -187,16 +195,10 @@ export const useUserStore = defineStore(
       // 无法获取当前用户 ID，跳过检查
       if (!currentUserId) return
 
-      // 首次登录或缓存已清除，保留现有标签页
-      if (!lastUserId) {
-        return
-      }
-
-      // 不同用户登录，清空工作台标签页
-      if (String(currentUserId) !== lastUserId) {
+      // 切換帳號時再次保險清理；登出流程已先執行即時清除。
+      if (lastUserId && String(currentUserId) !== lastUserId) {
         const worktabStore = useWorktabStore()
-        worktabStore.opened = []
-        worktabStore.keepAliveExclude = []
+        worktabStore.clearAll()
       }
 
       // 清除临时存储

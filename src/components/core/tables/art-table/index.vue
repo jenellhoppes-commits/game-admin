@@ -102,6 +102,8 @@
 
   /** 分页器配置选项接口 */
   interface PaginationOptions {
+    /** 每頁筆數選擇器的無障礙名稱 */
+    pageSizeLabel?: string
     /** 每页显示个数选择器的选项列表 */
     pageSizes?: number[]
     /** 分页器的对齐方式 */
@@ -149,6 +151,18 @@
   })
   const instance = getCurrentInstance()
   const attrs = useAttrs()
+  // Element Plus 的內建筆數選擇器未提供名稱傳入介面。
+  // 空資料切換至有資料後也需要替新掛載的控制項補上名稱。
+  watchEffect(() => {
+    const container = paginationRef.value
+    void props.pagination?.size
+    void props.paginationOptions?.pageSizeLabel
+    nextTick(() => {
+      container
+        ?.querySelector('.el-pagination__sizes input[role="combobox"]')
+        ?.setAttribute('aria-label', props.paginationOptions?.pageSizeLabel || '每頁筆數')
+    })
+  })
 
   const LAYOUT = {
     MOBILE: 'prev, pager, next, sizes, jumper, total',

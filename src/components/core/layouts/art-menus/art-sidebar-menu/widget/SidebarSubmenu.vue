@@ -8,7 +8,12 @@
     >
       {{ item.meta.menuGroup }}
     </div>
-    <ElSubMenu v-if="hasChildren(item)" :index="item.path || item.meta.title" :level="level">
+    <ElSubMenu
+      v-if="hasChildren(item)"
+      :index="item.path || item.meta.title"
+      :level="level"
+      :aria-label="formatMenuTitle(item.meta.title)"
+    >
       <template #title>
         <div class="menu-icon flex-cc">
           <ArtSvgIcon
@@ -36,6 +41,7 @@
       v-else
       :index="isExternalLink(item) ? undefined : item.path || item.meta.title"
       :level-item="level + 1"
+      :aria-label="formatMenuTitle(item.meta.title)"
       @click="goPage(item)"
     >
       <div class="menu-icon flex-cc">

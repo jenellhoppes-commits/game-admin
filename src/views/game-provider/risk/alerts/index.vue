@@ -109,7 +109,7 @@
         <ElPagination
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[20, 50, 100]"
           :total="filteredRows.length"
           layout="total, sizes, prev, pager, next, jumper"
         />
@@ -315,7 +315,7 @@
   const selectedRows = ref<RiskAlertRecord[]>([])
   const selectedAlertId = ref(String(route.query.alertId || ''))
   const drawerVisible = ref(Boolean(route.query.alertId))
-  const pagination = reactive({ current: 1, size: 10 })
+  const pagination = reactive({ current: 1, size: 20 })
 
   const categoryOptions: Array<{ label: string; value: RiskAlertCategory }> = [
     { label: '會員異常', value: 'Member' },

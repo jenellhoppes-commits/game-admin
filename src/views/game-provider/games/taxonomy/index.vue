@@ -43,6 +43,7 @@
         :data="pagedRows"
         :columns="columns"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [20, 50, 100] }"
         :loading="loading"
         height="520"
         row-key="id"
@@ -134,7 +135,7 @@
   const editingRecord = ref<GameTaxonomyRecord>()
   const drawerVisible = ref(false)
   const loading = ref(false)
-  const pagination = reactive({ current: 1, size: 10, total: 0 })
+  const pagination = reactive({ current: 1, size: 20, total: 0 })
   const searchForm = ref<{
     keyword?: string
     status?: GameTaxonomyStatus

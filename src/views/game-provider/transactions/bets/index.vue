@@ -44,8 +44,13 @@
         :columns="columns"
         :loading="loading"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [20, 50, 100] }"
+        :default-sort="
+          sortState.order ? { prop: sortState.prop, order: sortState.order } : undefined
+        "
         height="560"
         row-key="id"
+        @sort-change="handleSortChange"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -66,12 +71,41 @@
 
   const store = useTransactionCenterStore()
   const router = useRouter()
+  const route = useRoute()
   const { width } = useWindowSize()
   const isMobile = computed(() => width.value < 640)
   const loading = ref(false)
-  const searchForm = ref<Record<string, unknown>>({})
+  const allowedPageSizes = [20, 50, 100]
+  const initialPageSize = Number(route.query.pageSize)
+  const initialDateRange =
+    route.query.dateFrom && route.query.dateTo
+      ? [String(route.query.dateFrom), String(route.query.dateTo)]
+      : undefined
+  const searchForm = ref<Record<string, unknown>>({
+    keyword: String(route.query.keyword || ''),
+    member: String(route.query.member || ''),
+    merchantId: String(route.query.merchantId || ''),
+    gameId: String(route.query.gameId || ''),
+    status: String(route.query.status || ''),
+    riskStatus: String(route.query.riskStatus || ''),
+    dateRange: initialDateRange
+  })
+  const appliedFilters = ref<Record<string, unknown>>({ ...searchForm.value })
   const filteredRows = ref<BetCenterRecord[]>([...store.bets])
-  const pagination = reactive({ current: 1, size: 10, total: store.bets.length })
+  const pagination = reactive({
+    current: Math.max(1, Number(route.query.page) || 1),
+    size: allowedPageSizes.includes(initialPageSize) ? initialPageSize : 20,
+    total: store.bets.length
+  })
+  const sortState = reactive<{
+    prop: keyof BetCenterRecord | ''
+    order: 'ascending' | 'descending' | ''
+  }>({
+    prop: String(route.query.sort || '') as keyof BetCenterRecord | '',
+    order: ['ascending', 'descending'].includes(String(route.query.order))
+      ? (String(route.query.order) as 'ascending' | 'descending')
+      : ''
+  })
   const statusOptions: Array<{ label: string; value: MemberBetStatus }> = [
     { label: '進行中', value: 'In Progress' },
     { label: '已結算', value: 'Settled' },
@@ -160,8 +194,8 @@
       prop: 'id',
       label: '注單編號',
       minWidth: 125,
-      formatter: (row: BetCenterRecord) =>
-        h(EntityLink, { label: row.id, to: `/transactions/bets/${row.id}` })
+      sortable: 'custom',
+      formatter: (row: BetCenterRecord) => h(EntityLink, { label: row.id, to: detailUrl(row.id) })
     },
     { prop: 'roundId', label: '局號', minWidth: 180 },
     {
@@ -202,6 +236,7 @@
       label: '投注／派彩',
       minWidth: 160,
       align: 'right',
+      sortable: 'custom',
       formatter: (row: BetCenterRecord) =>
         `${money(row.betAmount)}／${money(row.payoutAmount)} ${row.currency}`
     },
@@ -210,6 +245,7 @@
       label: '會員淨額',
       minWidth: 125,
       align: 'right',
+      sortable: 'custom',
       formatter: (row: BetCenterRecord) =>
         h(
           'span',
@@ -235,11 +271,11 @@
           riskLabel(row.riskStatus)
         )
     },
-    { prop: 'time', label: '投注時間', minWidth: 160 },
+    { prop: 'time', label: '投注時間', minWidth: 160, sortable: 'custom' },
     {
       prop: 'operation',
       label: '操作',
-      width: 300,
+      width: 210,
       fixed: 'right',
       formatter: (row: BetCenterRecord) =>
         h('div', { class: 'row-actions' }, [
@@ -248,36 +284,16 @@
             {
               link: true,
               type: 'primary',
-              onClick: () => router.push(`/transactions/bets/${row.id}`)
+              onClick: () => router.push(detailUrl(row.id))
             },
             () => '查看'
           ),
-          row.result.replay.supportsBoardDisplay
-            ? h(
-                ElButton,
-                {
-                  link: true,
-                  onClick: () => router.push(`/transactions/bets/${row.id}?tab=board`)
-                },
-                () => '查看盤面'
-              )
-            : null,
-          row.result.replay.supportsResultReplay || row.result.replay.supportsEventReplay
-            ? h(
-                ElButton,
-                {
-                  link: true,
-                  onClick: () => router.push(`/transactions/bets/${row.id}?tab=replay`)
-                },
-                () => '結果重播'
-              )
-            : null,
           row.transactionIds.length
             ? h(
                 ElButton,
                 {
                   link: true,
-                  onClick: () => router.push(`/transactions/bets/${row.id}?tab=transactions`)
+                  onClick: () => router.push(detailUrl(row.id, 'transactions'))
                 },
                 () => '查看交易'
               )
@@ -288,7 +304,7 @@
                 {
                   link: true,
                   type: 'danger',
-                  onClick: () => router.push(`/transactions/bets/${row.id}?tab=anomalies`)
+                  onClick: () => router.push(detailUrl(row.id, 'anomalies'))
                 },
                 () => '查看異常'
               )
@@ -325,7 +341,50 @@
     ({ Normal: '正常', Attention: '關注', Exception: '異常' })[status]
   const riskType = (status: BetCenterRecord['riskStatus']) =>
     status === 'Exception' ? 'danger' : status === 'Attention' ? 'warning' : 'info'
-  const applyFilters = (params: Record<string, unknown>) => {
+  const buildListQuery = () => {
+    const range = appliedFilters.value.dateRange as string[] | undefined
+    return {
+      keyword: String(appliedFilters.value.keyword || '') || undefined,
+      member: String(appliedFilters.value.member || '') || undefined,
+      merchantId: String(appliedFilters.value.merchantId || '') || undefined,
+      gameId: String(appliedFilters.value.gameId || '') || undefined,
+      status: String(appliedFilters.value.status || '') || undefined,
+      riskStatus: String(appliedFilters.value.riskStatus || '') || undefined,
+      dateFrom: range?.[0],
+      dateTo: range?.[1],
+      page: pagination.current > 1 ? String(pagination.current) : undefined,
+      pageSize: pagination.size !== 20 ? String(pagination.size) : undefined,
+      sort: sortState.prop || undefined,
+      order: sortState.order || undefined
+    }
+  }
+  const syncListRoute = () => router.replace({ query: buildListQuery() })
+  const detailUrl = (id: string, tab?: string) => {
+    const returnTo = router.resolve({
+      path: '/transactions/bets',
+      query: buildListQuery()
+    }).fullPath
+    return router.resolve({
+      path: `/transactions/bets/${id}`,
+      query: { returnTo, tab: tab || undefined }
+    }).fullPath
+  }
+  const applySort = () => {
+    if (!sortState.prop || !sortState.order) return
+    const direction = sortState.order === 'ascending' ? 1 : -1
+    filteredRows.value.sort((left, right) => {
+      const leftValue = left[sortState.prop as keyof BetCenterRecord]
+      const rightValue = right[sortState.prop as keyof BetCenterRecord]
+      return (
+        String(leftValue).localeCompare(String(rightValue), 'zh-TW', { numeric: true }) * direction
+      )
+    })
+  }
+  const applyFilters = (
+    params: Record<string, unknown>,
+    options: { resetPage?: boolean; syncRoute?: boolean } = {}
+  ) => {
+    appliedFilters.value = structuredClone(params)
     const keyword = String(params.keyword || '')
       .trim()
       .toLowerCase()
@@ -350,20 +409,44 @@
         (!params.riskStatus || row.riskStatus === params.riskStatus)
       )
     })
+    applySort()
     pagination.total = filteredRows.value.length
-    pagination.current = 1
+    if (options.resetPage !== false) pagination.current = 1
+    const lastPage = Math.max(1, Math.ceil(pagination.total / pagination.size))
+    pagination.current = Math.min(pagination.current, lastPage)
+    if (options.syncRoute !== false) syncListRoute()
   }
   const resetFilters = () => {
+    searchForm.value = {}
+    appliedFilters.value = {}
     filteredRows.value = [...store.bets]
     pagination.total = filteredRows.value.length
     pagination.current = 1
+    sortState.prop = ''
+    sortState.order = ''
+    syncListRoute()
   }
   const handleSizeChange = (size: number) => {
     pagination.size = size
     pagination.current = 1
+    syncListRoute()
   }
   const handleCurrentChange = (current: number) => {
     pagination.current = current
+    syncListRoute()
+  }
+  const handleSortChange = ({
+    prop,
+    order
+  }: {
+    prop: keyof BetCenterRecord
+    order: 'ascending' | 'descending' | null
+  }) => {
+    sortState.prop = order ? prop : ''
+    sortState.order = order || ''
+    pagination.current = 1
+    applySort()
+    syncListRoute()
   }
   const refreshData = async () => {
     loading.value = true
@@ -415,6 +498,8 @@
     URL.revokeObjectURL(link.href)
     ElMessage.success('注單 CSV 已匯出')
   }
+
+  onMounted(() => applyFilters(searchForm.value, { resetPage: false, syncRoute: false }))
 </script>
 
 <style scoped lang="scss">

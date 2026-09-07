@@ -38,7 +38,15 @@ const permissionSeeds: Array<
   ['risk', '風控中心', '處理風控案件', 'Execute', true, 'High', '結案、解除或套用風控處置'],
   ['approvals', '審核中心', '執行審核', 'Approve', true, 'High', '核准或駁回敏感業務異動'],
   ['finance', '對帳／結算', '查看財務資料', 'View', false, 'Medium', '查看對帳、結算與差異'],
-  ['finance', '對帳／結算', '執行結算', 'Execute', true, 'High', '核准結算與完成付款'],
+  [
+    'finance',
+    '對帳／結算',
+    '確認對帳',
+    'Approve',
+    true,
+    'High',
+    '確認代理與商戶對帳結果及尾差調整'
+  ],
   ['reports', '報表中心', '查看報表', 'View', false, 'Normal', '查看各類營運與財務報表'],
   ['reports', '報表中心', '匯出報表', 'Export', true, 'Medium', '匯出完整營運或財務報表'],
   [
@@ -68,6 +76,25 @@ const permissionSeeds: Array<
     false,
     'Medium',
     '查看操作、登入、審核與錯誤紀錄'
+  ],
+  [
+    'finance',
+    '對帳／結算',
+    '建立結算申請',
+    'Create',
+    true,
+    'High',
+    '依已確認對帳結果建立待審結算申請'
+  ],
+  ['finance', '對帳／結算', '審核結算申請', 'Approve', true, 'High', '核准或駁回待審結算申請'],
+  [
+    'finance',
+    '對帳／結算',
+    '產生並鎖定結算單',
+    'Execute',
+    true,
+    'High',
+    '依已核准內容產生並鎖定結算單'
   ]
 ]
 
@@ -190,7 +217,14 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
       description: '對帳、結算、匯率與財務報表作業',
       accountCount: 3,
       permissionIds: financeIds.value,
-      sensitivePermissionIds: ['PERM-017', 'PERM-019', 'PERM-020'],
+      sensitivePermissionIds: [
+        'PERM-017',
+        'PERM-019',
+        'PERM-020',
+        'PERM-024',
+        'PERM-025',
+        'PERM-026'
+      ],
       dataScopeId: 'SCOPE-FINANCE',
       builtIn: false,
       status: 'Active',
@@ -337,20 +371,6 @@ export const usePlatformAccessStore = defineStore('platformAccessStore', () => {
   ])
 
   const logs = ref<PlatformAccessLog[]>([
-    {
-      id: 'ACL-0009',
-      entityType: 'Reconciliation',
-      entityId: 'SRC-202609-0008',
-      module: '對帳／結算',
-      action: '確認供應商對帳',
-      beforeValue: '待確認',
-      afterValue: '已確認',
-      operator: 'Finance Amy',
-      ipAddress: '10.20.2.25',
-      riskLevel: 'High',
-      createdAt: '2026-09-04 16:35',
-      note: '實收金額與系統金額差異已確認'
-    },
     {
       id: 'ACL-0008',
       entityType: 'Exchange Rate',

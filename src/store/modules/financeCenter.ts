@@ -19,8 +19,7 @@ import type {
   SettlementAdjustmentRecord,
   SettlementBatchRecord,
   SettlementCycle,
-  SettlementExchangeSnapshot,
-  SupplierReconciliationRecord
+  SettlementExchangeSnapshot
 } from '@/types/game-provider'
 
 const formatNow = () => {
@@ -356,84 +355,6 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
 
   const agentReconciliations = ref<AgentReconciliationRecord[]>(buildAgentReconciliations())
 
-  const supplierSeeds = [
-    { id: 'SUP-001', code: 'EVO', name: 'Evolution', gameCount: 18, rate: 12.5 },
-    { id: 'SUP-002', code: 'PGS', name: 'PG Soft', gameCount: 42, rate: 10.8 },
-    { id: 'SUP-003', code: 'JILI', name: 'JILI Games', gameCount: 36, rate: 11.2 },
-    { id: 'SUP-004', code: 'PRAG', name: 'Pragmatic Play', gameCount: 51, rate: 13 }
-  ]
-  const supplierReconciliations = ref<SupplierReconciliationRecord[]>(
-    supplierSeeds.flatMap((supplier, supplierIndex) =>
-      ['2026-08', '2026-07'].map((period, periodIndex) => {
-        const betAmount = 9200000 + supplierIndex * 1380000 + periodIndex * 310000
-        const validBet = roundMoney(betAmount * (0.91 + supplierIndex * 0.004))
-        const payoutAmount = roundMoney(betAmount * (0.935 + supplierIndex * 0.003))
-        const ggr = roundMoney(betAmount - payoutAmount)
-        const exchangeRate = getExchangeRate('USD', 'USDT', periodEndDate(period))
-        const initialSettlementAmount = roundMoney(ggr * (supplier.rate / 100) * exchangeRate)
-        const hasDifference = periodIndex === 0 && supplierIndex === 0
-        return {
-          id: `SRC-${period.replace('-', '')}-${String(supplierIndex + 1).padStart(4, '0')}`,
-          period,
-          ...periodRange(period),
-          supplierId: supplier.id,
-          supplierCode: supplier.code,
-          supplierName: supplier.name,
-          gameCount: supplier.gameCount,
-          currency: 'USD',
-          memberCount: 1800 + supplierIndex * 260,
-          betCount: 16800 + supplierIndex * 2100,
-          betAmount,
-          validBet,
-          payoutAmount,
-          jackpotContribution: roundMoney(betAmount * 0.003),
-          jackpotPayout: supplierIndex % 2 ? 0 : 68000,
-          cancelledAmount: 4800 + supplierIndex * 350,
-          refundAmount: 2600 + supplierIndex * 280,
-          ggr,
-          initialSettlementAmount,
-          adjustmentAmount: 0,
-          finalSettlementAmount: initialSettlementAmount,
-          differenceCount: hasDifference ? 1 : 0,
-          unresolvedDifferenceCount: hasDifference ? 1 : 0,
-          status:
-            periodIndex === 1 ? 'Locked' : hasDifference ? 'Difference' : 'Pending Confirmation',
-          snapshot: buildSnapshot('GGR', supplier.rate, 'USD', 'USDT', period, periodIndex === 1),
-          createdAt: periodIndex === 1 ? '2026-08-01 01:30' : '2026-09-01 01:30',
-          updatedAt: periodIndex === 1 ? '2026-08-03 15:10' : '2026-09-03 09:10',
-          confirmedAt: periodIndex === 1 ? '2026-08-02 13:40' : undefined,
-          lockedAt: periodIndex === 1 ? '2026-08-03 15:10' : undefined,
-          actualSettlementAmount: periodIndex === 1 ? initialSettlementAmount : undefined,
-          roundingAdjustment: periodIndex === 1 ? 0 : undefined,
-          confirmationNote: periodIndex === 1 ? '供應商帳單與實付金額已確認' : undefined
-        }
-      })
-    )
-  )
-
-  differences.value.unshift({
-    id: 'DIF-SUP-000001',
-    reconciliationType: 'Supplier',
-    reconciliationId: 'SRC-202608-0001',
-    period: '2026-08',
-    supplierId: 'SUP-001',
-    supplierName: 'Evolution',
-    agentId: '',
-    agentName: '',
-    type: 'Fee',
-    systemValue: 284560.42,
-    partnerValue: 284558,
-    differenceAmount: 2.42,
-    currency: 'USDT',
-    status: 'Open',
-    description: '供應商帳單尾數與平台計算結果不同，待確認實付金額。',
-    relatedBetIds: [],
-    relatedTransactionIds: [],
-    detectedAt: '2026-09-01 09:10',
-    dueAt: '2026-09-05 18:00',
-    updatedAt: '2026-09-03 09:10'
-  })
-
   const settlementCurrencyList = Array.from(
     new Set(
       merchantReconciliations.value
@@ -634,17 +555,6 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
   settlementBatches.value.forEach((batch) => refreshBatchTotals(batch.id))
 
   const actionLogs = ref<FinanceActionLog[]>([
-    ...supplierReconciliations.value.map((record, index) => ({
-      id: `FLOG-SUP-${String(index + 1).padStart(4, '0')}`,
-      entityType: 'Supplier Reconciliation' as const,
-      entityId: record.id,
-      action: '產生供應商對帳',
-      before: '無',
-      after: record.status,
-      reason: '依供應商合約與結算週期彙總遊戲帳務',
-      operator: 'Finance Scheduler',
-      time: record.createdAt
-    })),
     ...agentReconciliations.value.slice(0, 12).map((record, index) => ({
       id: `FLOG-AGT-${String(index + 1).padStart(4, '0')}`,
       entityType: 'Agent Reconciliation' as const,
@@ -699,8 +609,6 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     merchantReconciliations.value.find((record) => record.id === id)
   const findAgentReconciliation = (id: string) =>
     agentReconciliations.value.find((record) => record.id === id)
-  const findSupplierReconciliation = (id: string) =>
-    supplierReconciliations.value.find((record) => record.id === id)
   const findDifference = (id: string) => differences.value.find((record) => record.id === id)
   const getDifferences = (reconciliationId: string) =>
     differences.value.filter((record) => record.reconciliationId === reconciliationId)
@@ -1097,7 +1005,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
   }
 
   const applyActualAmount = (
-    record: MerchantReconciliationRecord | AgentReconciliationRecord | SupplierReconciliationRecord,
+    record: MerchantReconciliationRecord | AgentReconciliationRecord,
     reconciliationType: ReconciliationDifferenceRecord['reconciliationType'],
     actualAmount: number,
     note: string
@@ -1119,8 +1027,6 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
         period: record.period,
         merchantId: 'merchantId' in record ? record.merchantId : undefined,
         merchantName: 'merchantName' in record ? record.merchantName : undefined,
-        supplierId: 'supplierId' in record ? record.supplierId : undefined,
-        supplierName: 'supplierName' in record ? record.supplierName : undefined,
         agentId: 'agentId' in record ? record.agentId : '',
         agentName: 'agentName' in record ? record.agentName : '',
         lineUid: 'lineUid' in record ? record.lineUid : undefined,
@@ -1147,7 +1053,8 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
 
   const confirmMerchant = (id: string, actualAmount?: number, note = '') => {
     const record = findMerchantReconciliation(id)
-    if (!record || record.unresolvedDifferenceCount > 0 || record.status === 'Locked') return false
+    if (!record || record.status !== 'Pending Confirmation' || record.unresolvedDifferenceCount > 0)
+      return false
     if (!applyActualAmount(record, 'Merchant', actualAmount ?? record.finalSettlementAmount, note))
       return false
     const before = record.status
@@ -1190,8 +1097,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     if (resolutionType === 'Create Adjustment') {
       const parent =
         findMerchantReconciliation(difference.reconciliationId) ||
-        findAgentReconciliation(difference.reconciliationId) ||
-        findSupplierReconciliation(difference.reconciliationId)
+        findAgentReconciliation(difference.reconciliationId)
       if (parent) {
         parent.adjustmentAmount = roundMoney(parent.adjustmentAmount + difference.differenceAmount)
         parent.finalSettlementAmount = roundMoney(
@@ -1206,10 +1112,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
 
   function syncDifferenceCount(reconciliationId: string) {
     const merchantParent = findMerchantReconciliation(reconciliationId)
-    const parent =
-      merchantParent ||
-      findAgentReconciliation(reconciliationId) ||
-      findSupplierReconciliation(reconciliationId)
+    const parent = merchantParent || findAgentReconciliation(reconciliationId)
     if (!parent) return
     parent.unresolvedDifferenceCount = getDifferences(reconciliationId).filter(
       (item) => !['Resolved', 'Accepted', 'Closed'].includes(item.status)
@@ -1238,7 +1141,8 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
 
   const confirmAgent = (id: string, actualAmount?: number, note = '') => {
     const record = findAgentReconciliation(id)
-    if (!record || record.status === 'Locked' || record.unresolvedDifferenceCount > 0) return false
+    if (!record || record.status !== 'Pending Confirmation' || record.unresolvedDifferenceCount > 0)
+      return false
     const included = getIncludedMerchantReconciliations(record)
     if (included.some((item) => !['Confirmed', 'Locked'].includes(item.status))) return false
     if (!applyActualAmount(record, 'Agent', actualAmount ?? record.finalSettlementAmount, note))
@@ -1258,30 +1162,9 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     return true
   }
 
-  const confirmSupplier = (id: string, actualAmount?: number, note = '') => {
-    const record = findSupplierReconciliation(id)
-    if (!record || record.status === 'Locked' || record.unresolvedDifferenceCount > 0) return false
-    if (!applyActualAmount(record, 'Supplier', actualAmount ?? record.finalSettlementAmount, note))
-      return false
-    const before = record.status
-    record.status = 'Confirmed'
-    record.confirmedAt = formatNow()
-    record.updatedAt = record.confirmedAt
-    addLog(
-      'Supplier Reconciliation',
-      id,
-      '確認供應商對帳',
-      before,
-      record.status,
-      record.confirmationNote || '帳務與實付金額均已確認'
-    )
-    return true
-  }
-
   return {
     merchantReconciliations,
     agentReconciliations,
-    supplierReconciliations,
     differences,
     actionLogs,
     settlementBatches,
@@ -1292,7 +1175,6 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     unresolvedDifferences,
     findMerchantReconciliation,
     findAgentReconciliation,
-    findSupplierReconciliation,
     findDifference,
     getDifferences,
     getLogs,
@@ -1316,7 +1198,6 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     recalculateMerchant,
     confirmMerchant,
     confirmAgent,
-    confirmSupplier,
     updateDifference,
     resolveDifference
   }

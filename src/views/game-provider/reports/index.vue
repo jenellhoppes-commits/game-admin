@@ -33,11 +33,13 @@
           </div>
         </div>
       </template>
-      <ElForm inline label-position="left">
+      <ElForm inline label-position="left" @submit.prevent="applyFilters">
         <ElFormItem label="資料日期">
           <ElDatePicker
             v-model="filters.dateRange"
             type="daterange"
+            :shortcuts="reportDateShortcuts"
+            popper-class="report-date-panel"
             range-separator="至"
             start-placeholder="開始日期"
             end-placeholder="結束日期"
@@ -122,7 +124,7 @@
           <ElSwitch v-model="filters.excludeTest" aria-label="排除測試資料" />
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="primary" @click="applyFilters">查詢</ElButton>
+          <ElButton type="primary" native-type="submit">查詢</ElButton>
           <ElButton @click="resetFilters">重置</ElButton>
         </ElFormItem>
       </ElForm>
@@ -293,7 +295,7 @@
         <ElPagination
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[20, 50, 100]"
           :total="filteredRows.length"
           layout="total, sizes, prev, pager, next"
           background
@@ -333,6 +335,8 @@
 </template>
 
 <script setup lang="ts">
+  import { reportDateShortcuts } from '@/utils/reportDateShortcuts'
+  import '@/assets/styles/report-date-picker.scss'
   import { ElMessage } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
@@ -731,7 +735,7 @@
   const displayMode = ref<DisplayMode>('Original')
   const referenceCurrency = ref('USDT')
   const definitionVisible = ref(false)
-  const pagination = reactive({ current: 1, size: 10 })
+  const pagination = reactive({ current: 1, size: 20 })
 
   const defaultFilters = (): ReportFilters => ({
     dateRange: ['2026-09-01', '2026-09-04'],

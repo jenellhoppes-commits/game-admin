@@ -26,18 +26,9 @@
           </div>
         </template>
         <template #actions>
-          <ElButton @click="router.push('/transactions/bets')">返回列表</ElButton>
+          <ElButton @click="router.push(listReturnPath)">返回列表</ElButton>
           <ElButton @click="router.push(`/members/management/${bet.memberId}?tab=bets`)"
             >查看會員</ElButton
-          >
-          <ElButton v-if="bet.result.replay.supportsBoardDisplay" @click="openTab('board')"
-            >查看盤面</ElButton
-          >
-          <ElButton
-            v-if="bet.result.replay.supportsResultReplay || bet.result.replay.supportsEventReplay"
-            type="primary"
-            @click="openTab('replay')"
-            >結果重播</ElButton
           >
           <ElButton
             v-if="relatedTransactions[0]"
@@ -222,8 +213,92 @@
           </div>
         </ElTabPane>
 
-        <ElTabPane v-if="bet.result.replay.supportsBoardDisplay" label="遊戲盤面" name="board">
-          <div class="tab-panel board-layout">
+        <ElTabPane label="關聯交易" name="transactions">
+          <div class="tab-panel">
+            <div class="section-title"
+              ><div><h3>關聯交易</h3><p>同一局號下的投注扣款與派彩入帳。</p></div></div
+            >
+            <ElTable :data="relatedTransactions" border empty-text="尚無關聯交易">
+              <ElTableColumn label="交易編號" width="135"
+                ><template #default="scope"
+                  ><EntityLink
+                    :label="scope.row.id"
+                    :to="`/transactions/records/${scope.row.id}`" /></template
+              ></ElTableColumn>
+              <ElTableColumn label="類型" width="100"
+                ><template #default="scope">{{
+                  transactionTypeLabel(scope.row.type)
+                }}</template></ElTableColumn
+              >
+              <ElTableColumn label="金額" width="150" align="right"
+                ><template #default="scope"
+                  ><span :class="scope.row.amount >= 0 ? 'positive' : 'negative'"
+                    >{{ money(scope.row.amount) }} {{ scope.row.currency }}</span
+                  ></template
+                ></ElTableColumn
+              >
+              <ElTableColumn label="狀態" width="100"
+                ><template #default="scope"
+                  ><ElTag :type="transactionStatusType(scope.row.status)">{{
+                    transactionStatusLabel(scope.row.status)
+                  }}</ElTag></template
+                ></ElTableColumn
+              >
+              <ElTableColumn prop="externalReference" label="外部參考號" min-width="200" />
+              <ElTableColumn prop="time" label="交易時間" width="160" />
+            </ElTable>
+          </div>
+        </ElTabPane>
+
+        <ElTabPane label="異常紀錄" name="anomalies">
+          <div class="tab-panel">
+            <div class="section-title"
+              ><div><h3>異常與風控案件</h3><p>案件處理統一在風控中心進行。</p></div></div
+            >
+            <ElTable :data="anomalies" border empty-text="此注單尚無異常紀錄">
+              <ElTableColumn prop="id" label="異常編號" width="120" />
+              <ElTableColumn prop="type" label="異常類型" min-width="190" />
+              <ElTableColumn label="風險等級" width="100"
+                ><template #default="scope"
+                  ><ElTag :type="scope.row.riskLevel === 'High' ? 'danger' : 'warning'">{{
+                    scope.row.riskLevel === 'High'
+                      ? '高'
+                      : scope.row.riskLevel === 'Medium'
+                        ? '中'
+                        : '低'
+                  }}</ElTag></template
+                ></ElTableColumn
+              >
+              <ElTableColumn label="關聯交易" width="140"
+                ><template #default="scope"
+                  ><EntityLink
+                    v-if="scope.row.transactionId"
+                    :label="scope.row.transactionId"
+                    :to="`/transactions/records/${scope.row.transactionId}`"
+                  /><span v-else>—</span></template
+                ></ElTableColumn
+              >
+              <ElTableColumn label="風控案件" width="130"
+                ><template #default="scope"
+                  ><EntityLink
+                    v-if="scope.row.riskCaseId"
+                    :label="scope.row.riskCaseId"
+                    :to="`/risk/cases/${scope.row.riskCaseId}`"
+                  /><span v-else>尚未建案</span></template
+                ></ElTableColumn
+              >
+              <ElTableColumn label="狀態" width="100"
+                ><template #default="scope">{{
+                  anomalyStatusLabel(scope.row.status)
+                }}</template></ElTableColumn
+              >
+              <ElTableColumn prop="occurredAt" label="發生時間" width="160" />
+            </ElTable>
+          </div>
+        </ElTabPane>
+
+        <ElTabPane label="重播與盤面" name="replay">
+          <div v-if="bet.result.replay.supportsBoardDisplay" class="tab-panel board-layout">
             <section class="section-block">
               <div class="section-title">
                 <div>
@@ -268,10 +343,7 @@
                   ><span>盤面階段</span><strong>{{ currentBoardStage.label }}</strong></div
                 >
                 <div
-                  ><span>盤面尺寸</span
-                  ><strong
-                    >{{ currentBoardStage.columns }} × {{ currentBoardStage.rows }}</strong
-                  ></div
+                  ><span>盤面尺寸</span><strong>{{ currentBoardDimensions }}</strong></div
                 >
                 <div
                   ><span>中獎倍率</span><strong>×{{ currentBoardStage.winMultiplier }}</strong></div
@@ -295,14 +367,20 @@
               />
             </section>
           </div>
-        </ElTabPane>
+          <ElAlert
+            v-else
+            class="replay-unavailable"
+            title="此注單未提供保存盤面素材"
+            description="系統不會重新產生盤面或重跑 RNG；可用資料仍會如實保留。"
+            type="info"
+            :closable="false"
+            show-icon
+          />
 
-        <ElTabPane
-          v-if="bet.result.replay.supportsResultReplay || bet.result.replay.supportsEventReplay"
-          label="結果重播"
-          name="replay"
-        >
-          <div class="tab-panel replay-layout">
+          <div
+            v-if="bet.result.replay.supportsResultReplay || bet.result.replay.supportsEventReplay"
+            class="tab-panel replay-layout"
+          >
             <ElAlert
               v-if="route.query.alertId"
               class="risk-source-alert"
@@ -404,90 +482,15 @@
               </div>
             </section>
           </div>
-        </ElTabPane>
-
-        <ElTabPane label="關聯交易" name="transactions">
-          <div class="tab-panel">
-            <div class="section-title"
-              ><div><h3>關聯交易</h3><p>同一局號下的投注扣款與派彩入帳。</p></div></div
-            >
-            <ElTable :data="relatedTransactions" border empty-text="尚無關聯交易">
-              <ElTableColumn label="交易編號" width="135"
-                ><template #default="scope"
-                  ><EntityLink
-                    :label="scope.row.id"
-                    :to="`/transactions/records/${scope.row.id}`" /></template
-              ></ElTableColumn>
-              <ElTableColumn label="類型" width="100"
-                ><template #default="scope">{{
-                  transactionTypeLabel(scope.row.type)
-                }}</template></ElTableColumn
-              >
-              <ElTableColumn label="金額" width="150" align="right"
-                ><template #default="scope"
-                  ><span :class="scope.row.amount >= 0 ? 'positive' : 'negative'"
-                    >{{ money(scope.row.amount) }} {{ scope.row.currency }}</span
-                  ></template
-                ></ElTableColumn
-              >
-              <ElTableColumn label="狀態" width="100"
-                ><template #default="scope"
-                  ><ElTag :type="transactionStatusType(scope.row.status)">{{
-                    transactionStatusLabel(scope.row.status)
-                  }}</ElTag></template
-                ></ElTableColumn
-              >
-              <ElTableColumn prop="externalReference" label="外部參考號" min-width="200" />
-              <ElTableColumn prop="time" label="交易時間" width="160" />
-            </ElTable>
-          </div>
-        </ElTabPane>
-
-        <ElTabPane label="異常紀錄" name="anomalies">
-          <div class="tab-panel">
-            <div class="section-title"
-              ><div><h3>異常與風控案件</h3><p>案件處理統一在風控中心進行。</p></div></div
-            >
-            <ElTable :data="anomalies" border empty-text="此注單尚無異常紀錄">
-              <ElTableColumn prop="id" label="異常編號" width="120" />
-              <ElTableColumn prop="type" label="異常類型" min-width="190" />
-              <ElTableColumn label="風險等級" width="100"
-                ><template #default="scope"
-                  ><ElTag :type="scope.row.riskLevel === 'High' ? 'danger' : 'warning'">{{
-                    scope.row.riskLevel === 'High'
-                      ? '高'
-                      : scope.row.riskLevel === 'Medium'
-                        ? '中'
-                        : '低'
-                  }}</ElTag></template
-                ></ElTableColumn
-              >
-              <ElTableColumn label="關聯交易" width="140"
-                ><template #default="scope"
-                  ><EntityLink
-                    v-if="scope.row.transactionId"
-                    :label="scope.row.transactionId"
-                    :to="`/transactions/records/${scope.row.transactionId}`"
-                  /><span v-else>—</span></template
-                ></ElTableColumn
-              >
-              <ElTableColumn label="風控案件" width="130"
-                ><template #default="scope"
-                  ><EntityLink
-                    v-if="scope.row.riskCaseId"
-                    :label="scope.row.riskCaseId"
-                    :to="`/risk/cases/${scope.row.riskCaseId}`"
-                  /><span v-else>尚未建案</span></template
-                ></ElTableColumn
-              >
-              <ElTableColumn label="狀態" width="100"
-                ><template #default="scope">{{
-                  anomalyStatusLabel(scope.row.status)
-                }}</template></ElTableColumn
-              >
-              <ElTableColumn prop="occurredAt" label="發生時間" width="160" />
-            </ElTable>
-          </div>
+          <ElAlert
+            v-else
+            class="replay-unavailable"
+            title="此注單未提供事件重播素材"
+            description="僅顯示已保存的歷史資料，不會重新執行遊戲或產生結果。"
+            type="info"
+            :closable="false"
+            show-icon
+          />
         </ElTabPane>
 
         <ElTabPane v-if="canViewRawResult" label="原始結果" name="raw">
@@ -552,7 +555,10 @@
     MemberTransactionStatus,
     MemberTransactionType
   } from '@/types/game-provider'
-  import { useTransactionCenterStore } from '@/store/modules/transactionCenter'
+  import {
+    formatBoardDimensions,
+    useTransactionCenterStore
+  } from '@/store/modules/transactionCenter'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import EntityLink from '@/components/business/game-provider/entity-link/index.vue'
 
@@ -561,7 +567,13 @@
   const router = useRouter()
   const store = useTransactionCenterStore()
   const { width } = useWindowSize()
-  const activeTab = ref(String(route.query.tab || 'overview'))
+  const normalizeTab = (tab: unknown) =>
+    String(tab || 'overview') === 'board' ? 'replay' : String(tab || 'overview')
+  const activeTab = ref(normalizeTab(route.query.tab))
+  const listReturnPath = computed(() => {
+    const target = String(route.query.returnTo || '')
+    return target.startsWith('/transactions/bets') ? target : '/transactions/bets'
+  })
   const descriptionColumns = computed(() => (width.value < 760 ? 1 : 2))
   const bet = computed(() => store.findBet(String(route.params.id)))
   const relatedTransactions = computed(() =>
@@ -580,6 +592,9 @@
     () =>
       (bet.value?.result.replay.stages[boardStageIndex.value] ||
         bet.value?.result.replay.stages[0])!
+  )
+  const currentBoardDimensions = computed(() =>
+    formatBoardDimensions(currentBoardStage.value.columns, currentBoardStage.value.rows)
   )
   const currentReplayEvent = computed(() => replayEvents.value[currentEventIndex.value]!)
   const replayProgress = computed(() =>
@@ -771,8 +786,8 @@
     `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
   const trackTabAccess = (tab: string) => {
     if (!bet.value) return
-    if (tab === 'board') store.logBetResultAccess(bet.value.id, 'View Board', '查看歷史靜態盤面')
-    if (tab === 'replay') store.logBetResultAccess(bet.value.id, 'Start Replay', '開啟結果重播頁面')
+    if (tab === 'replay' && bet.value.result.replay.supportsBoardDisplay)
+      store.logBetResultAccess(bet.value.id, 'View Board', '查看歷史靜態盤面與重播')
     if (tab === 'raw')
       store.logBetResultAccess(bet.value.id, 'View Raw Result', '查看原始 JSON 結果')
   }
@@ -781,10 +796,6 @@
     trackTabAccess(target)
     if (target !== 'replay') stopPlayback()
     router.replace({ query: { ...route.query, tab: target } })
-  }
-  const openTab = (tab: string) => {
-    activeTab.value = tab
-    syncTab(tab)
   }
   const copyRawPayload = async () => {
     if (!bet.value) return
@@ -807,7 +818,7 @@
   watch(
     () => [route.query.tab, route.query.eventId, route.query.stageId],
     ([tab]) => {
-      if (tab) activeTab.value = String(tab)
+      if (tab) activeTab.value = normalizeTab(tab)
       applyReplayLocation()
     }
   )

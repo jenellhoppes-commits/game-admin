@@ -30,6 +30,7 @@
         <ArtIconButton
           v-if="isLeftMenu && shouldShowMenuButton"
           icon="ri:menu-2-fill"
+          :aria-label="menuOpen ? '收合側欄' : '展開側欄'"
           class="ml-3 max-sm:ml-[7px]"
           @click="visibleMenu"
         />
@@ -38,6 +39,7 @@
         <ArtIconButton
           v-if="shouldShowRefreshButton"
           icon="ri:refresh-line"
+          aria-label="重新整理頁面"
           class="!ml-3 refresh-btn max-sm:!hidden"
           :style="{ marginLeft: !isLeftMenu ? '10px' : '0' }"
           @click="reload"
@@ -45,7 +47,7 @@
 
         <!-- 快速入口 -->
         <ArtFastEnter v-if="shouldShowFastEnter && width >= headerBarFastEnterMinWidth">
-          <ArtIconButton icon="ri:function-line" class="ml-3" />
+          <ArtIconButton icon="ri:function-line" aria-label="開啟快速入口" class="ml-3" />
         </ArtFastEnter>
 
         <!-- 面包屑 -->
@@ -66,6 +68,7 @@
             <span class="context-item"><ArtSvgIcon icon="ri:server-line" />正式環境</span>
           </ElTag>
           <ElBadge
+            v-if="!router.currentRoute.value.path.startsWith('/agent') && !router.currentRoute.value.path.startsWith('/merchant')"
             :value="approvalStore.pendingItems.length"
             :hidden="!approvalStore.pendingItems.length"
           >
@@ -97,6 +100,7 @@
         <ArtIconButton
           v-if="shouldShowNotification"
           icon="ri:notification-2-line"
+          aria-label="開啟通知"
           class="notice-button relative"
           @click="visibleNotice"
         >

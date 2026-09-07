@@ -66,7 +66,7 @@
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
           :total="filteredLogs.length"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[20, 50, 100]"
           layout="total, sizes, prev, pager, next"
         />
       </div>

@@ -52,6 +52,7 @@ import { fetchGetUserInfo } from '@/api/auth'
 import { ApiStatus } from '@/utils/http/status'
 import { isHttpError } from '@/utils/http/error'
 import { RouteRegistry, MenuProcessor, IframeRouteManager, RoutePermissionValidator } from '../core'
+import { getPortalHome, isPortalPathAllowed } from '@/config/partner-portals'
 
 // 路由注册器实例
 let routeRegistry: RouteRegistry | null = null
@@ -180,6 +181,22 @@ async function handleRouteGuard(
     return
   }
 
+  if (userStore.isLogin) {
+    // 未知、空白或跨後台混合角色直接撤銷登入，不允許推定為管理者。
+    const portalHome = getPortalHome(userStore.info.roles || [])
+    if (!portalHome) {
+      userStore.logOut(false)
+      next({ name: 'Login', replace: true })
+      return
+    }
+
+    // 即使舊動態路由仍在瀏覽器中，也以目前登入角色再次核對命名空間。
+    if (!isPortalPathAllowed(to.path, userStore.info.roles || [])) {
+      next({ path: portalHome, replace: true })
+      return
+    }
+  }
+
   // 4. 处理根路径重定向
   if (handleRootPathRedirect(to, next)) {
     return
@@ -269,6 +286,23 @@ async function handleDynamicRoutes(
     // 1. 获取用户信息
     await fetchUserInfo()
 
+    const userStore = useUserStore()
+    const portalHome = getPortalHome(userStore.info.roles || [])
+    if (!portalHome) {
+      routeInitInProgress = false
+      closeLoading()
+      userStore.logOut(false)
+      next({ name: 'Login', replace: true })
+      return
+    }
+
+    if (!isPortalPathAllowed(to.path, userStore.info.roles || [])) {
+      routeInitInProgress = false
+      closeLoading()
+      next({ path: portalHome, replace: true })
+      return
+    }
+
     // 2. 获取菜单数据
     const menuList = await menuProcessor.getMenuList()
 
@@ -346,7 +380,8 @@ async function handleDynamicRoutes(
     if (isUnauthorizedError(error)) {
       // 重置状态，允许重新登录后再次初始化
       routeInitInProgress = false
-      next(false)
+      useUserStore().logOut(false)
+      next({ name: 'Login', replace: true })
       return
     }
 

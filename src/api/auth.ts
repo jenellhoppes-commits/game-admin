@@ -21,17 +21,23 @@ const localUsers: Record<
     roles: ['R_ADMIN'],
     email: 'admin@game-provider.local'
   },
-  user: {
+  agent: {
     password: '123456',
-    userId: 3,
-    roles: ['R_USER'],
-    email: 'user@game-provider.local'
+    userId: 101,
+    roles: ['R_AGENT'],
+    email: 'agent@game-provider.local'
+  },
+  merchant: {
+    password: '123456',
+    userId: 201,
+    roles: ['R_MERCHANT'],
+    email: 'merchant@game-provider.local'
   }
 }
 
 const getLocalUser = (userName?: string) => {
-  const key = (userName || localStorage.getItem(LOCAL_USER_KEY) || 'super').toLowerCase()
-  return { key, profile: localUsers[key] || localUsers.super }
+  const key = (userName || localStorage.getItem(LOCAL_USER_KEY) || '').toLowerCase()
+  return { key, profile: localUsers[key] }
 }
 
 /**
@@ -42,7 +48,7 @@ const getLocalUser = (userName?: string) => {
 export async function fetchLogin(params: Api.Auth.LoginParams): Promise<Api.Auth.LoginResponse> {
   if (isFrontendMode) {
     const { key, profile } = getLocalUser(params.userName)
-    if (!localUsers[key] || profile.password !== params.password) {
+    if (!profile || profile.password !== params.password) {
       throw new HttpError('帳號或密碼錯誤', ApiStatus.unauthorized)
     }
 
@@ -68,11 +74,26 @@ export async function fetchLogin(params: Api.Auth.LoginParams): Promise<Api.Auth
 export async function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
   if (isFrontendMode) {
     const { key, profile } = getLocalUser()
+    if (!profile) {
+      localStorage.removeItem(LOCAL_USER_KEY)
+      throw new HttpError('登入身分已失效，請重新登入', ApiStatus.unauthorized)
+    }
     return {
-      buttons: ['add', 'edit', 'delete', 'export', 'approve'],
+      buttons: profile.roles.some((role) => role === 'R_AGENT' || role === 'R_MERCHANT')
+        ? ['view', 'export']
+        : ['add', 'edit', 'delete', 'export', 'approve'],
       roles: profile.roles,
       userId: profile.userId,
-      userName: key === 'super' ? 'Super Admin' : key === 'admin' ? 'Admin' : 'Demo User',
+      userName:
+        key === 'super'
+          ? 'Super Admin'
+          : key === 'admin'
+            ? 'Admin'
+            : key === 'agent'
+              ? '示範代理'
+              : key === 'merchant'
+                ? '示範商戶'
+                : 'Demo User',
       email: profile.email
     }
   }

@@ -74,6 +74,7 @@
         :data="pagedRows"
         :columns="columns"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [20, 50, 100] }"
         :loading="loading"
         height="540"
         row-key="id"
@@ -169,7 +170,7 @@
     status?: AgentStatus
     updatedAt?: [string, string]
   }>({})
-  const pagination = reactive({ current: 1, size: 10, total: rows.value.length })
+  const pagination = reactive({ current: 1, size: 20, total: rows.value.length })
   const activeCount = computed(() => rows.value.filter((agent) => agent.status === 'Active').length)
   const levelSummary = computed(() => [
     {

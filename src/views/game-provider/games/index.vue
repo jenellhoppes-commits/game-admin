@@ -53,6 +53,7 @@
         :data="pagedRows"
         :columns="columns"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [20, 50, 100] }"
         :loading="loading"
         height="540"
         row-key="id"
@@ -150,7 +151,7 @@
   const activationVisible = ref(false)
   const activationTarget = ref<GameRecord>()
   const batchTagVisible = ref(false)
-  const pagination = reactive({ current: 1, size: 10, total: rows.value.length })
+  const pagination = reactive({ current: 1, size: 20, total: rows.value.length })
   const searchForm = ref<{
     keyword?: string
     typeId?: string

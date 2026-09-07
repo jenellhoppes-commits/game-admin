@@ -6,16 +6,20 @@
     </div>
 
     <div class="flex-c md:justify-end max-md:mt-3 max-sm:!hidden">
-      <div
+      <button
         v-if="showSearchBar != null"
+        type="button"
+        :aria-label="showSearchBar ? '收合搜尋條件' : '展開搜尋條件'"
         class="button"
         @click="search"
         :class="showSearchBar ? 'active !bg-theme hover:!bg-theme/80' : ''"
       >
         <ArtSvgIcon icon="ri:search-line" :class="showSearchBar ? 'text-white' : 'text-g-700'" />
-      </div>
-      <div
+      </button>
+      <button
         v-if="shouldShow('refresh')"
+        type="button"
+        aria-label="重新整理列表"
         class="button"
         @click="refresh"
         :class="{ loading: loading && isManualRefresh }"
@@ -24,12 +28,12 @@
           icon="ri:refresh-line"
           :class="loading && isManualRefresh ? 'animate-spin text-g-600' : ''"
         />
-      </div>
+      </button>
 
       <ElDropdown v-if="shouldShow('size')" @command="handleTableSizeChange">
-        <div class="button">
+        <button type="button" class="button" aria-label="調整表格密度">
           <ArtSvgIcon icon="ri:arrow-up-down-fill" />
-        </div>
+        </button>
         <template #dropdown>
           <ElDropdownMenu>
             <div
@@ -49,16 +53,22 @@
         </template>
       </ElDropdown>
 
-      <div v-if="shouldShow('fullscreen')" class="button" @click="toggleFullScreen">
+      <button
+        v-if="shouldShow('fullscreen')"
+        type="button"
+        class="button"
+        :aria-label="isFullScreen ? '退出表格全螢幕' : '表格全螢幕'"
+        @click="toggleFullScreen"
+      >
         <ArtSvgIcon :icon="isFullScreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-line'" />
-      </div>
+      </button>
 
       <!-- 列设置 -->
       <ElPopover v-if="shouldShow('columns')" placement="bottom" trigger="click">
         <template #reference>
-          <div class="button">
+          <button type="button" class="button" aria-label="設定顯示欄位">
             <ArtSvgIcon icon="ri:align-right" />
-          </div>
+          </button>
         </template>
         <div>
           <ElScrollbar max-height="380px">
@@ -101,9 +111,9 @@
       <!-- 其他设置 -->
       <ElPopover v-if="shouldShow('settings')" placement="bottom" trigger="click">
         <template #reference>
-          <div class="button">
+          <button type="button" class="button" aria-label="開啟表格顯示設定">
             <ArtSvgIcon icon="ri:settings-line" />
-          </div>
+          </button>
         </template>
         <div>
           <ElCheckbox v-if="showZebra" v-model="isZebra" :value="true">{{

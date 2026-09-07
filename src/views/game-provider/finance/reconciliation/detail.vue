@@ -85,12 +85,6 @@
               <ElDescriptionsItem v-if="isAgent" label="納入商戶數">{{
                 agentRecord!.merchantCount
               }}</ElDescriptionsItem>
-              <ElDescriptionsItem v-if="isSupplier" label="供應商">
-                {{ supplierRecord!.supplierCode }}｜{{ supplierRecord!.supplierName }}
-              </ElDescriptionsItem>
-              <ElDescriptionsItem v-if="isSupplier" label="納入遊戲數">{{
-                supplierRecord!.gameCount
-              }}</ElDescriptionsItem>
               <ElDescriptionsItem label="交易幣別">{{
                 record.snapshot.transactionCurrency
               }}</ElDescriptionsItem>
@@ -369,35 +363,27 @@
   const store = useFinanceCenterStore()
   const { width } = useWindowSize()
   const isMerchant = computed(() => route.name === 'MerchantReconciliationDetail')
-  const isSupplier = computed(() => route.name === 'SupplierReconciliationDetail')
-  const isAgent = computed(() => !isMerchant.value && !isSupplier.value)
+  const isAgent = computed(() => !isMerchant.value)
   const merchantRecord = computed(() =>
     isMerchant.value ? store.findMerchantReconciliation(String(route.params.id)) : undefined
   )
   const agentRecord = computed(() =>
     isAgent.value ? store.findAgentReconciliation(String(route.params.id)) : undefined
   )
-  const supplierRecord = computed(() =>
-    isSupplier.value ? store.findSupplierReconciliation(String(route.params.id)) : undefined
-  )
-  const record = computed(() => merchantRecord.value || agentRecord.value || supplierRecord.value)
+  const record = computed(() => merchantRecord.value || agentRecord.value)
   const recordTitle = computed(
     () =>
-      supplierRecord.value?.supplierName ||
       merchantRecord.value?.merchantName ||
       agentRecord.value?.agentName ||
       ''
   )
   const recordEyebrow = computed(() =>
-    isSupplier.value ? '供應商對帳詳細' : isMerchant.value ? '商戶對帳詳細' : '代理對帳詳細'
+    isMerchant.value ? '商戶對帳詳細' : '代理對帳詳細'
   )
   const recordDescription = computed(() =>
     record.value
       ? `${record.value.id} · ${record.value.period} · ${
-          supplierRecord.value?.supplierCode ||
-          merchantRecord.value?.lineUid ||
-          agentRecord.value?.agentCode ||
-          ''
+          merchantRecord.value?.lineUid || agentRecord.value?.agentCode || ''
         }`
       : ''
   )
@@ -514,9 +500,7 @@
   const confirm = () => {
     if (!record.value || (confirmAdjustment.value !== 0 && !confirmForm.note.trim()))
       return ElMessage.warning('有增減金額時，請填寫尾差原因')
-    const success = isSupplier.value
-      ? store.confirmSupplier(record.value.id, confirmForm.actualAmount, confirmForm.note)
-      : isMerchant.value
+    const success = isMerchant.value
         ? store.confirmMerchant(record.value.id, confirmForm.actualAmount, confirmForm.note)
         : store.confirmAgent(record.value.id, confirmForm.actualAmount, confirmForm.note)
     if (success) {

@@ -117,8 +117,14 @@
   import { useI18n } from 'vue-i18n'
   import { HttpError } from '@/utils/http/error'
   import { fetchLogin } from '@/api/auth'
-  import { ElNotification, type FormInstance, type FormRules } from 'element-plus'
+  import { ElMessage, ElNotification, type FormInstance, type FormRules } from 'element-plus'
   import { useSettingStore } from '@/store/modules/setting'
+  import {
+    DEMO_PORTAL_ACCOUNTS,
+    isDemoAccountAllowedForPortal,
+    resolvePortalRedirect,
+    type PortalKind
+  } from '@/config/partner-portals'
 
   defineOptions({ name: 'Login' })
 
@@ -132,37 +138,37 @@
     formKey.value++
   })
 
-  type AccountKey = 'super' | 'admin' | 'user'
+  type AccountKey = PortalKind
 
   export interface Account {
     key: AccountKey
     label: string
     userName: string
     password: string
-    roles: string[]
+    hint: string
   }
 
   const accounts = computed<Account[]>(() => [
     {
-      key: 'super',
-      label: t('login.roles.super'),
-      userName: 'Super',
-      password: '123456',
-      roles: ['R_SUPER']
-    },
-    {
       key: 'admin',
-      label: t('login.roles.admin'),
-      userName: 'Admin',
-      password: '123456',
-      roles: ['R_ADMIN']
+      label: '管理者後台',
+      userName: DEMO_PORTAL_ACCOUNTS.super.userName,
+      password: DEMO_PORTAL_ACCOUNTS.super.password,
+      hint: '平台全域管理'
     },
     {
-      key: 'user',
-      label: t('login.roles.user'),
-      userName: 'User',
-      password: '123456',
-      roles: ['R_USER']
+      key: 'agent',
+      label: '代理後台',
+      userName: DEMO_PORTAL_ACCOUNTS.agent.userName,
+      password: DEMO_PORTAL_ACCOUNTS.agent.password,
+      hint: '代理授權範圍'
+    },
+    {
+      key: 'merchant',
+      label: '商戶後台',
+      userName: DEMO_PORTAL_ACCOUNTS.merchant.userName,
+      password: DEMO_PORTAL_ACCOUNTS.merchant.password,
+      hint: '商戶與授權線路'
     }
   ])
 
@@ -192,7 +198,7 @@
   const loading = ref(false)
 
   onMounted(() => {
-    setupAccount('super')
+    setupAccount('admin')
   })
 
   // 设置账号
@@ -223,6 +229,11 @@
       // 登录请求
       const { username, password } = formData
 
+      if (!isDemoAccountAllowedForPortal(username, formData.account as PortalKind)) {
+        ElMessage.error('所選後台入口與帳號不相符，請確認後再登入')
+        return
+      }
+
       const { token, refreshToken } = await fetchLogin({
         userName: username,
         password
@@ -241,8 +252,8 @@
       showLoginSuccessNotice()
 
       // 获取 redirect 参数，如果存在则跳转到指定页面，否则跳转到首页
-      const redirect = route.query.redirect as string
-      router.push(redirect || '/')
+      const redirect = route.query.redirect as string | undefined
+      router.push(resolvePortalRedirect(redirect, formData.account as PortalKind))
     } catch (error) {
       // 处理 HttpError
       if (error instanceof HttpError) {

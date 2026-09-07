@@ -27,7 +27,7 @@
     </div>
 
     <ElCard class="filter-card" shadow="never">
-      <ElForm :model="filters" inline>
+      <ElForm :model="filters" inline @submit.prevent="applyFilters">
         <ElFormItem label="關鍵字">
           <ElInput v-model="filters.keyword" clearable :placeholder="pageCopy.placeholder" />
         </ElFormItem>
@@ -47,9 +47,7 @@
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem
-          ><ElButton type="primary" @click="pagination.current = 1">查詢</ElButton></ElFormItem
-        >
+        <ElFormItem><ElButton type="primary" native-type="submit">查詢</ElButton></ElFormItem>
         <ElFormItem><ElButton @click="reset">重置</ElButton></ElFormItem>
       </ElForm>
     </ElCard>
@@ -72,13 +70,6 @@
           </template>
         </ElTableColumn>
         <ElTableColumn v-if="isMerchant" label="商戶線路" prop="lineUid" min-width="180" />
-        <ElTableColumn
-          v-else-if="isSupplier"
-          label="遊戲數"
-          prop="gameCount"
-          width="90"
-          align="right"
-        />
         <ElTableColumn v-else label="商戶數" prop="merchantCount" width="90" align="right" />
         <ElTableColumn label="投注筆數" prop="betCount" width="110" align="right" />
         <ElTableColumn label="有效投注" min-width="145" align="right">
@@ -127,7 +118,7 @@
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
           :total="filteredRows.length"
-          :page-sizes="[10, 20, 50]"
+          :page-sizes="[20, 50, 100]"
           layout="total, sizes, prev, pager, next"
         />
       </div>
@@ -146,16 +137,8 @@
   const router = useRouter()
   const store = useFinanceCenterStore()
   const isMerchant = computed(() => route.name === 'MerchantReconciliation')
-  const isSupplier = computed(() => route.name === 'SupplierReconciliation')
   const pageCopy = computed(() =>
-    isSupplier.value
-      ? {
-          title: '供應商對帳',
-          description: '按遊戲供應商核對投注、派彩、分潤與最終實付金額。',
-          placeholder: '供應商或對帳編號',
-          tableTitle: '供應商對帳清單'
-        }
-      : isMerchant.value
+    isMerchant.value
         ? {
             title: '商戶對帳',
             description: '按商戶線路與交易幣別核對投注、派彩、獎池及應結金額。',
@@ -170,7 +153,7 @@
           }
   )
   const filters = reactive({ keyword: '', period: '', status: '' })
-  const pagination = reactive({ current: 1, size: 10 })
+  const pagination = reactive({ current: 1, size: 20 })
   const statusOptions: FinanceReconciliationStatus[] = [
     'Draft',
     'Pending Confirmation',
@@ -180,20 +163,14 @@
     'Cancelled'
   ]
   const records = computed(() =>
-    isSupplier.value
-      ? store.supplierReconciliations
-      : isMerchant.value
+    isMerchant.value
         ? store.merchantReconciliations
         : store.agentReconciliations
   )
   const filteredRows = computed(() =>
     records.value.filter((record) => {
       const searchable = `${record.id} ${recordName(record)} ${
-        'merchantCode' in record
-          ? `${record.merchantCode} ${record.lineUid}`
-          : 'supplierCode' in record
-            ? record.supplierCode
-            : record.agentCode
+        'merchantCode' in record ? `${record.merchantCode} ${record.lineUid}` : record.agentCode
       }`
       return (
         (!filters.keyword || searchable.toLowerCase().includes(filters.keyword.toLowerCase())) &&
@@ -214,6 +191,7 @@
     filters.status = status
     pagination.current = 1
   }
+  const applyFilters = () => (pagination.current = 1)
   const reset = () => {
     filters.keyword = ''
     filters.period = ''
@@ -222,14 +200,10 @@
   }
   const refresh = () => ElMessage.success('對帳資料已更新')
   const recordName = (record: (typeof records.value)[number]) =>
-    'supplierName' in record
-      ? record.supplierName
-      : 'merchantName' in record
-        ? record.merchantName
-        : record.agentName
+    'merchantName' in record ? record.merchantName : record.agentName
   const openDetail = (id: string) =>
     router.push(
-      `/finance/reconciliation/${isSupplier.value ? 'suppliers' : isMerchant.value ? 'merchants' : 'agents'}/${id}`
+      `/finance/reconciliation/${isMerchant.value ? 'merchants' : 'agents'}/${id}`
     )
   const openDifferences = (id: string) =>
     router.push({ path: '/finance/reconciliation/differences', query: { reconciliationId: id } })

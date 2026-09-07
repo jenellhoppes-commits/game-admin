@@ -3,7 +3,7 @@
     <AppPageHeader
       title="異動紀錄"
       eyebrow="對帳／結算"
-      description="集中追蹤供應商、代理、商戶對帳，以及差異調整與結算結果。"
+      description="集中追蹤代理、商戶對帳，以及差異調整與結算結果。"
       ><template #actions
         ><ElButton @click="ElMessage.success('異動紀錄已匯出')">匯出</ElButton></template
       ></AppPageHeader
@@ -68,7 +68,6 @@
   const store = useFinanceCenterStore()
   const filters = reactive({ keyword: '', entityType: '' })
   const entityOptions = [
-    { label: '供應商對帳', value: 'Supplier Reconciliation' },
     { label: '代理對帳', value: 'Agent Reconciliation' },
     { label: '商戶對帳', value: 'Merchant Reconciliation' },
     { label: '差異處理', value: 'Difference' }
@@ -77,7 +76,6 @@
     store.actionLogs
       .filter((item) =>
         [
-          'Supplier Reconciliation',
           'Agent Reconciliation',
           'Merchant Reconciliation',
           'Difference'
@@ -99,14 +97,12 @@
   }
   const entityLabel = (type: string) =>
     ({
-      'Supplier Reconciliation': '供應商對帳',
       'Agent Reconciliation': '代理對帳',
       'Merchant Reconciliation': '商戶對帳',
       Difference: '差異處理'
     })[type] || type
   const openEntity = (type: string, id: string) => {
-    if (type === 'Supplier Reconciliation') router.push(`/finance/reconciliation/suppliers/${id}`)
-    else if (type === 'Merchant Reconciliation')
+    if (type === 'Merchant Reconciliation')
       router.push(`/finance/reconciliation/merchants/${id}`)
     else if (type === 'Agent Reconciliation') router.push(`/finance/reconciliation/agents/${id}`)
     else if (type === 'Difference')

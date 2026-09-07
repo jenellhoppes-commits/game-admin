@@ -478,13 +478,6 @@ Object.assign(businessModuleDefinitions, {
     '按商戶與結算週期核對交易、GGR、費率與差異。',
     '建立對帳'
   ),
-  '/supplier-reconciliation': skeletonModule(
-    '/finance/reconciliation/suppliers',
-    '供應商對帳',
-    '對帳／結算',
-    '按遊戲供應商與結算週期核對投注、派彩、分潤與實付金額。',
-    '建立對帳'
-  ),
   '/agent-reconciliation': skeletonModule(
     '/finance/agent-reconciliation',
     '代理對帳',

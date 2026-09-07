@@ -45,6 +45,7 @@
         :columns="columns"
         :loading="loading"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [20, 50, 100] }"
         height="560"
         row-key="id"
         @pagination:size-change="handleSizeChange"
@@ -71,7 +72,7 @@
   const loading = ref(false)
   const searchForm = ref<Record<string, unknown>>({})
   const filteredRows = ref<JackpotPoolRecord[]>([...store.pools])
-  const pagination = reactive({ current: 1, size: 10, total: store.pools.length })
+  const pagination = reactive({ current: 1, size: 20, total: store.pools.length })
   const typeOptions: Array<{ label: string; value: JackpotType }> = [
     { label: '單一遊戲獎池', value: 'Single Game' },
     { label: '多遊戲共享獎池', value: 'Shared Games' },

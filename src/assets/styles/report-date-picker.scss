@@ -1,0 +1,29 @@
+@media (max-width: 767px) {
+  .report-date-panel .el-date-range-picker {
+    width: calc(100vw - 24px);
+  }
+  .report-date-panel .el-picker-panel__body-wrapper {
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+  .report-date-panel .el-picker-panel__sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--el-border-color-light);
+  }
+  .report-date-panel .el-picker-panel__sidebar + .el-picker-panel__body {
+    display: block;
+    min-width: 0;
+    margin-left: 0;
+  }
+  .report-date-panel .el-date-range-picker .el-date-range-picker__content {
+    display: block;
+    float: none;
+    flex: none;
+    width: 100%;
+    border-left: 0;
+  }
+}

@@ -538,6 +538,13 @@ export const useBusinessPartnerStore = defineStore('businessPartnerStore', () =>
   const createAgent = (payload: NewAgentPayload) => {
     const now = formatNow()
     const parent = payload.parentAgentId ? findAgent(payload.parentAgentId) : undefined
+    const requiredParentLevel =
+      payload.level === 'L2' ? 'L1' : payload.level === 'L3' ? 'L2' : undefined
+    if (
+      (payload.level === 'L1' && payload.parentAgentId) ||
+      (requiredParentLevel && (!parent || parent.level !== requiredParentLevel))
+    )
+      return undefined
     const agent: AgentRecord = {
       id: nextAgentId(),
       code: payload.code.trim().toUpperCase(),
@@ -586,9 +593,27 @@ export const useBusinessPartnerStore = defineStore('businessPartnerStore', () =>
 
   const updateAgent = (id: string, updates: Partial<AgentRecord>, reason: string) => {
     const agent = findAgent(id)
-    if (!agent) return
+    if (!agent) return false
+    const level = updates.level ?? agent.level
+    const hasParentUpdate = Object.prototype.hasOwnProperty.call(updates, 'parentAgentId')
+    const parentAgentId = hasParentUpdate ? updates.parentAgentId : agent.parentAgentId
+    const parent = parentAgentId ? findAgent(parentAgentId) : undefined
+    const requiredParentLevel = level === 'L2' ? 'L1' : level === 'L3' ? 'L2' : undefined
+    if (
+      (level === 'L1' && parentAgentId) ||
+      (requiredParentLevel && (!parent || parent.level !== requiredParentLevel)) ||
+      (parentAgentId &&
+        (parentAgentId === id || getDescendants(id).some((item) => item.id === parentAgentId)))
+    )
+      return false
     const before = JSON.stringify(agent)
-    Object.assign(agent, JSON.parse(JSON.stringify(updates)), { updatedAt: formatNow() })
+    const safeUpdates = JSON.parse(JSON.stringify(updates)) as Partial<AgentRecord>
+    delete safeUpdates.parentAgent
+    Object.assign(agent, safeUpdates, {
+      parentAgentId: parent?.id,
+      parentAgent: parent?.name || '—',
+      updatedAt: formatNow()
+    })
     refreshCounts()
     addAudit(id, {
       action: '編輯代理資料',
@@ -598,6 +623,7 @@ export const useBusinessPartnerStore = defineStore('businessPartnerStore', () =>
       before,
       after: JSON.stringify(agent)
     })
+    return true
   }
 
   const canAssignParent = (agentId: string, parentId: string) => {

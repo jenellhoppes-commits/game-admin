@@ -130,6 +130,11 @@ export function initializeTheme() {
   const settingStore = useSettingStore()
   const prefersDark = usePreferredDark()
 
+  // 將舊版低對比主色遷移至符合 WCAG AA 的新版主色。
+  if (settingStore.systemThemeColor.toUpperCase() === '#5D87FF') {
+    settingStore.setElementTheme(AppConfig.systemMainColor[0])
+  }
+
   // 根据系统偏好应用主题
   const applyThemeByMode = () => {
     const el = document.getElementsByTagName('html')[0]
