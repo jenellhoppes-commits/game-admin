@@ -83,6 +83,7 @@
       >
     </ElCard>
     <ElDrawer
+      class="merchant-drawer"
       :model-value="Boolean(route.query.detail)"
       :title="title + '明細'"
       size="min(760px, 100vw)"

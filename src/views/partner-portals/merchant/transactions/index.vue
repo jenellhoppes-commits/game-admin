@@ -25,6 +25,7 @@
       ></ElCard
     >
     <ElDrawer
+      class="merchant-drawer"
       :model-value="Boolean(route.query.detail)"
       :title="isMembers ? '會員明細' : mode === 'bets' ? '下注明細' : '資金交易明細'"
       size="min(960px, 100vw)"

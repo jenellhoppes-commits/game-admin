@@ -25,6 +25,7 @@
       >
     </ElCard>
     <ElDrawer
+      class="merchant-drawer"
       :model-value="Boolean(route.query.detail || route.query.snapshot)"
       :title="definition.title + '明細'"
       size="min(760px, 100vw)"
