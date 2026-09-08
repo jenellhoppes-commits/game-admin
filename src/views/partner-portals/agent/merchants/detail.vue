@@ -8,7 +8,9 @@
       "
     >
       <template #actions
-        ><ElButton @click="router.push({path:'/agent/merchants',query:route.query})">返回列表</ElButton></template
+        ><ElButton @click="router.push({ path: '/agent/merchants', query: route.query })"
+          >返回列表</ElButton
+        ></template
       >
     </AppPageHeader>
 
@@ -96,8 +98,11 @@
   const relationLabel = computed(() =>
     merchant.value?.agentId === CURRENT_AGENT_ID ? '直屬' : '間接'
   )
-  const currencies = computed(() =>
-    [...new Set(merchant.value?.lines.map((line) => line.currency) || [])].join('、')
+  const currencies = computed(
+    () =>
+      [...new Set(merchant.value?.lines.map((line) => line.currency) || [])].join('、') ||
+      merchant.value?.requestedCurrency ||
+      '未取得'
   )
   const summaries = computed(() =>
     groupAgentMetrics(

@@ -7,8 +7,7 @@ import { useTransactionCenterStore } from './transactionCenter'
 import type {
   AgentCommercialTerm,
   AgentRecord,
-  AgentReconciliationRecord,
-  MerchantRecord
+  AgentReconciliationRecord
 } from '@/types/game-provider'
 
 export const CURRENT_AGENT_ID = 'A00001'
@@ -111,12 +110,15 @@ export function groupAgentMetrics(
   rows: AgentMetricRow[],
   dimension: '代理' | '商戶' | '遊戲' | '幣別'
 ): AgentReportRow[] {
-  const groups = new Map<string, AgentReportRow & {
-    merchantIds: Set<string>
-    lineIds: Set<string>
-    memberIds: Set<string>
-    roundIds: Set<string>
-  }>()
+  const groups = new Map<
+    string,
+    AgentReportRow & {
+      merchantIds: Set<string>
+      lineIds: Set<string>
+      memberIds: Set<string>
+      roundIds: Set<string>
+    }
+  >()
   const seen = new Set<string>()
   rows.forEach((row) => {
     if (seen.has(row.id)) return
@@ -129,7 +131,14 @@ export function groupAgentMetrics(
           : dimension === '遊戲'
             ? row.gameName
             : row.currency
-    const entityId = dimension === '代理' ? row.agentId : dimension === '商戶' ? row.merchantId : dimension === '遊戲' ? row.gameId : row.currency
+    const entityId =
+      dimension === '代理'
+        ? row.agentId
+        : dimension === '商戶'
+          ? row.merchantId
+          : dimension === '遊戲'
+            ? row.gameId
+            : row.currency
     const id = JSON.stringify([dimension, entityId, row.currency])
     const current = groups.get(id) || {
       id,
@@ -160,17 +169,34 @@ export function groupAgentMetrics(
     current.ggr += row.ggr
     groups.set(id, current)
   })
-  return [...groups.values()].map(({ merchantIds: _merchantIds, lineIds: _lineIds, memberIds: _memberIds, roundIds: _roundIds, ...row }) => ({
-    ...row,
-    betAmount: Number(row.betAmount.toFixed(2)),
-    payoutAmount: Number(row.payoutAmount.toFixed(2)),
-    ggr: Number(row.ggr.toFixed(2))
-  }))
+  return [...groups.values()].map(
+    ({
+      merchantIds: _merchantIds,
+      lineIds: _lineIds,
+      memberIds: _memberIds,
+      roundIds: _roundIds,
+      ...row
+    }) => {
+      void [_merchantIds, _lineIds, _memberIds, _roundIds]
+      return {
+        ...row,
+        betAmount: Number(row.betAmount.toFixed(2)),
+        payoutAmount: Number(row.payoutAmount.toFixed(2)),
+        ggr: Number(row.ggr.toFixed(2))
+      }
+    }
+  )
 }
 
 export function getComparableSpread(
-  mine: Pick<AgentCommercialTerm, 'settlementBasis' | 'effectiveFrom' | 'effectiveTo' | 'ratePercent'>,
-  target: Pick<AgentCommercialTerm, 'settlementBasis' | 'effectiveFrom' | 'effectiveTo' | 'ratePercent'>
+  mine: Pick<
+    AgentCommercialTerm,
+    'settlementBasis' | 'effectiveFrom' | 'effectiveTo' | 'ratePercent'
+  >,
+  target: Pick<
+    AgentCommercialTerm,
+    'settlementBasis' | 'effectiveFrom' | 'effectiveTo' | 'ratePercent'
+  >
 ): string {
   if (
     mine.settlementBasis !== target.settlementBasis ||
@@ -296,8 +322,8 @@ export const useAgentPortalStore = defineStore(
 
     const currentAgent = computed(() => businessStore.findAgent(CURRENT_AGENT_ID))
     const descendantAgents = computed(() => businessStore.getDescendants(CURRENT_AGENT_ID))
-    const visibleAgents = computed(() =>
-      [currentAgent.value, ...descendantAgents.value].filter(Boolean) as AgentRecord[]
+    const visibleAgents = computed(
+      () => [currentAgent.value, ...descendantAgents.value].filter(Boolean) as AgentRecord[]
     )
     const visibleAgentIds = computed(() => new Set(visibleAgents.value.map((agent) => agent.id)))
     const directChildren = computed(() => businessStore.getDirectChildren(CURRENT_AGENT_ID))
@@ -326,7 +352,8 @@ export const useAgentPortalStore = defineStore(
       return masterRows.map((row) => {
         const lineKey = JSON.stringify([row.merchantId, row.lineUid])
         const memberIdentity = JSON.stringify([lineKey, row.memberId])
-        if (!memberKeys.has(memberIdentity)) memberKeys.set(memberIdentity, `member-${memberKeys.size}`)
+        if (!memberKeys.has(memberIdentity))
+          memberKeys.set(memberIdentity, `member-${memberKeys.size}`)
         return {
           id: row.id,
           date: row.time.slice(0, 10),
@@ -377,15 +404,25 @@ export const useAgentPortalStore = defineStore(
       )
     )
     const getReconciliationDifferences = (id: string) => {
-      const record = ownReconciliations.value.find(item => item.id === id)
+      const record = ownReconciliations.value.find((item) => item.id === id)
       if (!record) return []
       const included = new Set(record.includedMerchantReconciliationIds)
-      return financeStore.differences.filter(item =>
-        (item.reconciliationType === 'Agent' && item.reconciliationId === record.id && item.agentId === CURRENT_AGENT_ID) ||
-        (item.reconciliationType === 'Merchant' && included.has(item.reconciliationId))
-      ).map(item => ({ id: item.id, reconciliationId: item.reconciliationId,
-        merchantName: item.merchantName || '本代理', description: item.description,
-        status: item.status, resolution: item.resolution }))
+      return financeStore.differences
+        .filter(
+          (item) =>
+            (item.reconciliationType === 'Agent' &&
+              item.reconciliationId === record.id &&
+              item.agentId === CURRENT_AGENT_ID) ||
+            (item.reconciliationType === 'Merchant' && included.has(item.reconciliationId))
+        )
+        .map((item) => ({
+          id: item.id,
+          reconciliationId: item.reconciliationId,
+          merchantName: item.merchantName || '本代理',
+          description: item.description,
+          status: item.status,
+          resolution: item.resolution
+        }))
     }
     const unreadCount = computed(() => notices.value.filter((notice) => !notice.read).length)
 
@@ -400,6 +437,156 @@ export const useAgentPortalStore = defineStore(
       })
     }
 
+    const merchantTermOptions = computed(() => {
+      const ids = new Set(directMerchants.value.map((item) => item.id))
+      return businessStore.merchantCommercialTerms.filter(
+        (term) => ids.has(term.merchantId) && term.status === 'Active'
+      )
+    })
+    const nextMasterId = (prefix: string, records: { id: string }[]) =>
+      prefix +
+      String(Math.max(0, ...records.map((item) => Number(item.id.slice(1)) || 0)) + 1).padStart(
+        5,
+        '0'
+      )
+
+    const createChildAgent = (input: { parentId: string; name: string; reason?: string }) => {
+      if (!hasPermission('relations:manage')) return { ok: false, message: '沒有新增代理權限' }
+      const parent = businessStore.findAgent(input.parentId)
+      if (!parent || !visibleAgentIds.value.has(parent.id) || parent.status !== 'Active')
+        return { ok: false, message: '上級代理不存在、已停用或超出授權範圍' }
+      if (levelNumber(parent) >= 3) return { ok: false, message: 'L3 不能再新增下級' }
+      const name = input.name.trim()
+      if (!name || name.length > 80) return { ok: false, message: '請填寫 1 至 80 字的代理名稱' }
+      if (businessStore.getDirectChildren(parent.id).some((item) => item.name === name))
+        return { ok: false, message: '此上級已有同名下級代理' }
+      const id = nextMasterId('A', businessStore.agents)
+      let code = 'AG-' + id
+      while (!businessStore.isCodeAvailable(code)) code += '-N'
+      businessStore.agents.unshift({
+        id,
+        code,
+        name,
+        level: parent.level === 'L1' ? 'L2' : 'L3',
+        parentAgentId: parent.id,
+        parentAgent: parent.name,
+        childAgentCount: 0,
+        merchantCount: 0,
+        currency: parent.currency,
+        contact: '',
+        note: input.reason?.trim(),
+        status: 'Active',
+        createdAt: now(),
+        updatedAt: now()
+      })
+      parent.childAgentCount = businessStore.getDirectChildren(parent.id).length
+      addLog('直接新增下級代理', parent.code + '／' + code, '已建立')
+      return { ok: true, message: '下級代理已建立', id }
+    }
+
+    const createDirectMerchant = (input: {
+      code: string
+      name: string
+      currency: string
+      termId: string
+      walletMode: string
+      reason?: string
+    }) => {
+      if (!hasPermission('merchants:apply') || currentAgent.value?.status !== 'Active')
+        return { ok: false, message: '沒有新增商戶權限' }
+      const term = merchantTermOptions.value.find((item) => item.id === input.termId)
+      if (!term) return { ok: false, message: '請選擇授權範圍內的生效商務條件' }
+      if (!['Seamless', 'Transfer'].includes(input.walletMode))
+        return { ok: false, message: '請選擇錢包類型' }
+      const code = input.code.trim().toUpperCase(),
+        name = input.name.trim()
+      if (!/^[A-Z0-9][A-Z0-9_-]{1,23}$/.test(code) || !name || name.length > 80)
+        return { ok: false, message: '請填寫商戶名稱及 2 至 24 字的英數代碼（可含 -、_）' }
+      if (!businessStore.isMerchantCodeAvailable(code))
+        return { ok: false, message: '商戶代碼已存在' }
+      if (!visibleCurrencies.value.includes(input.currency))
+        return { ok: false, message: '請選擇可用投注幣別' }
+      const id = nextMasterId('M', businessStore.merchants),
+        time = now()
+      businessStore.merchants.unshift({
+        id,
+        code,
+        name,
+        agentId: CURRENT_AGENT_ID,
+        agentName: currentAgent.value!.name,
+        walletMode: input.walletMode as 'Seamless' | 'Transfer',
+        country: '',
+        timezone: 'Asia/Taipei',
+        contact: '',
+        note: input.reason?.trim(),
+        cooperationStartDate: time.slice(0, 10),
+        agentTermPercent: term.agentTermPercent,
+        merchantTermPercent: term.merchantTermPercent,
+        settlementCurrency: term.settlementCurrency,
+        settlementCycle: term.settlementCycle,
+        status: 'Active',
+        lines: [],
+        createdAt: time,
+        updatedAt: time,
+        requestedCurrency: input.currency
+      })
+      businessStore.merchantCommercialTerms.unshift({
+        ...term,
+        id: 'MTERM-' + id + '-001',
+        merchantId: id,
+        version: 1,
+        status: 'Draft',
+        effectiveFrom: '',
+        effectiveTo: undefined,
+        reason: '直接建立商戶；選用 ' + term.id + ' V' + term.version,
+        createdBy: currentStaff.value?.name || CURRENT_AGENT_ID,
+        createdAt: time
+      })
+      currentAgent.value!.merchantCount = businessStore.getDirectMerchants(CURRENT_AGENT_ID).length
+      addLog('直接新增商戶', code, '已建立；商務條件待設定生效')
+      return { ok: true, message: '商戶已建立', id }
+    }
+
+    const saveDirectChildTerm = (input: {
+      targetId: string
+      basis: string
+      percent: number
+      effectiveFrom: string
+      reason: string
+    }) => {
+      if (!hasPermission('terms:apply')) return { ok: false, message: '沒有修改條件權限' }
+      const target = directChildren.value.find((item) => item.id === input.targetId)
+      if (!target) return { ok: false, message: '僅可修改直屬下級代理條件' }
+      if (
+        !['GGR', 'Valid Bet', 'Turnover'].includes(input.basis) ||
+        !Number.isFinite(input.percent) ||
+        input.percent < 0 ||
+        input.percent > 100
+      )
+        return { ok: false, message: '請填寫有效基礎與 0 至 100 的比例' }
+      if (!input.reason.trim()) return { ok: false, message: '請填寫變更原因' }
+      const previous = businessStore.getCurrentTerm(target.id)
+      const fallback = previous || businessStore.getCurrentTerm(CURRENT_AGENT_ID)
+      if (!fallback) return { ok: false, message: '缺少結算幣別及週期設定' }
+      const term = businessStore.addCommercialTerm(target.id, {
+        settlementBasis: input.basis as AgentCommercialTerm['settlementBasis'],
+        ratePercent: input.percent,
+        settlementCurrency: fallback.settlementCurrency,
+        settlementCycle: fallback.settlementCycle,
+        effectiveFrom: '',
+        reason: input.reason.trim()
+      })
+      term.createdBy = currentStaff.value?.name || CURRENT_AGENT_ID
+      const audit = businessStore.auditLogs[target.id]?.[0]
+      if (audit) audit.operator = term.createdBy
+      addLog(
+        '直接修改直屬下級條件',
+        target.code,
+        'V' + term.version + ' 已保存，待設定生效；原版本 ' + (previous?.version || '無')
+      )
+      return { ok: true, message: '新條件版本已保存，待設定生效；不需送審', id: term.id }
+    }
+
     const submitRelationRequest = (input: {
       action: '新增下級' | '停用代理' | '移轉代理'
       targetId?: string
@@ -408,18 +595,18 @@ export const useAgentPortalStore = defineStore(
       name?: string
       reason: string
     }) => {
-      if (!hasPermission('relations:manage')) return { ok: false, message: '目前角色沒有關係申請權限' }
+      if (input.action === '新增下級')
+        return createChildAgent({
+          parentId: input.parentId || '',
+          name: input.name || '',
+          reason: input.reason
+        })
+      if (!hasPermission('relations:manage'))
+        return { ok: false, message: '目前角色沒有關係申請權限' }
       if (input.reason.trim().length < 6) return { ok: false, message: '申請原因至少需要 6 個字' }
 
-      const parent = businessStore.findAgent(input.parentId || '')
       const target = businessStore.findAgent(input.targetId || '')
       const newParent = businessStore.findAgent(input.newParentId || '')
-      if (input.action === '新增下級') {
-        if (!parent || !visibleAgentIds.value.has(parent.id))
-          return { ok: false, message: '上級代理不存在或超出授權範圍' }
-        if (levelNumber(parent) >= 3) return { ok: false, message: 'L3 不能再新增下級' }
-        if (!input.name?.trim()) return { ok: false, message: '請填寫新代理名稱' }
-      }
       if (input.action === '停用代理') {
         if (!target || target.id === CURRENT_AGENT_ID || !visibleAgentIds.value.has(target.id))
           return { ok: false, message: '只能申請停用授權範圍內的下級代理' }
@@ -445,10 +632,7 @@ export const useAgentPortalStore = defineStore(
           return { ok: false, message: '移轉後子樹會超過全域 L3' }
       }
 
-      const targetName =
-        input.action === '新增下級'
-          ? input.name!.trim()
-          : target?.name || input.targetId || '未指定'
+      const targetName = target?.name || input.targetId || '未指定'
       const request: AgentPortalRequest = {
         id: requestId('REQ-REL'),
         category: '關係',
@@ -474,27 +658,14 @@ export const useAgentPortalStore = defineStore(
       name: string
       currency: string
       reason: string
-    }) => {
-      if (!hasPermission('merchants:apply')) return { ok: false, message: '目前角色沒有商戶申請權限' }
-      if (!input.code.trim() || !input.name.trim() || !input.currency)
-        return { ok: false, message: '請填寫商戶代碼、名稱與幣別' }
-      if (input.reason.trim().length < 6) return { ok: false, message: '申請原因至少需要 6 個字' }
-      const request: AgentPortalRequest = {
-        id: requestId('REQ-MER'),
-        category: '商戶',
-        action: '新增直屬商戶',
-        targetId: input.code.trim().toUpperCase(),
-        targetName: input.name.trim(),
-        reason: input.reason.trim(),
-        status: 'Pending',
-        createdAt: now(),
-        effective: false,
-        extra: { currency: input.currency, directAgentId: CURRENT_AGENT_ID }
-      }
-      requests.value.unshift(request)
-      addLog('建立直屬商戶申請', 'A00001 自身', '待審核')
-      return { ok: true, message: '申請已建立，核准前不會出現在有效商戶清單', id: request.id }
-    }
+      termId?: string
+      walletMode?: string
+    }) =>
+      createDirectMerchant({
+        ...input,
+        termId: input.termId || '',
+        walletMode: input.walletMode || ''
+      })
 
     const submitTermRequest = (input: {
       targetId: string
@@ -504,8 +675,9 @@ export const useAgentPortalStore = defineStore(
       reason: string
     }) => {
       if (!hasPermission('terms:apply')) return { ok: false, message: '目前角色沒有條件申請權限' }
-      const allowedTargets = new Set([CURRENT_AGENT_ID, ...directMerchants.value.map((item) => item.id)])
-      if (!allowedTargets.has(input.targetId)) return { ok: false, message: '只能申請自己的條件或直屬商戶條件' }
+      const allowedTargets = new Set(directMerchants.value.map((item) => item.id))
+      if (!allowedTargets.has(input.targetId))
+        return { ok: false, message: '僅可申請直屬商戶條件變更；自己的條件唯讀' }
       if (!input.basis || !Number.isFinite(input.percent) || !input.effectiveFrom)
         return { ok: false, message: '請填寫完整條件資料' }
       if (input.reason.trim().length < 6) return { ok: false, message: '申請原因至少需要 6 個字' }
@@ -541,10 +713,17 @@ export const useAgentPortalStore = defineStore(
       currency: string
       reason: string
     }) => {
-      if (!hasPermission('finance:confirm')) return { ok: false, message: '目前角色沒有財務操作權限' }
+      if (!hasPermission('finance:confirm'))
+        return { ok: false, message: '目前角色沒有財務操作權限' }
       const record = ownReconciliations.value.find((item) => item.id === input.reconciliationId)
-      if (!record || record.lockedAt || !['Pending Confirmation', 'Difference'].includes(record.status)) return { ok: false, message: '單據目前不可回報差異' }
-      if (input.currency !== record.currency) return { ok: false, message: '差異幣別必須與單據一致' }
+      if (
+        !record ||
+        record.lockedAt ||
+        !['Pending Confirmation', 'Difference'].includes(record.status)
+      )
+        return { ok: false, message: '單據目前不可回報差異' }
+      if (input.currency !== record.currency)
+        return { ok: false, message: '差異幣別必須與單據一致' }
       if (!input.reference.trim() || !Number.isFinite(input.amount) || !input.currency)
         return { ok: false, message: '請填寫關聯參照、金額與幣別' }
       if (input.reason.trim().length < 6) return { ok: false, message: '差異原因至少需要 6 個字' }
@@ -581,7 +760,11 @@ export const useAgentPortalStore = defineStore(
       record.unresolvedDifferenceCount === 0 &&
       !hasPendingDifference(record.id) &&
       Boolean(record.snapshot.formulaVersion) &&
-      record.includedMerchantReconciliationIds.every(id => financeStore.merchantReconciliations.some(item => item.id === id && ['Confirmed', 'Locked'].includes(item.status))) &&
+      record.includedMerchantReconciliationIds.every((id) =>
+        financeStore.merchantReconciliations.some(
+          (item) => item.id === id && ['Confirmed', 'Locked'].includes(item.status)
+        )
+      ) &&
       record.snapshot.exchangeRateSnapshotIds.length > 0
 
     const confirmOwnReconciliation = (recordId: string, actualAmount: number, note: string) => {
@@ -604,9 +787,17 @@ export const useAgentPortalStore = defineStore(
 
     const inviteStaff = (input: { name: string; account: string; roleId: string }) => {
       if (!hasPermission('staff:manage')) return { ok: false, message: '目前角色沒有員工管理權限' }
-      if (!input.name.trim() || !input.account.includes('@') || !roles.value.some((role) => role.id === input.roleId))
+      if (
+        !input.name.trim() ||
+        !input.account.includes('@') ||
+        !roles.value.some((role) => role.id === input.roleId)
+      )
         return { ok: false, message: '請填寫有效姓名、電子郵件與角色' }
-      if (staff.value.some(member => member.account.toLowerCase() === input.account.trim().toLowerCase()))
+      if (
+        staff.value.some(
+          (member) => member.account.toLowerCase() === input.account.trim().toLowerCase()
+        )
+      )
         return { ok: false, message: '此帳號已存在' }
       const member: AgentPortalStaff = {
         id: requestId('U-A'),
@@ -624,7 +815,12 @@ export const useAgentPortalStore = defineStore(
     const updateStaffRole = (staffId: string, roleId: string) => {
       if (!hasPermission('staff:manage')) return false
       const member = staff.value.find((item) => item.id === staffId)
-      if (!member || member.id === currentStaffId.value || !roles.value.some((role) => role.id === roleId)) return false
+      if (
+        !member ||
+        member.id === currentStaffId.value ||
+        !roles.value.some((role) => role.id === roleId)
+      )
+        return false
       member.roleId = roleId
       addLog('更新員工角色', `${member.account}／A00001 組織`)
       return true
@@ -666,6 +862,10 @@ export const useAgentPortalStore = defineStore(
       getReconciliationDifferences,
       unreadCount,
       hasPermission,
+      merchantTermOptions,
+      createChildAgent,
+      createDirectMerchant,
+      saveDirectChildTerm,
       submitRelationRequest,
       submitMerchantApplication,
       submitTermRequest,

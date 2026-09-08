@@ -7,10 +7,11 @@
     >
       <template #actions>
         <ElButton
+          v-if="activeTab === 'children' || activeTab === 'merchants'"
           type="primary"
           :disabled="!store.hasPermission('terms:apply')"
           @click="openRequest"
-          >申請變更條件</ElButton
+          >{{ activeTab === 'children' ? '修改直屬下級條件' : '申請變更商戶條件' }}</ElButton
         >
       </template>
     </AppPageHeader>
@@ -19,17 +20,19 @@
       type="warning"
       :closable="false"
       title="價差不等於收益"
-      description="收益算法尚未定案；未核准的提案版本不會進入報表或結算。"
+      description="收益算法尚未定案；下級條件可直接保存新版本，生效規則待確認，不修改歷史結算。"
     />
 
     <ElCard shadow="never" class="terms-card">
       <ElTabs v-model="activeTab" @tab-change="page = 1">
-        <ElTabPane label="我的條件" name="mine" />
+        <ElTabPane label="我的條件（唯讀）" name="mine" />
+        <ElTabPane label="直屬下級條件" name="children" />
         <ElTabPane label="直屬商戶條件" name="merchants" />
         <ElTabPane label="申請紀錄" name="requests" />
       </ElTabs>
 
-      <ArtSearchBar label-position="top"
+      <ArtSearchBar
+        label-position="top"
         v-if="activeTab !== 'requests'"
         :model-value="{ keyword: draftKeyword, status: draftStatus }"
         @update:model-value="updateSearch"
@@ -98,13 +101,23 @@
       </ArtTable>
     </ElCard>
 
-    <ElDialog v-model="requestVisible" title="商務條件變更申請" width="min(92vw, 600px)">
+    <ElDialog
+      v-model="requestVisible"
+      :title="editingChild ? '修改直屬下級條件' : '商戶條件變更申請'"
+      width="min(92vw, 600px)"
+    >
       <ElForm label-position="top">
-        <ElFormItem label="申請對象">
+        <ElFormItem label="變更對象">
           <ElSelect v-model="request.targetId" class="full-width">
-            <ElOption label="AG-TW-001／亞洲總代理（我的條件）" :value="currentAgentId" />
+            <template v-if="editingChild"
+              ><ElOption
+                v-for="agent in store.directChildren"
+                :key="agent.id"
+                :value="agent.id"
+                :label="agent.code + '／' + agent.name"
+            /></template>
             <ElOption
-              v-for="merchant in store.directMerchants"
+              v-for="merchant in editingChild ? [] : store.directMerchants"
               :key="merchant.id"
               :label="`${merchant.code}／${merchant.name}（直屬商戶）`"
               :value="merchant.id"
@@ -118,10 +131,10 @@
             <ElOption label="投注總額" value="Turnover" />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="申請比例（%）">
+        <ElFormItem label="比例（%）">
           <ElInputNumber v-model="request.percent" :min="0" :max="100" :precision="2" />
         </ElFormItem>
-        <ElFormItem label="預計生效日">
+        <ElFormItem v-if="!editingChild" label="預計生效日">
           <ElDatePicker
             v-model="request.effectiveFrom"
             type="date"
@@ -129,7 +142,7 @@
             class="full-width"
           />
         </ElFormItem>
-        <ElFormItem label="申請原因">
+        <ElFormItem label="變更原因">
           <ElInput
             v-model="request.reason"
             type="textarea"
@@ -142,12 +155,18 @@
       <ElAlert
         type="info"
         :closable="false"
-        title="建立提案版本，不直接修改生效條件"
-        description="已鎖定的歷史條件不可回改；核准與生效由總後台後續流程決定。"
+        :title="editingChild ? '直接保存版本，不需送審' : '建立商戶條件提案'"
+        :description="
+          editingChild
+            ? '生效時間與未結算資料處理尚未定案；新版本標記待設定生效，歷史版本及帳單維持原值。'
+            : '已鎖定的歷史條件不可回改；商戶條件維持申請流程。'
+        "
       />
       <template #footer>
         <ElButton @click="requestVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="submitRequest">送出申請</ElButton>
+        <ElButton type="primary" @click="submitRequest">{{
+          editingChild ? '保存新版本' : '送出申請'
+        }}</ElButton>
       </template>
     </ElDialog>
   </div>
@@ -176,6 +195,7 @@
       props: {
         clearable: true,
         options: [
+          { label: '待設定生效', value: 'Draft' },
           { label: '生效中', value: 'Active' },
           { label: '排程中', value: 'Scheduled' },
           { label: '已到期', value: 'Expired' }
@@ -184,8 +204,7 @@
     }
   ]
   const businessStore = useBusinessPartnerStore()
-  const currentAgentId = CURRENT_AGENT_ID
-  const activeTab = ref<'mine' | 'merchants' | 'requests'>('mine')
+  const activeTab = ref<'mine' | 'children' | 'merchants' | 'requests'>('mine')
   const page = ref(1)
   const pageSize = ref(20)
   const draftKeyword = ref('')
@@ -193,6 +212,7 @@
   const keyword = ref('')
   const status = ref('')
   const requestVisible = ref(false)
+  const editingChild = ref(false)
   const request = reactive({
     targetId: CURRENT_AGENT_ID,
     basis: 'GGR',
@@ -247,8 +267,32 @@
       }))
     )
   })
+  const childTerms = computed(() =>
+    store.directChildren.flatMap((agent) =>
+      businessStore.getTerms(agent.id).map((term) => ({
+        id: term.id,
+        target: agent.name,
+        kind: '直屬下級',
+        version: term.version,
+        basis: basisLabel(term.settlementBasis),
+        basisValue: term.settlementBasis,
+        percent: term.ratePercent,
+        from: term.effectiveFrom || '待設定生效',
+        to: term.effectiveTo,
+        cycle: cycleLabel(term.settlementCycle),
+        currency: term.settlementCurrency,
+        spread: '不適用',
+        status: term.status,
+        statusLabel: term.status === 'Draft' ? '待設定生效' : termStatus(term.status)
+      }))
+    )
+  )
   const sourceRows = computed(() =>
-    activeTab.value === 'mine' ? myTerms.value : merchantTerms.value
+    activeTab.value === 'mine'
+      ? myTerms.value
+      : activeTab.value === 'children'
+        ? childTerms.value
+        : merchantTerms.value
   )
   const filteredRows = computed(() => {
     const query = keyword.value.trim().toLowerCase()
@@ -278,8 +322,11 @@
   }
 
   function openRequest() {
+    editingChild.value = activeTab.value === 'children'
     Object.assign(request, {
-      targetId: CURRENT_AGENT_ID,
+      targetId: editingChild.value
+        ? store.directChildren[0]?.id || ''
+        : store.directMerchants[0]?.id || '',
       basis: businessStore.getCurrentTerm(CURRENT_AGENT_ID)?.settlementBasis || 'GGR',
       percent: businessStore.getCurrentTerm(CURRENT_AGENT_ID)?.ratePercent || 0,
       effectiveFrom: '2026-10-01',
@@ -288,11 +335,23 @@
     requestVisible.value = true
   }
 
+  watch(
+    () => request.targetId,
+    (id) => {
+      if (!editingChild.value) return
+      const term = businessStore.getCurrentTerm(id)
+      request.basis = term?.settlementBasis || 'GGR'
+      request.percent = term?.ratePercent ?? 0
+    }
+  )
+
   function submitRequest() {
-    const result = store.submitTermRequest(request)
+    const result = editingChild.value
+      ? store.saveDirectChildTerm(request)
+      : store.submitTermRequest(request)
     if (!result.ok) return ElMessage.warning(result.message)
     requestVisible.value = false
-    activeTab.value = 'requests'
+    activeTab.value = editingChild.value ? 'children' : 'requests'
     ElMessage.success(result.message)
   }
 
@@ -328,7 +387,10 @@
       )[value] || value
     )
   }
-function updateSearch(value: Record<string,string>) { draftKeyword.value = value.keyword; draftStatus.value = value.status }
+  function updateSearch(value: Record<string, string>) {
+    draftKeyword.value = value.keyword
+    draftStatus.value = value.status
+  }
 </script>
 
 <style scoped lang="scss">

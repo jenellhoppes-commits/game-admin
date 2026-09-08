@@ -3,7 +3,7 @@
     <AppPageHeader
       eyebrow="代理後台／合作管理"
       title="代理關係"
-      description="代理樹與列表採相同授權範圍；申請核准前不更動有效關係。"
+      description="新增下級直接建立；停用與移轉維持申請流程。"
     >
       <template #actions>
         <ElButton
@@ -11,7 +11,7 @@
           :disabled="!store.hasPermission('relations:manage')"
           @click="openRequest('新增下級')"
         >
-          新增下級申請
+          新增下級代理
         </ElButton>
       </template>
     </AppPageHeader>
@@ -89,7 +89,8 @@
           <div><strong>授權後代列表</strong><small>不顯示上級或兄弟代理</small></div>
         </div>
       </template>
-      <ArtSearchBar label-position="top"
+      <ArtSearchBar
+        label-position="top"
         :model-value="draft"
         @update:model-value="Object.assign(draft, $event)"
         :items="searchItems"
@@ -160,7 +161,7 @@
 
     <ElDialog
       v-model="requestVisible"
-      :title="`${requestForm.action}申請`"
+      :title="requestForm.action === '新增下級' ? '新增下級代理' : `${requestForm.action}申請`"
       width="min(92vw, 580px)"
     >
       <ElForm label-position="top">
@@ -190,7 +191,7 @@
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="申請原因">
+        <ElFormItem :label="requestForm.action === '新增下級' ? '備註（選填）' : '申請原因'">
           <ElInput
             v-model="requestForm.reason"
             type="textarea"
@@ -201,6 +202,7 @@
         </ElFormItem>
       </ElForm>
       <ElAlert
+        v-if="requestForm.action !== '新增下級'"
         type="info"
         :closable="false"
         title="送出只建立申請"
@@ -208,7 +210,9 @@
       />
       <template #footer>
         <ElButton @click="requestVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="submitRequest">送出申請</ElButton>
+        <ElButton type="primary" @click="submitRequest">{{
+          requestForm.action === '新增下級' ? '建立代理' : '送出申請'
+        }}</ElButton>
       </template>
     </ElDialog>
   </div>
@@ -335,6 +339,7 @@
     })
     if (!result.ok) return ElMessage.warning(result.message)
     requestVisible.value = false
+    resetFilters()
     ElMessage.success(result.message)
   }
 

@@ -171,6 +171,8 @@ export interface MerchantLineGameConfiguration {
 }
 
 export interface MerchantRecord {
+  /** Requested betting currency before any line is provisioned. */
+  requestedCurrency?: string
   id: string
   code: string
   name: string

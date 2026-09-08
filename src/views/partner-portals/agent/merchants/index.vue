@@ -11,20 +11,21 @@
           type="primary"
           :disabled="!store.hasPermission('merchants:apply')"
           @click="openApplication"
-          >新增直屬商戶申請</ElButton
+          >新增直屬商戶</ElButton
         >
       </template>
     </AppPageHeader>
 
-      <ArtSearchBar label-position="top"
-        :model-value="draft"
-        @update:model-value="Object.assign(draft, $event)"
-        :items="searchItems"
-        :show-expand="false"
-        :is-expand="true"
-        @search="applyFilters"
-        @reset="resetFilters"
-      />
+    <ArtSearchBar
+      label-position="top"
+      :model-value="draft"
+      @update:model-value="Object.assign(draft, $event)"
+      :items="searchItems"
+      :show-expand="false"
+      :is-expand="true"
+      @search="applyFilters"
+      @reset="resetFilters"
+    />
 
     <ElCard shadow="never">
       <template #header>
@@ -76,7 +77,7 @@
     <ElCard shadow="never" class="request-card">
       <template #header>
         <div class="agent-card-title">
-          <div><strong>商戶申請紀錄</strong><small>未核准不進入有效商戶集合</small></div>
+          <div><strong>歷史商戶申請紀錄</strong><small>保留舊申請；新商戶直接建立</small></div>
         </div>
       </template>
       <ArtTable
@@ -102,7 +103,7 @@
       </ArtTable>
     </ElCard>
 
-    <ElDialog v-model="applicationVisible" title="新增直屬商戶申請" width="min(92vw, 580px)">
+    <ElDialog v-model="applicationVisible" title="新增直屬商戶" width="min(92vw, 580px)">
       <ElForm label-position="top">
         <ElFormItem label="直接代理"
           ><ElInput model-value="AG-TW-001／亞洲總代理" disabled
@@ -113,7 +114,39 @@
         <ElFormItem label="商戶名稱"
           ><ElInput v-model="application.name" maxlength="80"
         /></ElFormItem>
-        <ElFormItem label="投注幣別">
+        <ElFormItem label="商務條件" required>
+          <ElSelect v-model="application.termId" class="full-width" placeholder="請選擇商務條件">
+            <ElOption
+              v-for="term in store.merchantTermOptions"
+              :key="term.id"
+              :value="term.id"
+              :label="
+                term.id +
+                '／V' +
+                term.version +
+                '／' +
+                term.settlementBasis +
+                ' ' +
+                term.merchantTermPercent +
+                '%／' +
+                term.settlementCurrency +
+                '／' +
+                term.settlementCycle
+              "
+            />
+          </ElSelect>
+        </ElFormItem>
+        <ElFormItem label="錢包類型" required>
+          <ElSelect
+            v-model="application.walletMode"
+            class="full-width"
+            placeholder="請選擇錢包類型"
+          >
+            <ElOption label="單一錢包（Seamless）" value="Seamless" />
+            <ElOption label="轉帳錢包（Transfer）" value="Transfer" />
+          </ElSelect>
+        </ElFormItem>
+        <ElFormItem label="投注幣別" required>
           <ElSelect v-model="application.currency" class="full-width">
             <ElOption
               v-for="item in store.visibleCurrencies"
@@ -123,7 +156,7 @@
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="申請原因">
+        <ElFormItem label="備註（選填）">
           <ElInput
             v-model="application.reason"
             type="textarea"
@@ -133,15 +166,9 @@
           />
         </ElFormItem>
       </ElForm>
-      <ElAlert
-        type="info"
-        :closable="false"
-        title="送出只建立申請"
-        description="本代理只能申請自己的直屬商戶；總後台核准後才建立有效關係。"
-      />
       <template #footer>
         <ElButton @click="applicationVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="submitApplication">送出申請</ElButton>
+        <ElButton type="primary" @click="submitApplication">建立商戶</ElButton>
       </template>
     </ElDialog>
   </div>
@@ -223,7 +250,14 @@
   })
   const applied = reactive({ ...draft })
   const applicationVisible = ref(false)
-  const application = reactive({ code: '', name: '', currency: '', reason: '' })
+  const application = reactive({
+    code: '',
+    name: '',
+    currency: '',
+    reason: '',
+    termId: '',
+    walletMode: ''
+  })
 
   const sourceRows = computed(() =>
     applied.relation === 'direct' ? store.directMerchants : store.indirectMerchants
@@ -235,7 +269,9 @@
         (!keyword || `${merchant.code}${merchant.name}`.toLowerCase().includes(keyword)) &&
         (!applied.agentId || merchant.agentId === applied.agentId) &&
         (!applied.status || merchant.status === applied.status) &&
-        (!applied.currency || merchant.lines.some((line) => line.currency === applied.currency))
+        (!applied.currency ||
+          merchant.requestedCurrency === applied.currency ||
+          merchant.lines.some((line) => line.currency === applied.currency))
     )
   })
   const pagedRows = computed(() =>
@@ -262,6 +298,8 @@
     Object.assign(application, {
       code: '',
       name: '',
+      termId: '',
+      walletMode: '',
       currency: store.visibleCurrencies[0] || '',
       reason: ''
     })
@@ -276,9 +314,10 @@
   }
 
   function submitApplication() {
-    const result = store.submitMerchantApplication(application)
+    const result = store.createDirectMerchant(application)
     if (!result.ok) return ElMessage.warning(result.message)
     applicationVisible.value = false
+    resetFilters()
     ElMessage.success(result.message)
   }
 
@@ -287,7 +326,11 @@
   }
 
   function currencies(merchant: MerchantRecord) {
-    return [...new Set(merchant.lines.map((line) => line.currency))].join('、') || '未取得'
+    return (
+      [...new Set(merchant.lines.map((line) => line.currency))].join('、') ||
+      merchant.requestedCurrency ||
+      '未取得'
+    )
   }
 
   function merchantSummary(merchantId: string) {
