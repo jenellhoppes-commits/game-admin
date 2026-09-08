@@ -1,6 +1,7 @@
 // Shared spacing for all merchant pages, including nested list components.
 .merchant-page,
-.merchant-drawer {
+.merchant-drawer,
+.partner-drawer {
   // The app shell supplies a minimum height; do not stretch each grid row to fill it.
   align-content: start;
   // Nested lists must not inherit ArtTable's full-page percentage height.
@@ -44,7 +45,8 @@
 
 // Keep unfilled actions readable without changing filled primary buttons or other portals.
 html.dark .merchant-page,
-html.dark .merchant-drawer {
+html.dark .merchant-drawer,
+html.dark .partner-drawer {
   .el-tabs__item.is-active,
   .el-button--default:not(
     .el-button--primary,
@@ -61,7 +63,8 @@ html.dark .merchant-drawer {
 }
 
 // Teleported drawer content needs an independent spacing boundary.
-.merchant-drawer {
+.merchant-drawer,
+.partner-drawer {
   .el-drawer__header {
     padding-bottom: 20px;
     margin-bottom: 0;
@@ -153,4 +156,10 @@ html.dark .merchant-drawer {
       min-height: 40px;
     }
   }
+}
+
+// Embedded tables must size to their contents, never to the drawer viewport.
+.partner-drawer .art-table,
+.merchant-drawer .art-table {
+  height: auto !important;
 }

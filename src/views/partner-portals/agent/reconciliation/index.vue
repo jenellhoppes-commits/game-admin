@@ -37,7 +37,7 @@
         >
       </ArtTable>
     </ElCard>
-    <ElDrawer v-model="visible" title="本代理對帳明細" size="min(760px, 100%)">
+    <ElDrawer class="partner-drawer" v-model="visible" title="本代理對帳明細" size="min(760px, 100%)">
       <template v-if="selected">
         <ElDescriptions :column="1" border>
           <ElDescriptionsItem label="對帳單號">{{ selected.id }}</ElDescriptionsItem>

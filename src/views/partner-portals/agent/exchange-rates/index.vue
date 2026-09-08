@@ -58,7 +58,7 @@
       </ArtTable>
     </ElCard>
 
-    <ElDrawer
+    <ElDrawer class="partner-drawer"
       v-model="detailVisible"
       title="正式匯率快照"
       size="min(92vw, 560px)"

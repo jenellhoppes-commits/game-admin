@@ -38,7 +38,7 @@
         >
       </ArtTable>
     </ElCard>
-    <ElDrawer v-model="visible" title="通知詳細" size="min(560px, 100%)">
+    <ElDrawer class="partner-drawer" v-model="visible" title="通知詳細" size="min(560px, 100%)">
       <template v-if="selected">
         <h2>{{ selected.title }}</h2>
         <ElDescriptions :column="1" border>
