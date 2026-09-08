@@ -1,3 +1,4 @@
+import { useGameCatalogStore } from './gameCatalog'
 import { defineStore } from 'pinia'
 import { computed, ref, onScopeDispose } from 'vue'
 import { advancePartnerTerms, businessDate } from '@/utils/partnerTerms'
@@ -77,6 +78,7 @@ const formatNow = () => {
 export const useBusinessPartnerStore = defineStore(
   'businessPartnerStore',
   () => {
+    const catalog = useGameCatalogStore()
     const sourceAgents = structuredClone(agentMockData)
     const nameToId = new Map(sourceAgents.map((agent) => [agent.name, agent.id]))
     const agents = ref<AgentRecord[]>(
@@ -1063,13 +1065,26 @@ export const useBusinessPartnerStore = defineStore(
       updates: Partial<
         Pick<MerchantLineGameConfiguration, 'enabled' | 'limitPlan' | 'jackpotMode'>
       >,
-      reason: string
+      reason: string,
+      operator = 'Game Operations'
     ) => {
       const line = findMerchantLine(merchantId, lineUid)
       const config = getMerchantLineGameConfigurations(lineUid).find(
         (item) => item.gameId === gameId
       )
-      if (!line || !config) return
+      if (!line || !config) return false
+      if (
+        updates.limitPlan !== undefined &&
+        !catalog
+          .getLimitPlans(gameId)
+          .some(
+            (plan) =>
+              plan.id === updates.limitPlan &&
+              plan.currency === line.currency &&
+              plan.status === 'Active'
+          )
+      )
+        return false
       const before = JSON.stringify(config)
       Object.assign(config, updates, { updatedAt: formatNow() })
       line.enabledGames = getMerchantLineGameConfigurations(lineUid).filter(
@@ -1083,7 +1098,7 @@ export const useBusinessPartnerStore = defineStore(
       line.updatedAt = config.updatedAt
       addMerchantLineAudit(lineUid, {
         action: '更新線路遊戲配置',
-        operator: 'Game Operations',
+        operator,
         reason,
         result: 'Success',
         before,
@@ -1091,12 +1106,13 @@ export const useBusinessPartnerStore = defineStore(
       })
       addMerchantAudit(merchantId, {
         action: '更新線路遊戲配置',
-        operator: 'Game Operations',
+        operator,
         reason,
         result: 'Success',
         before: `${lineUid}｜${gameId}`,
         after: JSON.stringify(config)
       })
+      return true
     }
 
     const startMerchantLineTests = (merchantId: string, lineUid: string) => {
@@ -1316,7 +1332,10 @@ export const useBusinessPartnerStore = defineStore(
         'commercialTerms',
         'merchantCommercialTerms',
         'auditLogs',
-        'merchantAuditLogs'
+        'merchantAuditLogs',
+        'merchantGameConfigurations',
+        'merchantLineGameConfigurations',
+        'merchantLineAuditLogs'
       ]
     }
   }

@@ -936,6 +936,8 @@ export interface ApprovalChangeItem {
 }
 
 export interface ApprovalRecord {
+  lineCurrency?: string
+  createdLineUid?: string
   id: string
   title: string
   sourceType: ApprovalSourceType

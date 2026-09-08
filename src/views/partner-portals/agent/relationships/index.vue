@@ -196,7 +196,7 @@
         </ElFormItem>
         <template v-if="requestForm.action === '新增下級'">
           <ElDivider content-position="left">商務條件</ElDivider>
-          <TermFields v-model="conditions" :currencies="store.visibleCurrencies" />
+          <TermFields v-model="conditions" :currencies="store.settlementCurrencies" />
         </template>
         <ElFormItem v-if="requestForm.action === '移轉代理'" label="新上級代理">
           <ElSelect v-model="requestForm.newParentId" class="full-width">

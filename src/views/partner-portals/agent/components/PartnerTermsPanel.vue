@@ -81,7 +81,7 @@
     append-to-body
   >
     <ElForm label-position="top">
-      <TermFields v-model="form" :currencies="store.visibleCurrencies" />
+      <TermFields v-model="form" :currencies="store.settlementCurrencies" />
       <ElFormItem label="變更原因" required
         ><ElInput v-model="reason" type="textarea" :rows="2" maxlength="300" show-word-limit
       /></ElFormItem>

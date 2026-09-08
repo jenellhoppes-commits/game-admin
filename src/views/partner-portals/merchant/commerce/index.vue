@@ -8,9 +8,9 @@
         ><ElButton
           v-if="kind === 'lines'"
           type="primary"
-          :disabled="!store.lines.length"
+          :disabled="!store.merchant"
           @click="request('NEW', '新增線路')"
-          >新增線路申請</ElButton
+          >申請幣別線路</ElButton
         ></template
       >
     </AppPageHeader>
@@ -37,7 +37,7 @@
     />
     <ElAlert
       v-if="kind === 'games'"
-      title="遊戲資訊唯讀。僅可關閉本商戶平台遊戲，關閉後不再於自己的平台提供；不影響全域主檔或其他商戶，重新開啟規則待確認。"
+      title="可依幣別線路選擇總後台限紅方案；RTP 與其他遊戲資料唯讀。"
       type="info"
       :closable="false"
     />
@@ -62,7 +62,10 @@
       </template>
       <ScopedTable
         v-else-if="kind === 'lines' && tab === 'requests'"
-        :rows="store.requests.filter((item) => item.category === category)"
+        :rows="[
+          ...store.lineApplications,
+          ...store.requests.filter((item) => item.category === category)
+        ]"
         :columns="requestColumns"
       />
       <ScopedTable
@@ -97,10 +100,25 @@
           }}</ElDescriptionsItem>
         </ElDescriptions>
         <template v-if="kind === 'games'">
-          <h3>授權線路配置</h3
-          ><ScopedTable
+          <h3>幣別與限紅</h3>
+          <ScopedTable
             :rows="store.configurations.filter((item) => item.gameId === detail!.id)"
             :columns="configColumns"
+          >
+            <template #actions="{ row }"
+              ><ElButton
+                link
+                type="primary"
+                :disabled="!store.availableLimitPlans(row.lineUid, row.gameId).length"
+                @click="openLimit(row.lineUid, row.gameId)"
+                >設定限紅</ElButton
+              ></template
+            >
+          </ScopedTable>
+          <h3>限紅操作紀錄</h3>
+          <ScopedTable
+            :rows="store.limitLogs.filter((item) => item.gameId === detail!.id)"
+            :columns="limitLogColumns"
           />
         </template>
         <template v-else-if="kind === 'lines'">
@@ -141,7 +159,6 @@
             >
           </template>
           <template v-else>
-            <ElButton @click="request(detail.id, '申請變更線路設定')">變更設定申請</ElButton>
             <ElButton
               @click="router.push({ path: '/merchant/integrations', query: { line: detail.id } })"
               >查看串接</ElButton
@@ -156,22 +173,45 @@
       :title="form.action"
       width="min(560px, 94vw)"
     >
-      <ElAlert
-        title="此操作只建立本地原型申請，不會修改有效設定或核發憑證。"
-        type="info"
-        :closable="false"
-      />
       <ElForm label-position="top" @submit.prevent="submit">
-        <ElFormItem label="對象"><ElInput :model-value="form.target" disabled /></ElFormItem>
-        <ElFormItem label="目標設定／線路與用途"
-          ><ElInput
-            v-model="form.proposed"
-            type="textarea"
-            placeholder="填寫授權線路、期望設定及用途；請勿填入秘密金鑰"
+        <ElFormItem label="商戶"
+          ><ElInput :model-value="store.merchant?.name" disabled
         /></ElFormItem>
-        <ElFormItem label="申請原因"><ElInput v-model="form.reason" type="textarea" /></ElFormItem>
-        <ElButton type="primary" native-type="submit">建立原型申請</ElButton>
+        <ElFormItem label="申請幣別" required
+          ><ElSelect v-model="form.proposed" style="width: 100%" placeholder="請選擇幣別"
+            ><ElOption
+              v-for="currency in store.availableCurrencies"
+              :key="currency"
+              :label="currency"
+              :value="currency" /></ElSelect
+        ></ElFormItem>
+        <ElFormItem label="申請原因" required
+          ><ElInput v-model="form.reason" type="textarea" :rows="3" maxlength="300"
+        /></ElFormItem>
       </ElForm>
+      <template #footer
+        ><ElButton @click="requestVisible = false">取消</ElButton
+        ><ElButton type="primary" @click="submit">送出申請</ElButton></template
+      >
+    </ElDialog>
+    <ElDialog v-model="limitVisible" title="設定限紅" width="min(560px, 94vw)" append-to-body>
+      <ElForm label-position="top">
+        <ElFormItem label="線路"><ElInput :model-value="limitForm.lineUid" readonly /></ElFormItem>
+        <ElFormItem label="總後台限紅方案" required
+          ><ElSelect v-model="limitForm.planId" style="width: 100%" placeholder="請選擇方案"
+            ><ElOption
+              v-for="plan in store.availableLimitPlans(limitForm.lineUid, limitForm.gameId)"
+              :key="plan.id"
+              :value="plan.id"
+              :label="
+                plan.name + ' · ' + plan.minBet + '–' + plan.maxBet + ' ' + plan.currency
+              " /></ElSelect
+        ></ElFormItem>
+      </ElForm>
+      <template #footer
+        ><ElButton @click="limitVisible = false">取消</ElButton
+        ><ElButton type="primary" @click="saveLimit">保存</ElButton></template
+      >
     </ElDialog>
   </div>
 </template>
@@ -267,7 +307,10 @@
     { key: 'gameId', label: '遊戲' },
     { key: 'enabled', label: '開通' },
     { key: 'rtpPlanName', label: 'RTP 方案' },
-    { key: 'limitPlan', label: '限紅方案' }
+    { key: 'currency', label: '幣別' },
+    { key: 'limitPlan', label: '限紅方案' },
+    { key: 'minBet', label: '最低投注' },
+    { key: 'maxBet', label: '最高投注' }
   ]
   const testColumns = [
     { key: 'lineUid', label: '線路', width: 220 },
@@ -279,12 +322,32 @@
     { key: 'id', label: '申請編號', width: 260 },
     { key: 'action', label: '類型' },
     { key: 'target', label: '對象' },
-    { key: 'proposed', label: '目標設定' },
+    { key: 'proposed', label: '申請幣別' },
+    { key: 'reviewReason', label: '審核說明' },
     { key: 'reason', label: '原因' },
     { key: 'status', label: '審核狀態' },
     { key: 'execution', label: '執行狀態' },
     { key: 'createdAt', label: '建立時間' }
   ]
+  const limitVisible = ref(false)
+  const limitForm = reactive({ lineUid: '', gameId: '', planId: '' })
+  const limitLogColumns = [
+    { key: 'time', label: '操作時間' },
+    { key: 'operator', label: '操作人' },
+    { key: 'lineUid', label: '線路' },
+    { key: 'beforePlan', label: '原方案' },
+    { key: 'afterPlan', label: '新方案' }
+  ]
+  function openLimit(lineUid: string, gameId: string) {
+    Object.assign(limitForm, { lineUid, gameId, planId: '' })
+    limitVisible.value = true
+  }
+  function saveLimit() {
+    const result = store.setLimitPlan(limitForm.lineUid, limitForm.gameId, limitForm.planId)
+    if (!result.ok) return ElMessage.warning(result.message)
+    limitVisible.value = false
+    ElMessage.success(result.message)
+  }
   const requestVisible = ref(false)
   const form = reactive({ target: '', action: '', proposed: '', reason: '' })
   function showDetail(id: string) {
@@ -300,7 +363,7 @@
     requestVisible.value = true
   }
   function submit() {
-    const result = store.submitRequest({ ...form, category: category.value })
+    const result = store.submitLineApplication(form.proposed, form.reason)
     if (!result.ok) return ElMessage.error(result.message)
     ElMessage.success(result.message)
     requestVisible.value = false

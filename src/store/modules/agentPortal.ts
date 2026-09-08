@@ -385,6 +385,16 @@ export const useAgentPortalStore = defineStore(
     })
 
     const currencySummaries = computed(() => groupAgentMetrics(metricRows.value, '幣別'))
+    const settlementCurrencies = computed(() =>
+      financeSettingsStore.currencies
+        .filter((c) => c.status === 'Active' && c.settlementEnabled)
+        .map((c) => c.code)
+    )
+    const transactionCurrencies = computed(() =>
+      financeSettingsStore.currencies
+        .filter((c) => c.status === 'Active' && c.transactionEnabled)
+        .map((c) => c.code)
+    )
     const visibleCurrencies = computed(() => {
       const currencies = new Set(metricRows.value.map((row) => row.currency))
       const termCurrency = businessStore.getCurrentTerm(CURRENT_AGENT_ID)?.settlementCurrency
@@ -471,7 +481,7 @@ export const useAgentPortalStore = defineStore(
     }) => {
       if (!hasPermission('relations:manage')) return { ok: false, message: '沒有新增代理權限' }
       if (!input.conditions) return { ok: false, message: '請填寫商務條件' }
-      const validation = validatePartnerTerm(input.conditions, visibleCurrencies.value)
+      const validation = validatePartnerTerm(input.conditions, settlementCurrencies.value)
       if (validation) return { ok: false, message: validation }
       if (input.parentId !== CURRENT_AGENT_ID)
         return { ok: false, message: '僅可新增自己的直屬下級' }
@@ -544,7 +554,7 @@ export const useAgentPortalStore = defineStore(
       if (!hasPermission('merchants:apply') || currentAgent.value?.status !== 'Active')
         return { ok: false, message: '沒有新增商戶權限' }
       if (!input.conditions) return { ok: false, message: '請填寫商務條件' }
-      const validation = validatePartnerTerm(input.conditions, visibleCurrencies.value)
+      const validation = validatePartnerTerm(input.conditions, settlementCurrencies.value)
       if (validation) return { ok: false, message: validation }
       const term = {
         settlementBasis: 'GGR' as const,
@@ -561,7 +571,7 @@ export const useAgentPortalStore = defineStore(
         return { ok: false, message: '請填寫商戶名稱及 2 至 24 字的英數代碼（可含 -、_）' }
       if (!businessStore.isMerchantCodeAvailable(code))
         return { ok: false, message: '商戶代碼已存在' }
-      if (!visibleCurrencies.value.includes(input.currency))
+      if (!transactionCurrencies.value.includes(input.currency))
         return { ok: false, message: '請選擇可用投注幣別' }
       const id = nextMasterId('M', businessStore.merchants),
         time = now()
@@ -623,7 +633,7 @@ export const useAgentPortalStore = defineStore(
           ? directChildren.value.find((t) => t.id === input.targetId)
           : directMerchants.value.find((t) => t.id === input.targetId)
       if (!target) return { ok: false, message: '僅可修改直屬下級代理或直屬商戶條件' }
-      const error = validatePartnerTerm(input, visibleCurrencies.value)
+      const error = validatePartnerTerm(input, settlementCurrencies.value)
       if (error) return { ok: false, message: error }
       if (!input.reason.trim()) return { ok: false, message: '請填寫變更原因' }
       const versions =
@@ -983,6 +993,8 @@ export const useAgentPortalStore = defineStore(
       currentPermissions,
       metricRows,
       currencySummaries,
+      settlementCurrencies,
+      transactionCurrencies,
       visibleCurrencies,
       visibleRateHistory,
       ownReconciliations,

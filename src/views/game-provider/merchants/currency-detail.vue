@@ -91,9 +91,14 @@
                     size="small"
                     @change="(value) => updateLineGame(scope.row, { limitPlan: String(value) })"
                   >
-                    <ElOption label="標準限紅" value="標準限紅" />
-                    <ElOption label="低額限紅" value="低額限紅" />
-                    <ElOption label="高額限紅" value="高額限紅" />
+                    <ElOption
+                      v-for="plan in catalog
+                        .getLimitPlans(scope.row.gameId)
+                        .filter((p) => p.currency === line?.currency && p.status === 'Active')"
+                      :key="plan.id"
+                      :label="`${plan.name} · ${plan.minBet}–${plan.maxBet} ${plan.currency}`"
+                      :value="plan.id"
+                    />
                   </ElSelect>
                 </template>
               </ElTableColumn>
@@ -260,6 +265,8 @@
 </template>
 
 <script setup lang="ts">
+  import { useGameCatalogStore } from '@/store/modules/gameCatalog'
+  const catalog = useGameCatalogStore()
   import { ElMessage } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import type {
@@ -371,13 +378,14 @@
     row: MerchantLineGameConfiguration,
     updates: Partial<Pick<MerchantLineGameConfiguration, 'enabled' | 'limitPlan' | 'jackpotMode'>>
   ) => {
-    store.updateMerchantLineGameConfiguration(
+    const ok = store.updateMerchantLineGameConfiguration(
       merchant.value.id,
       line.value.uid,
       row.gameId,
       updates,
       '線路詳細頁調整遊戲設定'
     )
+    if (!ok) return ElMessage.warning('方案已停用或不適用此遊戲／幣別，請重新選擇')
     ElMessage.success('線路遊戲設定已更新')
   }
   const changeJackpot = (row: MerchantLineGameConfiguration, value: string) => {

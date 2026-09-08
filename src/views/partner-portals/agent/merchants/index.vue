@@ -122,7 +122,7 @@
           ><ElInput v-model="application.name" maxlength="80"
         /></ElFormItem>
         <ElDivider content-position="left">商務條件</ElDivider>
-        <TermFields v-model="conditions" :currencies="store.visibleCurrencies" />
+        <TermFields v-model="conditions" :currencies="store.settlementCurrencies" />
         <ElFormItem label="錢包類型" required>
           <ElSelect
             v-model="application.walletMode"
@@ -136,7 +136,7 @@
         <ElFormItem label="投注幣別" required>
           <ElSelect v-model="application.currency" class="full-width">
             <ElOption
-              v-for="item in store.visibleCurrencies"
+              v-for="item in store.transactionCurrencies"
               :key="item"
               :label="item"
               :value="item"

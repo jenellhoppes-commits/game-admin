@@ -1,3 +1,4 @@
+import { useApprovalCenterStore } from './approvalCenter'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useBusinessPartnerStore } from './businessPartner'
@@ -27,6 +28,7 @@ export interface MerchantPortalRequest {
 
 export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
   const business = useBusinessPartnerStore()
+  const approval = useApprovalCenterStore()
   const catalog = useGameCatalogStore()
   const membersSource = useMemberCenterStore()
   const transactionsSource = useTransactionCenterStore()
@@ -49,7 +51,17 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
       : undefined
   )
   const sourceLines = computed(() =>
-    (source.value?.lines || []).filter((line) => authorizedLineUids.value.includes(line.uid))
+    (source.value?.lines || []).filter(
+      (line) =>
+        authorizedLineUids.value.includes(line.uid) ||
+        (staff.value.length > 0 &&
+          approval.approvals.some(
+            (a) =>
+              a.sourceId === CURRENT_MERCHANT_ID &&
+              a.status === 'Approved' &&
+              a.createdLineUid === line.uid
+          ))
+    )
   )
   const lineIds = computed(() => new Set(sourceLines.value.map((line) => line.uid)))
   const lines = computed(() =>
@@ -76,7 +88,11 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
         gameId: config.gameId,
         enabled: config.enabled,
         rtpPlanName: config.rtpPlanName,
-        limitPlan: config.limitPlan,
+        limitPlanId: config.limitPlan,
+        limitPlan:
+          catalog.limitPlans.find((p) => p.id === config.limitPlan)?.name || config.limitPlan,
+        minBet: catalog.limitPlans.find((p) => p.id === config.limitPlan)?.minBet,
+        maxBet: catalog.limitPlans.find((p) => p.id === config.limitPlan)?.maxBet,
         updatedAt: config.updatedAt
       }))
     )
@@ -415,12 +431,97 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
       target,
       result
     })
+  const limitLogs = computed(() =>
+    sourceLines.value
+      .flatMap((line) =>
+        business.getMerchantLineAuditLogs(line.uid).flatMap((log) => {
+          try {
+            const before = JSON.parse(log.before || '{}'),
+              after = JSON.parse(log.after || '{}')
+            if (!after.gameId || before.limitPlan === after.limitPlan) return []
+            return [
+              {
+                id: log.id,
+                time: log.time,
+                operator: log.operator,
+                lineUid: line.uid,
+                gameId: after.gameId,
+                beforePlan:
+                  catalog.limitPlans.find((p) => p.id === before.limitPlan)?.name ||
+                  before.limitPlan ||
+                  '—',
+                afterPlan:
+                  catalog.limitPlans.find((p) => p.id === after.limitPlan)?.name ||
+                  after.limitPlan ||
+                  '—'
+              }
+            ]
+          } catch {
+            return []
+          }
+        })
+      )
+      .sort((a, b) => b.time.localeCompare(a.time))
+  )
+  const availableCurrencies = computed(() =>
+    financeSettings.currencies
+      .filter((c) => c.status === 'Active' && c.transactionEnabled)
+      .map((c) => c.code)
+  )
+  const lineApplications = computed(() =>
+    approval.approvals
+      .filter((a) => a.sourceId === CURRENT_MERCHANT_ID && a.lineCurrency)
+      .map((a) => ({
+        id: a.id,
+        category: '線路',
+        target: a.createdLineUid || 'NEW',
+        action: a.action,
+        proposed: a.lineCurrency,
+        reason: a.summary,
+        status:
+          ({ Pending: '待審核', Approved: '已核准', Rejected: '已駁回' } as Record<string, string>)[
+            a.status
+          ] || a.status,
+        execution: a.createdLineUid ? '已建立線路' : '未建立',
+        createdAt: a.requestedAt,
+        reviewReason: a.reviewReason || '—'
+      }))
+  )
+  const submitLineApplication = (currency: string, reason: string) => {
+    if (!staff.value.length) return { ok: false, message: '沒有可用商戶會話' }
+    return approval.submitCurrencyLine(CURRENT_MERCHANT_ID, currency, reason)
+  }
+  const availableLimitPlans = (lineUid: string, gameId: string) => {
+    const line = sourceLines.value.find((l) => l.uid === lineUid)
+    if (!line || !configurations.value.some((c) => c.lineUid === lineUid && c.gameId === gameId))
+      return []
+    return catalog
+      .getLimitPlans(gameId)
+      .filter((p) => p.currency === line.currency && p.status === 'Active')
+  }
+  const setLimitPlan = (lineUid: string, gameId: string, planId: string) => {
+    if (!availableLimitPlans(lineUid, gameId).some((p) => p.id === planId))
+      return { ok: false, message: '方案不適用或不在授權範圍' }
+    const ok = business.updateMerchantLineGameConfiguration(
+      CURRENT_MERCHANT_ID,
+      lineUid,
+      gameId,
+      { limitPlan: planId },
+      '商戶選擇總後台限紅方案',
+      merchant.value?.code || 'Merchant'
+    )
+    if (!ok) return { ok: false, message: '方案已變更，請重新選擇' }
+    addLog('修改限紅方案', lineUid + '/' + gameId, planId)
+    return { ok: true, message: '限紅方案已保存' }
+  }
   const submitRequest = (
     input: Pick<
       MerchantPortalRequest,
       'category' | 'target' | 'action' | 'proposed' | 'reason' | 'expectedVersion'
     >
   ) => {
+    if (input.category === '線路' && input.action === '新增線路')
+      return submitLineApplication(input.proposed, input.reason)
     if (!merchant.value || !lineIds.value.size)
       return { ok: false, message: '沒有可用商戶或線路範圍' }
     const actions: Record<MerchantRequestCategory, string[]> = {
@@ -563,6 +664,12 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
     return { ok: true, message: '邀請草稿已保存，尚未寄信或授權' }
   }
   return {
+    limitLogs,
+    availableCurrencies,
+    lineApplications,
+    submitLineApplication,
+    availableLimitPlans,
+    setLimitPlan,
     merchant,
     authorizedLineUids,
     lineIds,
