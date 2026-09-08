@@ -102,7 +102,6 @@
             :rows="store.configurations.filter((item) => item.gameId === detail!.id)"
             :columns="configColumns"
           />
-          <p>試玩：尚未提供核准的 Sandbox／演示入口。</p>
         </template>
         <template v-else-if="kind === 'lines'">
           <h3>遊戲配置</h3
@@ -110,7 +109,6 @@
             :rows="store.configurations.filter((item) => item.lineUid === detail!.id)"
             :columns="configColumns"
           />
-          <p>大廳展示版本與核准入口：來源未提供。</p>
         </template>
         <template v-else>
           <ElDescriptions :column="1" border>

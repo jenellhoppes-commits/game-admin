@@ -72,8 +72,7 @@
             ><ScopedTable
               :rows="store.requests.filter((item) => item.target === selected!.id)"
               :columns="requestColumns"
-            /><p>僅提供本商戶回報與公開處理紀錄，內部風控研判不在此顯示。</p></ElTabPane
-          >
+          /></ElTabPane>
           <template v-if="!isMembers && mode === 'bets'">
             <ElTabPane label="重播與盤面" name="replay">
               <template v-if="result">
@@ -82,7 +81,7 @@
                   type="info"
                   :closable="false"
                 />
-                <p>依當局保存結果呈現，不重新計算或新增交易。</p>
+
                 <ElEmpty v-if="!result.replay.events.length" description="尚無可用歷史事件" />
                 <template v-else>
                   <ElSpace wrap
@@ -117,8 +116,8 @@
                 />
               </template>
             </ElTabPane>
-            <ElTabPane label="原始結果" name="raw"
-              ><p>外部白名單結果投影</p><pre>{{ externalResult }}</pre>
+            <ElTabPane label="原始結果" name="raw">
+              <pre>{{ externalResult }}</pre>
             </ElTabPane>
           </template>
         </ElTabs>

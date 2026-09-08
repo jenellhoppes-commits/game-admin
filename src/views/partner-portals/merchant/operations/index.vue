@@ -101,7 +101,7 @@
             <ElFormItem label="說明"
               ><ElInput v-model="difference.reason" type="textarea"
             /></ElFormItem>
-            <p>附件上傳服務尚未接入；此處保存文字回報及指定版本，不修改原交易。</p>
+
             <ElButton type="primary" native-type="submit">建立原型差異申請</ElButton>
           </ElForm>
           <ScopedTable
