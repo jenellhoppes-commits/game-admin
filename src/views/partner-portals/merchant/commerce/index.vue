@@ -103,12 +103,6 @@
             :columns="configColumns"
           />
           <p>試玩：尚未提供核准的 Sandbox／演示入口。</p>
-          <ElButton
-            type="danger"
-            :disabled="!store.games.find((item) => item.id === detail!.id)?.enabled"
-            @click="closeGame(detail.id)"
-            >關閉本平台遊戲</ElButton
-          >
         </template>
         <template v-else-if="kind === 'lines'">
           <h3>遊戲配置</h3
@@ -117,11 +111,6 @@
             :columns="configColumns"
           />
           <p>大廳展示版本與核准入口：來源未提供。</p>
-          <ElButton @click="request(detail.id, '申請變更線路設定')">變更設定申請</ElButton>
-          <ElButton
-            @click="router.push({ path: '/merchant/integrations', query: { line: detail.id } })"
-            >查看串接</ElButton
-          >
         </template>
         <template v-else>
           <ElDescriptions :column="1" border>
@@ -142,6 +131,25 @@
             }}</ElDescriptionsItem>
           </ElDescriptions>
         </template>
+      </template>
+      <template v-if="detail && (kind === 'games' || kind === 'lines')" #footer>
+        <div class="merchant-drawer-footer-actions">
+          <template v-if="kind === 'games'">
+            <ElButton
+              type="danger"
+              :disabled="!store.games.find((item) => item.id === detail!.id)?.enabled"
+              @click="closeGame(detail.id)"
+              >關閉本平台遊戲</ElButton
+            >
+          </template>
+          <template v-else>
+            <ElButton @click="request(detail.id, '申請變更線路設定')">變更設定申請</ElButton>
+            <ElButton
+              @click="router.push({ path: '/merchant/integrations', query: { line: detail.id } })"
+              >查看串接</ElButton
+            >
+          </template>
+        </div>
       </template>
     </ElDrawer>
     <ElDialog

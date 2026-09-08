@@ -156,6 +156,42 @@ html.dark .partner-drawer {
       min-height: 40px;
     }
   }
+
+  container-type: inline-size;
+
+  .el-drawer__footer {
+    padding: 16px 20px max(16px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--el-border-color-light);
+  }
+
+  .merchant-drawer-footer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-end;
+
+    .el-button {
+      min-height: 40px;
+      margin-left: 0;
+    }
+  }
+
+  @container (max-width: 600px) {
+    .el-pagination {
+      flex-wrap: wrap;
+      gap: 8px;
+      height: auto;
+    }
+
+    .el-pagination__sizes,
+    .el-pagination__jump {
+      display: none;
+    }
+
+    .merchant-drawer-footer-actions .el-button {
+      flex: 1 1 140px;
+    }
+  }
 }
 
 // Embedded tables must size to their contents, never to the drawer viewport.
@@ -163,3 +199,4 @@ html.dark .partner-drawer {
 .merchant-drawer .art-table {
   height: auto !important;
 }
+
