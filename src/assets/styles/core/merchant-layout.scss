@@ -112,6 +112,14 @@ html.dark .merchant-drawer {
     margin-bottom: 16px;
   }
 
+  .el-empty {
+    padding: 24px 0;
+  }
+
+  .el-empty__image {
+    width: 80px;
+  }
+
   pre {
     max-width: 100%;
     overflow: auto;

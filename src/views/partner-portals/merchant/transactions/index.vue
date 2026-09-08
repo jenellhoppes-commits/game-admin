@@ -111,7 +111,10 @@
                     ></div
                   >
                 </template>
-                <ElEmpty v-else description="此事件沒有可用盤面；可查看保存的事件摘要" />
+                <ElEmpty
+                  v-else-if="result.replay.events.length"
+                  description="此事件沒有可用盤面；可查看保存的事件摘要"
+                />
               </template>
             </ElTabPane>
             <ElTabPane label="原始結果" name="raw"
