@@ -74,7 +74,7 @@
       </ArtTable>
     </ElCard>
 
-    <ElCard shadow="never" class="request-card">
+    <ElCard v-if="merchantRequests.length" shadow="never" class="request-card">
       <template #header>
         <div class="agent-card-title">
           <div><strong>歷史商戶申請紀錄</strong><small>保留舊申請；新商戶直接建立</small></div>
@@ -103,39 +103,26 @@
       </ArtTable>
     </ElCard>
 
-    <ElDialog v-model="applicationVisible" title="新增直屬商戶" width="min(92vw, 580px)">
+    <ElDialog
+      class="partner-terms-dialog"
+      v-model="applicationVisible"
+      title="新增直屬商戶"
+      width="min(92vw, 580px)"
+    >
       <ElForm label-position="top">
         <ElFormItem label="直接代理"
-          ><ElInput model-value="AG-TW-001／亞洲總代理" disabled
+          ><ElInput
+            :model-value="store.currentAgent?.code + '／' + store.currentAgent?.name"
+            disabled
         /></ElFormItem>
-        <ElFormItem label="商戶代碼"
+        <ElFormItem label="商戶代碼" required
           ><ElInput v-model="application.code" maxlength="24"
         /></ElFormItem>
-        <ElFormItem label="商戶名稱"
+        <ElFormItem label="商戶名稱" required
           ><ElInput v-model="application.name" maxlength="80"
         /></ElFormItem>
-        <ElFormItem label="商務條件" required>
-          <ElSelect v-model="application.termId" class="full-width" placeholder="請選擇商務條件">
-            <ElOption
-              v-for="term in store.merchantTermOptions"
-              :key="term.id"
-              :value="term.id"
-              :label="
-                term.id +
-                '／V' +
-                term.version +
-                '／' +
-                term.settlementBasis +
-                ' ' +
-                term.merchantTermPercent +
-                '%／' +
-                term.settlementCurrency +
-                '／' +
-                term.settlementCycle
-              "
-            />
-          </ElSelect>
-        </ElFormItem>
+        <ElDivider content-position="left">商務條件</ElDivider>
+        <TermFields v-model="conditions" :currencies="store.visibleCurrencies" />
         <ElFormItem label="錢包類型" required>
           <ElSelect
             v-model="application.walletMode"
@@ -160,7 +147,7 @@
           <ElInput
             v-model="application.reason"
             type="textarea"
-            :rows="4"
+            :rows="2"
             maxlength="300"
             show-word-limit
           />
@@ -175,6 +162,9 @@
 </template>
 
 <script setup lang="ts">
+  import '../components/term-dialog.scss'
+  import type { PartnerTermInput } from '@/utils/partnerTerms'
+  import TermFields from '../components/TermFields.vue'
   import { ElMessage } from 'element-plus'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import {
@@ -249,13 +239,20 @@
     currency: queryText('currency')
   })
   const applied = reactive({ ...draft })
+  const conditions = ref<PartnerTermInput>({
+    basis: 'GGR',
+    percent: 0,
+    settlementCurrency: '',
+    settlementCycle: '',
+    effectiveFrom: ''
+  })
   const applicationVisible = ref(false)
   const application = reactive({
     code: '',
     name: '',
     currency: '',
     reason: '',
-    termId: '',
+    effectiveFrom: '',
     walletMode: ''
   })
 
@@ -295,10 +292,16 @@
   }
 
   function openApplication() {
+    conditions.value = {
+      basis: 'GGR',
+      percent: 0,
+      settlementCurrency: '',
+      settlementCycle: '',
+      effectiveFrom: ''
+    }
     Object.assign(application, {
       code: '',
       name: '',
-      termId: '',
       walletMode: '',
       currency: store.visibleCurrencies[0] || '',
       reason: ''
@@ -314,7 +317,7 @@
   }
 
   function submitApplication() {
-    const result = store.createDirectMerchant(application)
+    const result = store.createDirectMerchant({ ...application, conditions: conditions.value })
     if (!result.ok) return ElMessage.warning(result.message)
     applicationVisible.value = false
     resetFilters()

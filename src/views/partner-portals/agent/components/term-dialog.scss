@@ -1,0 +1,26 @@
+.partner-terms-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 90dvh;
+  margin: 5vh auto;
+
+  .el-date-editor.el-input {
+    width: 100%;
+  }
+
+  .el-dialog__body {
+    min-height: 0;
+    padding-right: 4px;
+    overflow: auto;
+  }
+
+  .el-dialog__header,
+  .el-dialog__footer {
+    flex-shrink: 0;
+  }
+
+  .el-dialog__footer {
+    padding-top: 16px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}

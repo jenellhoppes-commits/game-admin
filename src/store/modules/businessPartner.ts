@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, onScopeDispose } from 'vue'
+import { advancePartnerTerms, businessDate } from '@/utils/partnerTerms'
 import { agentMockData, merchantRecords } from '@/mock/game-provider'
 import type {
   AgentCommercialTerm,
@@ -91,11 +92,7 @@ export const useBusinessPartnerStore = defineStore(
         id: `TERM-${agent.id}-001`,
         agentId: agent.id,
         version: 1,
-        settlementBasis: (index % 3 === 0
-          ? 'GGR'
-          : index % 3 === 1
-            ? 'Valid Bet'
-            : 'Turnover') as SettlementBasis,
+        settlementBasis: 'GGR',
         ratePercent: Number((5.5 + (index % 5) * 0.25).toFixed(2)),
         settlementCurrency: agent.currency || 'USDT',
         settlementCycle: (index % 2 === 0 ? 'Monthly' : 'Weekly') as SettlementCycle,
@@ -117,12 +114,11 @@ export const useBusinessPartnerStore = defineStore(
     })
     const merchantCommercialTerms = ref<MerchantCommercialTerm[]>(
       merchants.value.map((merchant) => {
-        const agentTerm = commercialTerms.value.find((term) => term.agentId === merchant.agentId)
         return {
           id: `MTERM-${merchant.id}-001`,
           merchantId: merchant.id,
           version: 1,
-          settlementBasis: agentTerm?.settlementBasis || 'GGR',
+          settlementBasis: 'GGR',
           agentTermPercent: merchant.agentTermPercent,
           merchantTermPercent: merchant.merchantTermPercent,
           settlementCurrency: merchant.settlementCurrency,
@@ -370,12 +366,52 @@ export const useBusinessPartnerStore = defineStore(
       const agentIds = new Set([agentId, ...getDescendants(agentId).map((agent) => agent.id)])
       return merchants.value.filter((merchant) => agentIds.has(merchant.agentId))
     }
+    const syncPartnerTerms = (today = businessDate()) => {
+      for (const agent of agents.value) {
+        const activated = advancePartnerTerms(
+          commercialTerms.value.filter((t) => t.agentId === agent.id),
+          today
+        )
+        for (const term of activated) {
+          agent.currency = term.settlementCurrency
+          addAudit(agent.id, {
+            action: '商務條件生效',
+            operator: '系統',
+            reason: '指定生效日 ' + term.effectiveFrom,
+            result: 'Success',
+            after: JSON.stringify(term)
+          })
+        }
+      }
+      for (const merchant of merchants.value) {
+        const activated = advancePartnerTerms(
+          merchantCommercialTerms.value.filter((t) => t.merchantId === merchant.id),
+          today
+        )
+        for (const term of activated) {
+          merchant.settlementCurrency = term.settlementCurrency
+          merchant.settlementCycle = term.settlementCycle
+          merchant.merchantTermPercent = term.merchantTermPercent
+          merchant.agentTermPercent = term.agentTermPercent
+          merchantAuditLogs.value[merchant.id] ||= []
+          merchantAuditLogs.value[merchant.id].unshift({
+            id: 'AUTO-' + term.id,
+            time: formatNow(),
+            action: '商務條件生效',
+            operator: '系統',
+            reason: '指定生效日 ' + term.effectiveFrom,
+            result: 'Success',
+            after: JSON.stringify(term)
+          })
+        }
+      }
+    }
     const getTerms = (agentId: string) =>
       commercialTerms.value
         .filter((term) => term.agentId === agentId)
         .sort((a, b) => b.version - a.version)
     const getCurrentTerm = (agentId: string) =>
-      getTerms(agentId).find((term) => term.status === 'Active') || getTerms(agentId)[0]
+      getTerms(agentId).find((term) => term.status === 'Active')
     const getReconciliations = (agentId: string) =>
       reconciliationSummaries.value.filter((item) => item.agentId === agentId)
     const getAuditLogs = (agentId: string) => auditLogs.value[agentId] || []
@@ -540,6 +576,7 @@ export const useBusinessPartnerStore = defineStore(
     }
 
     const createAgent = (payload: NewAgentPayload) => {
+      if (payload.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
       const now = formatNow()
       const parent = payload.parentAgentId ? findAgent(payload.parentAgentId) : undefined
       const requiredParentLevel =
@@ -684,6 +721,7 @@ export const useBusinessPartnerStore = defineStore(
         'id' | 'agentId' | 'version' | 'createdAt' | 'createdBy' | 'status'
       >
     ) => {
+      if (input.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
       const versions = getTerms(agentId)
       const term: AgentCommercialTerm = {
         ...input,
@@ -717,6 +755,7 @@ export const useBusinessPartnerStore = defineStore(
         | 'effectiveFrom'
       >
     ) => {
+      if (updates.settlementBasis !== 'GGR') return false
       const term = getTerms(agentId).find((item) => item.status === 'Draft')
       if (!term) return false
       const before = JSON.stringify(term)
@@ -758,6 +797,7 @@ export const useBusinessPartnerStore = defineStore(
     }
 
     const createMerchant = (payload: NewMerchantPayload) => {
+      if (payload.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
       const agent = findAgent(payload.agentId)
       const agentTerm = getCurrentTerm(payload.agentId)
       if (!agent || !agentTerm || !isMerchantCodeAvailable(payload.code)) return
@@ -926,6 +966,7 @@ export const useBusinessPartnerStore = defineStore(
         'id' | 'merchantId' | 'version' | 'createdAt' | 'createdBy' | 'status'
       >
     ) => {
+      if (input.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
       const versions = getMerchantTerms(merchantId)
       const term: MerchantCommercialTerm = {
         ...input,
@@ -1193,6 +1234,16 @@ export const useBusinessPartnerStore = defineStore(
 
     refreshCounts()
 
+    if (typeof window !== 'undefined') {
+      const timer = window.setInterval(() => syncPartnerTerms(), 30000)
+      const refreshTerms = () => syncPartnerTerms()
+      window.addEventListener('focus', refreshTerms)
+      Promise.resolve().then(refreshTerms)
+      onScopeDispose(() => {
+        window.clearInterval(timer)
+        window.removeEventListener('focus', refreshTerms)
+      })
+    }
     return {
       agents,
       merchants,
@@ -1216,6 +1267,7 @@ export const useBusinessPartnerStore = defineStore(
       getAllMerchants,
       getTerms,
       getCurrentTerm,
+      syncPartnerTerms,
       getReconciliations,
       getAuditLogs,
       findMerchant,

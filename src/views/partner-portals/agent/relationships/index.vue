@@ -46,17 +46,23 @@
             <div><strong>節點摘要</strong><small>僅限目前授權樹</small></div>
           </div>
         </template>
-        <ElDescriptions v-if="selected" :column="1" border>
-          <ElDescriptionsItem label="代理代碼">{{ selected.code }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="名稱">{{ selected.name }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="全域層級">{{ selected.level }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="直接上級">{{ selected.parentAgent }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="狀態">{{ statusLabel(selected.status) }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="生效期間"
-            >{{ selected.cooperationStartDate || '未取得' }} ～ —</ElDescriptionsItem
-          >
-          <ElDescriptionsItem label="直屬商戶">{{ selected.merchantCount }}</ElDescriptionsItem>
-        </ElDescriptions>
+        <PartnerTermsPanel v-if="selected" kind="agent" :target-id="selected.id"
+          ><template #basic>
+            <ElDescriptions :column="1" border>
+              <ElDescriptionsItem label="代理代碼">{{ selected.code }}</ElDescriptionsItem>
+              <ElDescriptionsItem label="名稱">{{ selected.name }}</ElDescriptionsItem>
+              <ElDescriptionsItem label="全域層級">{{ selected.level }}</ElDescriptionsItem>
+              <ElDescriptionsItem label="直接上級">{{ selected.parentAgent }}</ElDescriptionsItem>
+              <ElDescriptionsItem label="狀態">{{
+                statusLabel(selected.status)
+              }}</ElDescriptionsItem>
+              <ElDescriptionsItem label="生效期間"
+                >{{ selected.cooperationStartDate || '未取得' }} ～ —</ElDescriptionsItem
+              >
+              <ElDescriptionsItem label="直屬商戶">{{ selected.merchantCount }}</ElDescriptionsItem>
+            </ElDescriptions>
+          </template></PartnerTermsPanel
+        >
         <ElEmpty v-else description="請從左側選擇代理" />
         <ElAlert
           v-if="selected?.level === 'L3'"
@@ -112,7 +118,13 @@
         row-key="id"
       >
         <ElTableColumn prop="code" label="代理代碼" min-width="125" />
-        <ElTableColumn prop="name" label="名稱" min-width="150" />
+        <ElTableColumn label="名稱" min-width="150"
+          ><template #default="{ row }"
+            ><ElButton link type="primary" @click="onNodeClick(row)">{{
+              row.name
+            }}</ElButton></template
+          ></ElTableColumn
+        >
         <ElTableColumn prop="level" label="層級" width="80" />
         <ElTableColumn prop="parentAgent" label="直接上級" min-width="140" />
         <ElTableColumn label="狀態" width="100">
@@ -130,7 +142,7 @@
     <ElCard shadow="never" class="history-card">
       <template #header>
         <div class="agent-card-title">
-          <div><strong>申請與歷程</strong><small>Pending 不代表已生效</small></div>
+          <div><strong>申請與歷程</strong><small>停用、移轉及歷史申請</small></div>
         </div>
       </template>
       <ArtTable
@@ -160,6 +172,7 @@
     </ElCard>
 
     <ElDialog
+      class="partner-terms-dialog"
       v-model="requestVisible"
       :title="requestForm.action === '新增下級' ? '新增下級代理' : `${requestForm.action}申請`"
       width="min(92vw, 580px)"
@@ -175,12 +188,16 @@
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem v-if="requestForm.action === '新增下級'" label="新代理名稱">
+        <ElFormItem v-if="requestForm.action === '新增下級'" label="新代理名稱" required>
           <ElInput v-model="requestForm.name" maxlength="80" />
         </ElFormItem>
         <ElFormItem v-else label="申請對象">
           <ElInput :model-value="selected ? `${selected.code}／${selected.name}` : ''" disabled />
         </ElFormItem>
+        <template v-if="requestForm.action === '新增下級'">
+          <ElDivider content-position="left">商務條件</ElDivider>
+          <TermFields v-model="conditions" :currencies="store.visibleCurrencies" />
+        </template>
         <ElFormItem v-if="requestForm.action === '移轉代理'" label="新上級代理">
           <ElSelect v-model="requestForm.newParentId" class="full-width">
             <ElOption
@@ -195,7 +212,7 @@
           <ElInput
             v-model="requestForm.reason"
             type="textarea"
-            :rows="4"
+            :rows="2"
             maxlength="300"
             show-word-limit
           />
@@ -219,6 +236,9 @@
 </template>
 
 <script setup lang="ts">
+  import TermFields from '../components/TermFields.vue'
+  import PartnerTermsPanel from '../components/PartnerTermsPanel.vue'
+  import type { PartnerTermInput } from '@/utils/partnerTerms'
   import { ElMessage } from 'element-plus'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import { CURRENT_AGENT_ID, useAgentPortalStore } from '@/store/modules/agentPortal'
@@ -264,6 +284,13 @@
   const pageSize = ref(20)
   const draft = reactive({ keyword: '', level: '', status: '' })
   const applied = reactive({ keyword: '', level: '', status: '' })
+  const conditions = ref<PartnerTermInput>({
+    basis: 'GGR',
+    percent: 0,
+    settlementCurrency: '',
+    settlementCycle: '',
+    effectiveFrom: ''
+  })
   const requestVisible = ref(false)
   const requestForm = reactive({
     action: '新增下級' as '新增下級' | '停用代理' | '移轉代理',
@@ -281,7 +308,7 @@
     return build(undefined).filter((agent) => agent.id === CURRENT_AGENT_ID)
   })
   const parentCandidates = computed(() =>
-    store.visibleAgents.filter((agent) => agent.level !== 'L3')
+    store.visibleAgents.filter((agent) => agent.id === CURRENT_AGENT_ID && agent.level !== 'L3')
   )
   const transferParents = computed(() =>
     store.visibleAgents.filter((agent) => agent.id !== selected.value?.id && agent.level !== 'L3')
@@ -320,8 +347,14 @@
 
   function openRequest(action: typeof requestForm.action) {
     requestForm.action = action
-    requestForm.parentId =
-      selected.value?.level === 'L3' ? CURRENT_AGENT_ID : selected.value?.id || CURRENT_AGENT_ID
+    requestForm.parentId = CURRENT_AGENT_ID
+    conditions.value = {
+      basis: 'GGR',
+      percent: 0,
+      settlementCurrency: '',
+      settlementCycle: '',
+      effectiveFrom: ''
+    }
     requestForm.newParentId = ''
     requestForm.name = ''
     requestForm.reason = ''
@@ -329,14 +362,22 @@
   }
 
   function submitRequest() {
-    const result = store.submitRelationRequest({
-      action: requestForm.action,
-      targetId: selected.value?.id,
-      parentId: requestForm.parentId,
-      newParentId: requestForm.newParentId,
-      name: requestForm.name,
-      reason: requestForm.reason
-    })
+    const result =
+      requestForm.action === '新增下級'
+        ? store.createChildAgent({
+            parentId: CURRENT_AGENT_ID,
+            name: requestForm.name,
+            reason: requestForm.reason,
+            conditions: conditions.value
+          })
+        : store.submitRelationRequest({
+            action: requestForm.action,
+            targetId: selected.value?.id,
+            parentId: requestForm.parentId,
+            newParentId: requestForm.newParentId,
+            name: requestForm.name,
+            reason: requestForm.reason
+          })
     if (!result.ok) return ElMessage.warning(result.message)
     requestVisible.value = false
     resetFilters()

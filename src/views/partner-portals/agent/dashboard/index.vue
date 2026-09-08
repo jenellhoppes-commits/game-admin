@@ -60,7 +60,12 @@
         :title="metric.label"
         :count="metric.value"
         :description="metric.note"
-        :decimals="metric.label === '活躍線路會員數' ? 0 : (financeSettings.currencies.find(item => item.code === appliedCurrency)?.decimalPlaces ?? 2)"
+        :decimals="
+          metric.label === '活躍線路會員數'
+            ? 0
+            : (financeSettings.currencies.find((item) => item.code === appliedCurrency)
+                ?.decimalPlaces ?? 2)
+        "
       />
     </div>
 
@@ -116,7 +121,9 @@
           ><template #default="{ row }">{{ number(row.rounds) }}</template></ElTableColumn
         >
       </ArtTable>
-      <p class="summary-note">依投注時間（Asia/Taipei）查詢共用模擬交易，按原幣分別統計。收益計算規則待確認，遊戲輸贏不代表代理收益。</p>
+      <p class="summary-note"
+        >依投注時間（Asia/Taipei）查詢共用模擬交易，按原幣分別統計。收益計算規則待確認，遊戲輸贏不代表代理收益。</p
+      >
     </ElCard>
   </div>
 </template>
@@ -135,7 +142,6 @@
   const financeSettings = useFinanceSettingsStore()
   const tasks = computed(() => [
     { title: '待審關係申請', count: pending('關係'), path: '/agent/relationships' },
-    { title: '待審商戶申請', count: pending('商戶'), path: '/agent/merchants' },
     { title: '待確認對帳', count: pendingReconciliations.value, path: '/agent/reconciliation' },
     { title: '未讀公告', count: store.unreadCount, path: '/agent/notifications' }
   ])
@@ -155,7 +161,9 @@
 
   const filteredMetrics = computed(() =>
     store.metricRows.filter(
-      (row) => row.date >= appliedRange.value[0] && row.date <= appliedRange.value[1] &&
+      (row) =>
+        row.date >= appliedRange.value[0] &&
+        row.date <= appliedRange.value[1] &&
         (!appliedCurrency.value || row.currency === appliedCurrency.value)
     )
   )
@@ -172,7 +180,11 @@
     const label = currencies.size === 1 ? [...currencies][0] : '分幣查看'
     return [
       { label: '投注總額', value: rows.reduce((sum, row) => sum + row.betAmount, 0), note: label },
-      { label: '派彩總額', value: rows.reduce((sum, row) => sum + row.payoutAmount, 0), note: label },
+      {
+        label: '派彩總額',
+        value: rows.reduce((sum, row) => sum + row.payoutAmount, 0),
+        note: label
+      },
       { label: '遊戲輸贏', value: rows.reduce((sum, row) => sum + row.ggr, 0), note: label },
       {
         label: '活躍線路會員數',
@@ -201,19 +213,6 @@
     draftRange.value = [...defaultRange]
     draftCurrency.value = ''
     applyFilters()
-  }
-
-  function sumDisplay(rows: typeof store.metricRows, key: 'betAmount' | 'payoutAmount' | 'ggr') {
-    const currencies = [...new Set(rows.map((row) => row.currency))]
-    if (currencies.length !== 1) return '請選擇原幣'
-    return money(
-      rows.reduce((sum, row) => sum + row[key], 0),
-      currencies[0]
-    )
-  }
-
-  function money(value: number, currency: string) {
-    return `${new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 2 }).format(value)} ${currency}`
   }
 
   function number(value: number) {

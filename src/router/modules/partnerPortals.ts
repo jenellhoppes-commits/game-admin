@@ -1,8 +1,6 @@
 import type { AppRouteRecord } from '@/types/router'
 
 const stagePage = '/partner-portals/stage-page'
-const dashboardPage = '/partner-portals/dashboard'
-const exchangeReportPage = '/partner-portals/exchange-report'
 
 const child = (
   path: string,
@@ -59,15 +57,12 @@ export const partnerPortalRoutes: AppRouteRecord[] = [
         '僅顯示授權範圍內商戶彙總',
         '/partner-portals/agent/merchants'
       ),
-      child(
-        'business-terms',
-        'AgentBusinessTerms',
-        '商務條件',
-        'ri:file-list-3-line',
-        '第二階段',
-        '代理商務條件與生效版本',
-        '/partner-portals/agent/business-terms'
-      ),
+      {
+        path: 'business-terms',
+        name: 'AgentBusinessTerms',
+        redirect: '/agent/relationships',
+        meta: { title: '商務條件', isHide: true }
+      },
       child(
         'reports/operations',
         'AgentOperationsReport',
@@ -169,7 +164,15 @@ export const partnerPortalRoutes: AppRouteRecord[] = [
         '已授權線路可用遊戲',
         '/partner-portals/merchant/commerce'
       ),
-      child('lines', 'MerchantLines', '線路管理', 'ri:route-line', '第三階段', '本商戶已授權線路', '/partner-portals/merchant/commerce'),
+      child(
+        'lines',
+        'MerchantLines',
+        '線路管理',
+        'ri:route-line',
+        '第三階段',
+        '本商戶已授權線路',
+        '/partner-portals/merchant/commerce'
+      ),
       child(
         'integrations',
         'MerchantIntegrations',

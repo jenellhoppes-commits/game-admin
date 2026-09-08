@@ -282,9 +282,7 @@
         <div class="form-grid">
           <ElFormItem label="計算基準" required
             ><ElSelect v-model="termForm.settlementBasis" class="w-full"
-              ><ElOption label="GGR" value="GGR" /><ElOption
-                label="有效投注"
-                value="Valid Bet" /><ElOption label="總投注" value="Turnover" /></ElSelect
+              ><ElOption label="GGR" value="GGR" /></ElSelect
           ></ElFormItem>
           <ElFormItem label="代理條件"
             ><ElInput :model-value="`${merchant.agentTermPercent}%`" disabled
@@ -547,7 +545,7 @@
   const openTermDialog = () => {
     const current = store.getCurrentMerchantTerm(merchant.value.id)
     Object.assign(termForm, {
-      settlementBasis: current?.settlementBasis || 'GGR',
+      settlementBasis: 'GGR',
       merchantTermPercent: current?.merchantTermPercent || merchant.value.merchantTermPercent,
       settlementCurrency: current?.settlementCurrency || merchant.value.settlementCurrency,
       settlementCycle: current?.settlementCycle || merchant.value.settlementCycle,

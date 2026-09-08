@@ -143,11 +143,7 @@
               <ElCol :xs="24" :sm="12"
                 ><ElFormItem label="結算基礎" prop="settlementBasis"
                   ><ElSelect v-model="form.settlementBasis" class="w-full"
-                    ><ElOption label="GGR" value="GGR" /><ElOption
-                      label="有效投注"
-                      value="Valid Bet" /><ElOption
-                      label="營業額"
-                      value="Turnover" /></ElSelect></ElFormItem
+                    ><ElOption label="GGR" value="GGR" /></ElSelect></ElFormItem
               ></ElCol>
               <ElCol :xs="24" :sm="12"
                 ><ElFormItem label="代理條件" prop="ratePercent"

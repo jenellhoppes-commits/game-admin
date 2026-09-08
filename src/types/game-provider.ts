@@ -105,6 +105,7 @@ export interface AgentRecord {
 }
 
 export interface AgentCommercialTerm {
+  autoEffective?: boolean
   id: string
   agentId: string
   version: number
@@ -197,6 +198,7 @@ export interface MerchantRecord {
 }
 
 export interface MerchantCommercialTerm {
+  autoEffective?: boolean
   id: string
   merchantId: string
   version: number

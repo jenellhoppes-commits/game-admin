@@ -369,11 +369,7 @@
       /><ElForm ref="termFormRef" :model="termForm" :rules="termRules" label-position="top"
         ><ElFormItem label="結算基礎" prop="settlementBasis"
           ><ElSelect v-model="termForm.settlementBasis" class="w-full"
-            ><ElOption label="GGR" value="GGR" /><ElOption
-              label="有效投注"
-              value="Valid Bet" /><ElOption
-              label="營業額"
-              value="Turnover" /></ElSelect></ElFormItem
+            ><ElOption label="GGR" value="GGR" /></ElSelect></ElFormItem
         ><ElFormItem label="代理條件" prop="ratePercent"
           ><ElInputNumber
             v-model="termForm.ratePercent"
@@ -691,7 +687,7 @@
   }
   const openTermDrawer = () => {
     Object.assign(termForm, {
-      settlementBasis: currentTerm.value?.settlementBasis || 'GGR',
+      settlementBasis: 'GGR',
       ratePercent: currentTerm.value?.ratePercent || 6.5,
       settlementCurrency: currentTerm.value?.settlementCurrency || 'USDT',
       settlementCycle: currentTerm.value?.settlementCycle || 'Monthly',

@@ -115,8 +115,6 @@
             <ElFormItem label="結算基礎" required>
               <ElSelect v-model="form.settlementBasis" class="w-full">
                 <ElOption label="GGR" value="GGR" />
-                <ElOption label="有效投注" value="Valid Bet" />
-                <ElOption label="營業額" value="Turnover" />
               </ElSelect>
             </ElFormItem>
             <ElFormItem label="商戶條件" required>

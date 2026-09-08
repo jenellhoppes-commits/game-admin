@@ -1,3 +1,4 @@
+import { validatePartnerTerm, type PartnerTermInput } from '@/utils/partnerTerms'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useBusinessPartnerStore } from './businessPartner'
@@ -60,6 +61,12 @@ export interface AgentPortalNotice {
 }
 
 export interface AgentPortalLog {
+  targetId?: string
+  before?: string
+  after?: string
+  effectiveFrom?: string
+  version?: number
+  reason?: string
   id: string
   time: string
   actor: string
@@ -426,8 +433,14 @@ export const useAgentPortalStore = defineStore(
     }
     const unreadCount = computed(() => notices.value.filter((notice) => !notice.read).length)
 
-    const addLog = (action: string, scope: string, result = '成功') => {
+    const addLog = (
+      action: string,
+      scope: string,
+      result = '成功',
+      detail: Partial<AgentPortalLog> = {}
+    ) => {
       logs.value.unshift({
+        ...detail,
         id: requestId('LOG-A'),
         time: now(),
         actor: currentStaff.value?.name || '目前代理員工',
@@ -450,8 +463,18 @@ export const useAgentPortalStore = defineStore(
         '0'
       )
 
-    const createChildAgent = (input: { parentId: string; name: string; reason?: string }) => {
+    const createChildAgent = (input: {
+      parentId: string
+      name: string
+      reason?: string
+      conditions?: PartnerTermInput
+    }) => {
       if (!hasPermission('relations:manage')) return { ok: false, message: '沒有新增代理權限' }
+      if (!input.conditions) return { ok: false, message: '請填寫商務條件' }
+      const validation = validatePartnerTerm(input.conditions, visibleCurrencies.value)
+      if (validation) return { ok: false, message: validation }
+      if (input.parentId !== CURRENT_AGENT_ID)
+        return { ok: false, message: '僅可新增自己的直屬下級' }
       const parent = businessStore.findAgent(input.parentId)
       if (!parent || !visibleAgentIds.value.has(parent.id) || parent.status !== 'Active')
         return { ok: false, message: '上級代理不存在、已停用或超出授權範圍' }
@@ -472,7 +495,7 @@ export const useAgentPortalStore = defineStore(
         parentAgent: parent.name,
         childAgentCount: 0,
         merchantCount: 0,
-        currency: parent.currency,
+        currency: input.conditions.settlementCurrency,
         contact: '',
         note: input.reason?.trim(),
         status: 'Active',
@@ -480,7 +503,31 @@ export const useAgentPortalStore = defineStore(
         updatedAt: now()
       })
       parent.childAgentCount = businessStore.getDirectChildren(parent.id).length
-      addLog('直接新增下級代理', parent.code + '／' + code, '已建立')
+      const term = businessStore.addCommercialTerm(id, {
+        settlementBasis: input.conditions.basis as AgentCommercialTerm['settlementBasis'],
+        ratePercent: input.conditions.percent,
+        settlementCurrency: input.conditions.settlementCurrency,
+        settlementCycle: input.conditions.settlementCycle as AgentCommercialTerm['settlementCycle'],
+        effectiveFrom: input.conditions.effectiveFrom,
+        reason: input.reason?.trim() || '建立代理初始條件',
+        autoEffective: true
+      })
+      term.createdBy = currentStaff.value?.name || CURRENT_AGENT_ID
+      term.status = 'Scheduled'
+      const audit = businessStore.auditLogs[id]?.[0]
+      if (audit) {
+        audit.operator = term.createdBy
+        audit.after = JSON.stringify(term)
+      }
+      businessStore.syncPartnerTerms()
+      addLog('直接新增下級代理', code, '已建立', {
+        targetId: id,
+        before: '無',
+        after: JSON.stringify(term),
+        version: 1,
+        effectiveFrom: term.effectiveFrom,
+        reason: input.reason
+      })
       return { ok: true, message: '下級代理已建立', id }
     }
 
@@ -488,14 +535,24 @@ export const useAgentPortalStore = defineStore(
       code: string
       name: string
       currency: string
-      termId: string
+      termId?: string
+      conditions?: PartnerTermInput
       walletMode: string
+      effectiveFrom?: string
       reason?: string
     }) => {
       if (!hasPermission('merchants:apply') || currentAgent.value?.status !== 'Active')
         return { ok: false, message: '沒有新增商戶權限' }
-      const term = merchantTermOptions.value.find((item) => item.id === input.termId)
-      if (!term) return { ok: false, message: '請選擇授權範圍內的生效商務條件' }
+      if (!input.conditions) return { ok: false, message: '請填寫商務條件' }
+      const validation = validatePartnerTerm(input.conditions, visibleCurrencies.value)
+      if (validation) return { ok: false, message: validation }
+      const term = {
+        settlementBasis: 'GGR' as const,
+        merchantTermPercent: input.conditions.percent,
+        settlementCurrency: input.conditions.settlementCurrency,
+        settlementCycle: input.conditions.settlementCycle as AgentCommercialTerm['settlementCycle'],
+        agentTermPercent: businessStore.getCurrentTerm(CURRENT_AGENT_ID)?.ratePercent || 0
+      }
       if (!['Seamless', 'Transfer'].includes(input.walletMode))
         return { ok: false, message: '請選擇錢包類型' }
       const code = input.code.trim().toUpperCase(),
@@ -535,57 +592,118 @@ export const useAgentPortalStore = defineStore(
         id: 'MTERM-' + id + '-001',
         merchantId: id,
         version: 1,
-        status: 'Draft',
-        effectiveFrom: '',
+        status: 'Scheduled',
+        autoEffective: true,
+        effectiveFrom: input.conditions.effectiveFrom,
         effectiveTo: undefined,
-        reason: '直接建立商戶；選用 ' + term.id + ' V' + term.version,
+        reason: input.reason?.trim() || '建立商戶初始條件',
         createdBy: currentStaff.value?.name || CURRENT_AGENT_ID,
         createdAt: time
       })
       currentAgent.value!.merchantCount = businessStore.getDirectMerchants(CURRENT_AGENT_ID).length
-      addLog('直接新增商戶', code, '已建立；商務條件待設定生效')
+      businessStore.syncPartnerTerms()
+      addLog('直接新增商戶', code, '已建立', {
+        targetId: id,
+        before: '無',
+        after: JSON.stringify(businessStore.getMerchantTerms(id)[0]),
+        version: 1,
+        effectiveFrom: input.conditions.effectiveFrom,
+        reason: input.reason
+      })
       return { ok: true, message: '商戶已建立', id }
     }
 
-    const saveDirectChildTerm = (input: {
-      targetId: string
-      basis: string
-      percent: number
-      effectiveFrom: string
-      reason: string
-    }) => {
+    const savePartnerTerm = (
+      kind: 'agent' | 'merchant',
+      input: PartnerTermInput & { targetId: string; reason: string }
+    ) => {
       if (!hasPermission('terms:apply')) return { ok: false, message: '沒有修改條件權限' }
-      const target = directChildren.value.find((item) => item.id === input.targetId)
-      if (!target) return { ok: false, message: '僅可修改直屬下級代理條件' }
-      if (
-        !['GGR', 'Valid Bet', 'Turnover'].includes(input.basis) ||
-        !Number.isFinite(input.percent) ||
-        input.percent < 0 ||
-        input.percent > 100
-      )
-        return { ok: false, message: '請填寫有效基礎與 0 至 100 的比例' }
+      const target =
+        kind === 'agent'
+          ? directChildren.value.find((t) => t.id === input.targetId)
+          : directMerchants.value.find((t) => t.id === input.targetId)
+      if (!target) return { ok: false, message: '僅可修改直屬下級代理或直屬商戶條件' }
+      const error = validatePartnerTerm(input, visibleCurrencies.value)
+      if (error) return { ok: false, message: error }
       if (!input.reason.trim()) return { ok: false, message: '請填寫變更原因' }
-      const previous = businessStore.getCurrentTerm(target.id)
-      const fallback = previous || businessStore.getCurrentTerm(CURRENT_AGENT_ID)
-      if (!fallback) return { ok: false, message: '缺少結算幣別及週期設定' }
-      const term = businessStore.addCommercialTerm(target.id, {
-        settlementBasis: input.basis as AgentCommercialTerm['settlementBasis'],
-        ratePercent: input.percent,
-        settlementCurrency: fallback.settlementCurrency,
-        settlementCycle: fallback.settlementCycle,
-        effectiveFrom: '',
-        reason: input.reason.trim()
-      })
-      term.createdBy = currentStaff.value?.name || CURRENT_AGENT_ID
-      const audit = businessStore.auditLogs[target.id]?.[0]
-      if (audit) audit.operator = term.createdBy
-      addLog(
-        '直接修改直屬下級條件',
-        target.code,
-        'V' + term.version + ' 已保存，待設定生效；原版本 ' + (previous?.version || '無')
+      const versions =
+        kind === 'agent'
+          ? businessStore.getTerms(target.id)
+          : businessStore.getMerchantTerms(target.id)
+      if (
+        versions.some(
+          (t) =>
+            t.effectiveFrom === input.effectiveFrom && ['Active', 'Scheduled'].includes(t.status)
+        )
       )
-      return { ok: true, message: '新條件版本已保存，待設定生效；不需送審', id: term.id }
+        return { ok: false, message: '該日期已有生效或待生效版本，請選擇其他日期' }
+      const previous = versions[0]
+      const before = previous ? JSON.stringify(previous) : '無'
+      const common = {
+        settlementBasis: input.basis as AgentCommercialTerm['settlementBasis'],
+        settlementCurrency: input.settlementCurrency,
+        settlementCycle: input.settlementCycle as AgentCommercialTerm['settlementCycle'],
+        effectiveFrom: input.effectiveFrom,
+        reason: input.reason.trim(),
+        autoEffective: true
+      }
+      let term
+      if (kind === 'agent') {
+        term = businessStore.addCommercialTerm(target.id, { ...common, ratePercent: input.percent })
+        term.status = 'Scheduled'
+        term.createdBy = currentStaff.value?.name || CURRENT_AGENT_ID
+        const audit = businessStore.auditLogs[target.id]?.[0]
+        if (audit) {
+          audit.operator = term.createdBy
+          audit.after = JSON.stringify(term)
+        }
+      } else {
+        const version = (versions[0]?.version || 0) + 1
+        term = {
+          ...common,
+          id: 'MTERM-' + target.id + '-' + String(version).padStart(3, '0'),
+          merchantId: target.id,
+          version,
+          merchantTermPercent: input.percent,
+          agentTermPercent: businessStore.getCurrentTerm(CURRENT_AGENT_ID)?.ratePercent || 0,
+          status: 'Scheduled' as const,
+          createdBy: currentStaff.value?.name || CURRENT_AGENT_ID,
+          createdAt: now()
+        }
+        businessStore.merchantCommercialTerms.unshift(term)
+        businessStore.merchantAuditLogs[target.id] ||= []
+        businessStore.merchantAuditLogs[target.id].unshift({
+          id: requestId('TERM-AUDIT'),
+          time: now(),
+          action: '修改商務條件',
+          operator: term.createdBy,
+          reason: input.reason,
+          result: 'Success',
+          before,
+          after: JSON.stringify(term)
+        })
+      }
+      businessStore.syncPartnerTerms()
+      addLog(
+        kind === 'agent' ? '直接修改直屬下級條件' : '直接修改直屬商戶條件',
+        target.code,
+        '已保存',
+        {
+          targetId: target.id,
+          before,
+          after: JSON.stringify(term),
+          version: term.version,
+          effectiveFrom: term.effectiveFrom,
+          reason: input.reason
+        }
+      )
+      return { ok: true, message: '條件版本已保存，依指定日期生效', id: term.id }
     }
+    const saveDirectChildTerm = (input: PartnerTermInput & { targetId: string; reason: string }) =>
+      savePartnerTerm('agent', input)
+    const saveDirectMerchantTerm = (
+      input: PartnerTermInput & { targetId: string; reason: string }
+    ) => savePartnerTerm('merchant', input)
 
     const submitRelationRequest = (input: {
       action: '新增下級' | '停用代理' | '移轉代理'
@@ -678,6 +796,13 @@ export const useAgentPortalStore = defineStore(
       const allowedTargets = new Set(directMerchants.value.map((item) => item.id))
       if (!allowedTargets.has(input.targetId))
         return { ok: false, message: '僅可申請直屬商戶條件變更；自己的條件唯讀' }
+      const date = new Date(input.effectiveFrom + 'T00:00:00Z')
+      if (
+        !/^\d{4}-\d{2}-\d{2}$/.test(input.effectiveFrom || '') ||
+        !Number.isFinite(date.getTime()) ||
+        date.toISOString().slice(0, 10) !== input.effectiveFrom
+      )
+        return { ok: false, message: '請選擇有效的生效日' }
       if (!input.basis || !Number.isFinite(input.percent) || !input.effectiveFrom)
         return { ok: false, message: '請填寫完整條件資料' }
       if (input.reason.trim().length < 6) return { ok: false, message: '申請原因至少需要 6 個字' }
@@ -702,7 +827,11 @@ export const useAgentPortalStore = defineStore(
         }
       }
       requests.value.unshift(request)
-      addLog('建立商務條件提案', target?.name || input.targetId, '待審核')
+      addLog(
+        '建立商務條件提案',
+        target?.name || input.targetId,
+        '待審核；生效日 ' + input.effectiveFrom
+      )
       return { ok: true, message: '提案版本已建立，未核准前不影響報表或結算', id: request.id }
     }
 
@@ -866,6 +995,7 @@ export const useAgentPortalStore = defineStore(
       createChildAgent,
       createDirectMerchant,
       saveDirectChildTerm,
+      saveDirectMerchantTerm,
       submitRelationRequest,
       submitMerchantApplication,
       submitTermRequest,
