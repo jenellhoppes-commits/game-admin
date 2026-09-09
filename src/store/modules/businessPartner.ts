@@ -1160,7 +1160,7 @@ export const useBusinessPartnerStore = defineStore(
         operator,
         reason,
         result: 'Success',
-        before: `${lineUid}｜${gameId}`,
+        before,
         after: JSON.stringify(config)
       })
       return true

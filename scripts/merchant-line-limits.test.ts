@@ -15,6 +15,9 @@ const config = portal.configurations.find(
   (c) => portal.availableLimitPlans(c.lineUid, c.gameId).length
 )!
 const plan = portal.availableLimitPlans(config.lineUid, config.gameId)[0]
+const previousLimit = business
+  .getMerchantLineGameConfigurations(config.lineUid)
+  .find((c) => c.gameId === config.gameId)!.limitPlan
 const masterBefore = JSON.stringify(catalog.games)
 const transactionsBefore = JSON.stringify(useTransactionCenterStore().bets)
 assert(portal.setLimitPlan(config.lineUid, config.gameId, plan.id).ok)
@@ -31,6 +34,9 @@ assert.equal(portal.setLimitPlan(config.lineUid, config.gameId, plan.id).ok, fal
 assert.equal(JSON.stringify(catalog.games), masterBefore)
 assert.equal(JSON.stringify(useTransactionCenterStore().bets), transactionsBefore)
 assert(portal.limitLogs.length > 0)
+const audit = business.getMerchantAuditLogs('M00001').find((a) => a.action === '更新線路遊戲配置')!
+assert.equal(JSON.parse(audit.before!).limitPlan, previousLimit)
+assert.equal(JSON.parse(audit.after!).limitPlan, plan.id)
 // Revoking authorization hides current operations without erasing historical data.
 const grant = business
   .getMerchantGameConfigurations('M00001')
