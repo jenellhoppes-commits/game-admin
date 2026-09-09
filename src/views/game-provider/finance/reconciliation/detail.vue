@@ -12,6 +12,7 @@
       </template>
     </AppPageHeader>
 
+    <SettlementCarryDemo :key="record.id" />
     <ElAlert v-if="record.unresolvedDifferenceCount" type="error" :closable="false" show-icon>
       <template #title
         >尚有 {{ record.unresolvedDifferenceCount }} 筆差異未完成處理，因此不能確認對帳。</template
@@ -360,6 +361,7 @@
 </template>
 
 <script setup lang="ts">
+  import SettlementCarryDemo from '@/components/business/SettlementCarryDemo.vue'
   import { ElMessage } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'

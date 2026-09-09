@@ -9,6 +9,7 @@
         ></template
       ></AppPageHeader
     >
+    <SettlementCarryDemo v-if="kind === 'reconciliation'" />
     <ElAlert :title="definition.note" type="info" :closable="false" />
     <ElTabs v-model="tab"
       ><ElTabPane
@@ -164,6 +165,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import SettlementCarryDemo from '@/components/business/SettlementCarryDemo.vue'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
   import { describeGameTypeRates, termCycleLabels, termStatusLabels } from '@/utils/partnerTerms'
   const business = useBusinessPartnerStore()

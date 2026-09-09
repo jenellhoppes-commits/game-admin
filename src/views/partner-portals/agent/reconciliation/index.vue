@@ -1,6 +1,7 @@
 <template>
   <div class="agent-page">
     <AppPageHeader title="對帳／結算" description="查看並確認本代理單據；確認不代表付款完成。" />
+    <SettlementCarryDemo />
     <ArtSearchBar
       label-position="top"
       :model-value="draft"
@@ -151,6 +152,7 @@
   </div>
 </template>
 <script setup lang="ts">
+  import SettlementCarryDemo from '@/components/business/SettlementCarryDemo.vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import { useAgentPortalStore } from '@/store/modules/agentPortal'
