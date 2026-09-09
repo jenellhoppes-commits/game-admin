@@ -1,7 +1,8 @@
 <template>
   <div class="agent-page">
     <AppPageHeader title="對帳／結算" description="查看並確認本代理單據；確認不代表付款完成。" />
-    <ArtSearchBar label-position="top"
+    <ArtSearchBar
+      label-position="top"
       :model-value="draft"
       @update:model-value="Object.assign(draft, $event)"
       :items="items"
@@ -22,6 +23,17 @@
         <ElTableColumn prop="period" label="期間" width="110" />
         <ElTableColumn prop="id" label="對帳單號" min-width="180" />
         <ElTableColumn prop="currency" label="幣別" width="80" />
+        <ElTableColumn label="結算方式" min-width="110"
+          ><template #default="{ row }">{{
+            row.settlementMode || '未設定'
+          }}</template></ElTableColumn
+        ><ElTableColumn label="上期累積金額" min-width="150"
+          ><template #default="{ row }">{{
+            row.previousAccumulatedAmount === undefined
+              ? '待定'
+              : money(row.previousAccumulatedAmount, row.currency)
+          }}</template></ElTableColumn
+        >
         <ElTableColumn label="結算金額" min-width="150" align="right"
           ><template #default="{ row }">{{
             money(row.finalSettlementAmount, row.currency)
@@ -37,7 +49,12 @@
         >
       </ArtTable>
     </ElCard>
-    <ElDrawer class="partner-drawer" v-model="visible" title="本代理對帳明細" size="min(760px, 100%)">
+    <ElDrawer
+      class="partner-drawer"
+      v-model="visible"
+      title="本代理對帳明細"
+      size="min(760px, 100%)"
+    >
       <template v-if="selected">
         <ElDescriptions :column="1" border>
           <ElDescriptionsItem label="對帳單號">{{ selected.id }}</ElDescriptionsItem>
@@ -57,6 +74,14 @@
             >{{ money(selected.ggr, selected.currency) }}
             {{ selected.currency }}</ElDescriptionsItem
           >
+          <ElDescriptionsItem label="結算方式">{{
+            selected.settlementMode || '未設定'
+          }}</ElDescriptionsItem
+          ><ElDescriptionsItem label="上期累積金額">{{
+            selected.previousAccumulatedAmount === undefined
+              ? '待定'
+              : money(selected.previousAccumulatedAmount, selected.currency)
+          }}</ElDescriptionsItem>
           <ElDescriptionsItem label="結算金額"
             >{{ money(selected.finalSettlementAmount, selected.currency) }}
             {{ selected.currency }}</ElDescriptionsItem
@@ -79,12 +104,22 @@
           <ElDescriptionsItem label="鎖定時間">{{ selected.lockedAt || '—' }}</ElDescriptionsItem>
         </ElDescriptions>
         <ElDivider>差異回報</ElDivider>
-        <ArtTable :data="differences" :show-table-header="false" height="auto" empty-text="沒有差異紀錄"
-          ><ElTableColumn prop="id" label="差異編號" min-width="180" /><ElTableColumn prop="source" label="來源單據" min-width="190" /><ElTableColumn prop="reason" label="原因" min-width="200" /><ElTableColumn
+        <ArtTable
+          :data="differences"
+          :show-table-header="false"
+          height="auto"
+          empty-text="沒有差異紀錄"
+          ><ElTableColumn prop="id" label="差異編號" min-width="180" /><ElTableColumn
+            prop="source"
+            label="來源單據"
+            min-width="190" /><ElTableColumn
+            prop="reason"
+            label="原因"
+            min-width="200" /><ElTableColumn
             prop="status"
             label="處理狀態"
-            width="110"
-        /><ElTableColumn prop="resolution" label="處理結果" min-width="180" /></ArtTable>
+            width="110" /><ElTableColumn prop="resolution" label="處理結果" min-width="180"
+        /></ArtTable>
         <ElForm label-position="top">
           <ElFormItem label="關聯參照"
             ><ElInput v-model="form.reference" :disabled="!canReport"
@@ -183,10 +218,34 @@
       !selected.value.lockedAt &&
       ['Pending Confirmation', 'Difference'].includes(selected.value.status)
   )
-  const differenceLabels: Record<string,string> = {Open:'待處理',Investigating:'調查中','Waiting Partner':'待合作方回覆','Waiting Internal':'內部處理中',Resolved:'已解決',Accepted:'已接受',Closed:'已結案',Pending:'待處理',Approved:'已核准',Rejected:'已退回'}
+  const differenceLabels: Record<string, string> = {
+    Open: '待處理',
+    Investigating: '調查中',
+    'Waiting Partner': '待合作方回覆',
+    'Waiting Internal': '內部處理中',
+    Resolved: '已解決',
+    Accepted: '已接受',
+    Closed: '已結案',
+    Pending: '待處理',
+    Approved: '已核准',
+    Rejected: '已退回'
+  }
   const differences = computed(() => [
-    ...store.getReconciliationDifferences(selectedId.value).map(r => ({id:r.id,source:r.merchantName+'／'+r.reconciliationId,reason:r.description,status:differenceLabels[r.status] || r.status,resolution:r.resolution || '尚未提供'})),
-    ...store.requests.filter(r => r.category === '差異' && r.targetId === selectedId.value).map(r => ({id:r.id,reason:r.reason,status:differenceLabels[r.status] || r.status,resolution:r.status === 'Pending' ? '待處理' : '請依正式差異紀錄查看結果'}))
+    ...store.getReconciliationDifferences(selectedId.value).map((r) => ({
+      id: r.id,
+      source: r.merchantName + '／' + r.reconciliationId,
+      reason: r.description,
+      status: differenceLabels[r.status] || r.status,
+      resolution: r.resolution || '尚未提供'
+    })),
+    ...store.requests
+      .filter((r) => r.category === '差異' && r.targetId === selectedId.value)
+      .map((r) => ({
+        id: r.id,
+        reason: r.reason,
+        status: differenceLabels[r.status] || r.status,
+        resolution: r.status === 'Pending' ? '待處理' : '請依正式差異紀錄查看結果'
+      }))
   ])
   function search() {
     Object.assign(applied, draft)
@@ -238,7 +297,10 @@
       /* 使用者取消 */
     }
   }
-function changePageSize(value: number) { size.value = value; page.value = 1 }
+  function changePageSize(value: number) {
+    size.value = value
+    page.value = 1
+  }
 </script>
 <style scoped lang="scss">
   @use '../shared';

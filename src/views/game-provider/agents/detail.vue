@@ -373,8 +373,21 @@
           ><ElSelect v-model="termForm.settlementBasis" class="w-full"
             ><ElOption label="GGR" value="GGR" /></ElSelect></ElFormItem
         ><ElFormItem label="代理條件" prop="ratePercent"
-          ><GameTypeRates v-model="termForm.gameTypeRates" /></ElFormItem
-        ><ElFormItem label="結算幣別" prop="settlementCurrency"
+          ><GameTypeRates
+            v-model="termForm.gameTypeRates"
+            :cost-rates="
+              agent?.parentAgentId
+                ? costRatesAt(
+                    store.getTerms(agent?.parentAgentId),
+                    termForm.effectiveFrom || businessDate()
+                  )
+                : undefined
+            " /></ElFormItem
+        ><ElFormItem label="結算方式" required
+          ><ElSelect v-model="termForm.settlementMode" placeholder="請選擇"
+            ><ElOption label="清零" value="清零" /><ElOption label="累積" value="累積" /></ElSelect
+        ></ElFormItem>
+        <ElFormItem label="結算幣別" prop="settlementCurrency"
           ><ElSelect v-model="termForm.settlementCurrency" class="w-full"
             ><ElOption
               v-for="currency in currencies"
@@ -501,7 +514,7 @@
 <script setup lang="ts">
   import '@/views/partner-portals/agent/components/term-dialog.scss'
   import GameTypeRates from '@/components/business/GameTypeRates.vue'
-  import { describeGameTypeRates, validateGameTypeRates, businessDate } from '@/utils/partnerTerms'
+  import { describeGameTypeRates, businessDate, costRatesAt } from '@/utils/partnerTerms'
   import type { FormInstance, FormRules } from 'element-plus'
   import { ElMessage } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
@@ -630,6 +643,7 @@
   const termForm = reactive({
     settlementBasis: 'GGR' as SettlementBasis,
     ratePercent: 0,
+    settlementMode: '',
     gameTypeRates: [] as import('@/types/game-provider').GameTypeRate[],
     settlementCurrency: 'USDT',
     settlementCycle: 'Monthly' as SettlementCycle,
@@ -690,6 +704,7 @@
     Object.assign(termForm, {
       settlementBasis: 'GGR',
       ratePercent: 0,
+      settlementMode: '',
       gameTypeRates: JSON.parse(JSON.stringify(currentTerm.value?.gameTypeRates || [])),
       settlementCurrency: currentTerm.value?.settlementCurrency || 'USDT',
       settlementCycle: currentTerm.value?.settlementCycle || 'Monthly',
@@ -700,7 +715,7 @@
   }
   const saveTerm = async () => {
     if (!agent.value || !(await termFormRef.value?.validate().catch(() => false))) return
-    const error = validateGameTypeRates(termForm.gameTypeRates)
+    const error = store.validateCommercialInput(termForm, agent.value?.parentAgentId)
     if (error) return ElMessage.warning(error)
     if (termForm.effectiveFrom < businessDate()) return ElMessage.warning('生效日不可早於本日')
     store.addCommercialTerm(agent.value.id, {

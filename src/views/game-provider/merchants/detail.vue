@@ -85,6 +85,11 @@
                   describeGameTypeRates(scope.row)
                 }}</template></ElTableColumn
               >
+              <ElTableColumn label="結算方式" min-width="100"
+                ><template #default="{ row }">{{
+                  row.settlementMode || '未設定'
+                }}</template></ElTableColumn
+              >
               <ElTableColumn prop="settlementCurrency" label="幣別" width="90" />
               <ElTableColumn label="週期" width="100"
                 ><template #default="scope">{{
@@ -288,8 +293,23 @@
           ></ElFormItem>
 
           <ElFormItem label="各遊戲類型 GGR 比例" required style="grid-column: 1 / -1"
-            ><GameTypeRates v-model="termForm.gameTypeRates"
+            ><GameTypeRates
+              v-model="termForm.gameTypeRates"
+              :cost-rates="
+                merchant.agentId
+                  ? costRatesAt(
+                      store.getTerms(merchant.agentId),
+                      termForm.effectiveFrom || businessDate()
+                    )
+                  : undefined
+              "
           /></ElFormItem>
+          <ElFormItem label="結算方式" required
+            ><ElSelect v-model="termForm.settlementMode" placeholder="請選擇"
+              ><ElOption label="清零" value="清零" /><ElOption
+                label="累積"
+                value="累積" /></ElSelect
+          ></ElFormItem>
           <ElFormItem label="結算幣別" required
             ><ElSelect v-model="termForm.settlementCurrency" class="w-full"
               ><ElOption
@@ -382,7 +402,7 @@
   import '@/views/partner-portals/agent/components/term-dialog.scss'
   import MerchantLimits from '@/components/business/MerchantLimits.vue'
   import GameTypeRates from '@/components/business/GameTypeRates.vue'
-  import { describeGameTypeRates, validateGameTypeRates, businessDate } from '@/utils/partnerTerms'
+  import { describeGameTypeRates, businessDate, costRatesAt } from '@/utils/partnerTerms'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import type {
@@ -439,6 +459,7 @@
   })
   const termForm = reactive<{
     settlementBasis: SettlementBasis
+    settlementMode: string
     gameTypeRates: import('@/types/game-provider').GameTypeRate[]
     merchantTermPercent: number
     settlementCurrency: string
@@ -448,6 +469,7 @@
   }>({
     settlementBasis: 'GGR',
     merchantTermPercent: 0,
+    settlementMode: '',
     gameTypeRates: [] as import('@/types/game-provider').GameTypeRate[],
     settlementCurrency: 'USD',
     settlementCycle: 'Monthly',
@@ -545,6 +567,7 @@
     Object.assign(termForm, {
       settlementBasis: 'GGR',
       merchantTermPercent: 0,
+      settlementMode: current?.settlementMode || '',
       gameTypeRates: JSON.parse(JSON.stringify(current?.gameTypeRates || [])),
       settlementCurrency: current?.settlementCurrency || merchant.value.settlementCurrency,
       settlementCycle: current?.settlementCycle || merchant.value.settlementCycle,
@@ -558,13 +581,14 @@
       ElMessage.warning('請填寫預計生效日與建立原因')
       return
     }
-    const error = validateGameTypeRates(termForm.gameTypeRates)
+    const error = store.validateCommercialInput(termForm, merchant.value.agentId)
     if (error) return ElMessage.warning(error)
     if (termForm.effectiveFrom < businessDate()) return ElMessage.warning('生效日不可早於本日')
     store.addMerchantCommercialTerm(merchant.value.id, {
       settlementBasis: termForm.settlementBasis,
       agentTermPercent: merchant.value.agentTermPercent,
       merchantTermPercent: 0,
+      settlementMode: termForm.settlementMode,
       gameTypeRates: JSON.parse(JSON.stringify(termForm.gameTypeRates)),
       settlementCurrency: termForm.settlementCurrency,
       settlementCycle: termForm.settlementCycle,

@@ -112,6 +112,7 @@ export interface GameTypeRate {
 }
 
 export interface AgentCommercialTerm {
+  settlementMode?: string
   gameTypeRates?: GameTypeRate[]
   autoEffective?: boolean
   id: string
@@ -207,6 +208,7 @@ export interface MerchantRecord {
 }
 
 export interface MerchantCommercialTerm {
+  settlementMode?: string
   gameTypeRates?: GameTypeRate[]
   autoEffective?: boolean
   id: string
@@ -284,6 +286,8 @@ export interface FinanceCalculationSnapshot {
 }
 
 export interface ReconciliationMetrics {
+  previousAccumulatedAmount?: number
+  settlementMode?: string
   memberCount: number
   betCount: number
   betAmount: number
@@ -456,6 +460,8 @@ export interface SettlementBatchRecord {
 }
 
 export interface MerchantSettlementStatement {
+  previousAccumulatedAmount?: number
+  settlementMode?: string
   id: string
   batchId: string
   reconciliationId: string
@@ -479,6 +485,8 @@ export interface MerchantSettlementStatement {
 }
 
 export interface AgentSettlementStatement {
+  previousAccumulatedAmount?: number
+  settlementMode?: string
   id: string
   batchId: string
   reconciliationId: string

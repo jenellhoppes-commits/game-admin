@@ -8,6 +8,7 @@ import { useBusinessPartnerStore } from '../src/store/modules/businessPartner'
 import { useFinanceCenterStore } from '../src/store/modules/financeCenter'
 import {
   businessDate,
+  validateCostFloor,
   validateGameTypeRates,
   describeGameTypeRates
 } from '../src/utils/partnerTerms'
@@ -29,8 +30,11 @@ for (const bad of [
 ])
   assert(validateGameTypeRates(bad))
 const history = JSON.stringify([finance.agentReconciliations, finance.merchantReconciliations])
+business.getCurrentTerm(CURRENT_AGENT_ID)!.gameTypeRates = JSON.parse(JSON.stringify(rates))
+business.getCurrentTerm(CURRENT_AGENT_ID)!.settlementMode = '清零'
 const conditions = {
   basis: 'GGR',
+  settlementMode: '累積',
   percent: 0,
   gameTypeRates: rates,
   settlementCurrency: portal.settlementCurrencies[0],
@@ -72,6 +76,7 @@ assert(!describeGameTypeRates(latest).includes('全域'))
 assert(describeGameTypeRates({ merchantTermPercent: 3 }).includes('歷史全域'))
 const admin = business.addCommercialTerm(child.id!, {
   settlementBasis: 'GGR',
+  settlementMode: '清零',
   ratePercent: 0,
   gameTypeRates: rates,
   settlementCurrency: 'USD',
@@ -93,3 +98,18 @@ business.activateCommercialTerm(admin.id, '確認未來版本')
 assert.equal(admin.status, 'Scheduled')
 assert.equal(business.getTerms(child.id!).find((t) => t.status === 'Active')?.version, 1)
 console.log('PASS future admin version remains scheduled')
+
+assert.equal(validateCostFloor([{ ...rates[0], percent: 5 }], [{ ...rates[0], percent: 5 }]), '')
+assert.equal(validateCostFloor([{ ...rates[0], percent: 6 }], [{ ...rates[0], percent: 5 }]), '')
+assert(validateCostFloor([{ ...rates[0], percent: 4.99 }], [{ ...rates[0], percent: 5 }]))
+assert(validateCostFloor(rates, []))
+assert(
+  business.validateCommercialInput({
+    gameTypeRates: rates,
+    settlementMode: '累計',
+    effectiveFrom: '2099-02-01'
+  })
+)
+assert.equal(admin.settlementMode, '清零')
+assert.equal(latest.settlementMode, '累積')
+console.log('PASS equal/above/below/missing cost and settlement modes')

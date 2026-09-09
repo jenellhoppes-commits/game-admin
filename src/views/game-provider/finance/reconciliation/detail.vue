@@ -197,6 +197,14 @@
           <ElDescriptions :column="descriptionColumns" border>
             <ElDescriptionsItem label="結算單號">ST-{{ record.id }}</ElDescriptionsItem>
             <ElDescriptionsItem label="對帳期間">{{ record.period }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="結算方式">{{
+              record.settlementMode || '未設定'
+            }}</ElDescriptionsItem
+            ><ElDescriptionsItem label="上期累積金額">{{
+              record.previousAccumulatedAmount === undefined
+                ? '待定'
+                : settlementMoney(record.previousAccumulatedAmount)
+            }}</ElDescriptionsItem>
             <ElDescriptionsItem label="原始應結">{{
               settlementMoney(record.initialSettlementAmount)
             }}</ElDescriptionsItem>
@@ -372,14 +380,9 @@
   )
   const record = computed(() => merchantRecord.value || agentRecord.value)
   const recordTitle = computed(
-    () =>
-      merchantRecord.value?.merchantName ||
-      agentRecord.value?.agentName ||
-      ''
+    () => merchantRecord.value?.merchantName || agentRecord.value?.agentName || ''
   )
-  const recordEyebrow = computed(() =>
-    isMerchant.value ? '商戶對帳詳細' : '代理對帳詳細'
-  )
+  const recordEyebrow = computed(() => (isMerchant.value ? '商戶對帳詳細' : '代理對帳詳細'))
   const recordDescription = computed(() =>
     record.value
       ? `${record.value.id} · ${record.value.period} · ${
@@ -501,8 +504,8 @@
     if (!record.value || (confirmAdjustment.value !== 0 && !confirmForm.note.trim()))
       return ElMessage.warning('有增減金額時，請填寫尾差原因')
     const success = isMerchant.value
-        ? store.confirmMerchant(record.value.id, confirmForm.actualAmount, confirmForm.note)
-        : store.confirmAgent(record.value.id, confirmForm.actualAmount, confirmForm.note)
+      ? store.confirmMerchant(record.value.id, confirmForm.actualAmount, confirmForm.note)
+      : store.confirmAgent(record.value.id, confirmForm.actualAmount, confirmForm.note)
     if (success) {
       confirmVisible.value = false
       activeTab.value = 'settlement'

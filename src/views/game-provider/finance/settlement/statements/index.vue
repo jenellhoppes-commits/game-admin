@@ -91,6 +91,14 @@
           ><ElDescriptionsItem v-if="isMerchant && 'lineUid' in current" label="商戶線路">{{
             current.lineUid
           }}</ElDescriptionsItem
+          ><ElDescriptionsItem label="結算方式">{{
+            current.settlementMode || '未設定'
+          }}</ElDescriptionsItem
+          ><ElDescriptionsItem label="上期累積金額">{{
+            current.previousAccumulatedAmount === undefined
+              ? '待定'
+              : money(current.previousAccumulatedAmount, current.settlementCurrency)
+          }}</ElDescriptionsItem
           ><ElDescriptionsItem label="結算期間">{{ current.period }}</ElDescriptionsItem
           ><ElDescriptionsItem label="付款期限">{{ current.dueDate }}</ElDescriptionsItem
           ><ElDescriptionsItem label="建立時間">{{ current.createdAt }}</ElDescriptionsItem

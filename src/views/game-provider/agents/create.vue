@@ -147,13 +147,29 @@
               ></ElCol>
               <ElCol :xs="24" :sm="12"
                 ><ElFormItem label="代理條件" prop="ratePercent"
-                  ><GameTypeRates v-model="form.gameTypeRates" /><div class="form-help"
+                  ><GameTypeRates
+                    v-model="form.gameTypeRates"
+                    :cost-rates="
+                      form.parentAgentId
+                        ? costRatesAt(
+                            store.getTerms(form.parentAgentId),
+                            form.effectiveFrom || businessDate()
+                          )
+                        : undefined
+                    "
+                  /><div class="form-help"
                     >條件值以百分比保存，實際基礎依左側選項。</div
                   ></ElFormItem
                 ></ElCol
               >
               <ElCol :xs="24" :sm="12"
-                ><ElFormItem label="結算幣別" prop="settlementCurrency"
+                ><ElFormItem label="結算方式" required
+                  ><ElSelect v-model="form.settlementMode" placeholder="請選擇"
+                    ><ElOption label="清零" value="清零" /><ElOption
+                      label="累積"
+                      value="累積" /></ElSelect
+                ></ElFormItem>
+                <ElFormItem label="結算幣別" prop="settlementCurrency"
                   ><ElSelect v-model="form.settlementCurrency" class="w-full" filterable
                     ><ElOption
                       v-for="currency in currencies"
@@ -233,7 +249,12 @@
 
 <script setup lang="ts">
   import GameTypeRates from '@/components/business/GameTypeRates.vue'
-  import { describeGameTypeRates, validateGameTypeRates, businessDate } from '@/utils/partnerTerms'
+  import {
+    describeGameTypeRates,
+    validateGameTypeRates,
+    businessDate,
+    costRatesAt
+  } from '@/utils/partnerTerms'
   import type { FormInstance, FormRules } from 'element-plus'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
@@ -267,6 +288,7 @@
     parentAgentId: '',
     settlementBasis: 'GGR' as SettlementBasis,
     ratePercent: 0,
+    settlementMode: '',
     gameTypeRates: [] as import('@/types/game-provider').GameTypeRate[],
     settlementCurrency: 'USDT',
     settlementCycle: 'Monthly' as SettlementCycle,
@@ -363,7 +385,7 @@
 
   const saveAgent = async (destination: 'stay' | 'detail') => {
     submitError.value = ''
-    const error = validateGameTypeRates(form.gameTypeRates)
+    const error = store.validateCommercialInput(form, form.parentAgentId)
     if (error || form.effectiveFrom < businessDate()) {
       submitError.value = error || '生效日不可早於本日'
       return
@@ -398,6 +420,7 @@
       store.updateDraftCommercialTerm(agent.id, {
         settlementBasis: form.settlementBasis,
         ratePercent: 0,
+        settlementMode: form.settlementMode,
         gameTypeRates: JSON.parse(JSON.stringify(form.gameTypeRates)),
         settlementCurrency: form.settlementCurrency,
         settlementCycle: form.settlementCycle,

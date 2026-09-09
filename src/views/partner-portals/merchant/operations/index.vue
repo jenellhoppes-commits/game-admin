@@ -28,7 +28,12 @@
           prop="effectiveTo"
           label="截止日"
           min-width="120"
-        /><ElTableColumn prop="settlementCurrency" label="結算幣別" /><ElTableColumn label="週期"
+        /><ElTableColumn prop="settlementCurrency" label="結算幣別" /><ElTableColumn
+          label="結算方式"
+          ><template #default="{ row }">{{
+            row.settlementMode || '未設定'
+          }}</template></ElTableColumn
+        ><ElTableColumn label="週期"
           ><template #default="{ row }">{{
             termCycleLabels[row.settlementCycle as keyof typeof termCycleLabels]
           }}</template></ElTableColumn
@@ -355,6 +360,8 @@
           ]
         : [
             c('id', '結算單'),
+            c('settlementMode', '結算方式'),
+            c('previousAccumulatedAmount', '上期累積金額'),
             c('reconciliationId', '對帳單'),
             c('period', '期間'),
             c('currency', '結算幣'),

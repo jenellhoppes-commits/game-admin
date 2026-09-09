@@ -1,7 +1,13 @@
 import { useGameCatalogStore } from './gameCatalog'
 import { defineStore } from 'pinia'
 import { computed, ref, onScopeDispose } from 'vue'
-import { advancePartnerTerms, businessDate, validateGameTypeRates } from '@/utils/partnerTerms'
+import {
+  advancePartnerTerms,
+  businessDate,
+  validateGameTypeRates,
+  costRatesAt,
+  validateCostFloor
+} from '@/utils/partnerTerms'
 import { agentMockData, merchantRecords } from '@/mock/game-provider'
 import type {
   AgentCommercialTerm,
@@ -27,6 +33,7 @@ import type {
 } from '@/types/game-provider'
 
 export interface NewAgentPayload {
+  settlementMode?: string
   gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
   code: string
   name: string
@@ -44,6 +51,7 @@ export interface NewAgentPayload {
 }
 
 export interface NewMerchantPayload {
+  settlementMode?: string
   gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
   code: string
   name: string
@@ -579,7 +587,27 @@ export const useBusinessPartnerStore = defineStore(
       })
     }
 
+    const validateCommercialInput = (
+      input: {
+        gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
+        settlementMode?: string
+        effectiveFrom: string
+      },
+      parentId?: string
+    ) => {
+      if (!input.gameTypeRates) return ''
+      if (!['清零', '累積'].includes(input.settlementMode || '')) return '請選擇清零或累積'
+      const invalid = validateGameTypeRates(input.gameTypeRates)
+      if (invalid) return invalid
+      return parentId
+        ? validateCostFloor(
+            input.gameTypeRates,
+            costRatesAt(getTerms(parentId), input.effectiveFrom)
+          )
+        : ''
+    }
     const createAgent = (payload: NewAgentPayload) => {
+      if (validateCommercialInput(payload, payload.parentAgentId)) return undefined
       if (payload.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
       if (payload.gameTypeRates) {
         const error = validateGameTypeRates(payload.gameTypeRates)
@@ -617,6 +645,7 @@ export const useBusinessPartnerStore = defineStore(
         id: `TERM-${agent.id}-001`,
         agentId: agent.id,
         version: 1,
+        settlementMode: payload.settlementMode,
         settlementBasis: payload.settlementBasis,
         gameTypeRates: payload.gameTypeRates
           ? JSON.parse(JSON.stringify(payload.gameTypeRates))
@@ -738,6 +767,8 @@ export const useBusinessPartnerStore = defineStore(
         if (error) throw new Error(error)
         input = { ...input, gameTypeRates: JSON.parse(JSON.stringify(input.gameTypeRates)) }
       }
+      const invalid = validateCommercialInput(input, findAgent(agentId)?.parentAgentId)
+      if (invalid) throw new Error(invalid)
       const versions = getTerms(agentId)
       const term: AgentCommercialTerm = {
         ...input,
@@ -767,16 +798,20 @@ export const useBusinessPartnerStore = defineStore(
         | 'settlementBasis'
         | 'ratePercent'
         | 'gameTypeRates'
+        | 'settlementMode'
         | 'settlementCurrency'
         | 'settlementCycle'
         | 'effectiveFrom'
       >
     ) => {
       if (updates.settlementBasis !== 'GGR') return false
+      if (validateCommercialInput(updates, findAgent(agentId)?.parentAgentId)) return false
       const term = getTerms(agentId).find((item) => item.status === 'Draft')
       if (!term) return false
       const before = JSON.stringify(term)
-      Object.assign(term, updates)
+      Object.assign(term, updates, {
+        gameTypeRates: updates.gameTypeRates?.map((rate) => ({ ...rate }))
+      })
       addAudit(agentId, {
         action: '更新商務條件草稿',
         operator: 'Super Admin',
@@ -826,6 +861,7 @@ export const useBusinessPartnerStore = defineStore(
     }
 
     const createMerchant = (payload: NewMerchantPayload) => {
+      if (validateCommercialInput(payload, payload.agentId)) return undefined
       if (payload.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
       if (payload.gameTypeRates) {
         const error = validateGameTypeRates(payload.gameTypeRates)
@@ -868,6 +904,7 @@ export const useBusinessPartnerStore = defineStore(
         id: `MTERM-${merchant.id}-001`,
         merchantId: merchant.id,
         version: 1,
+        settlementMode: payload.settlementMode,
         settlementBasis: payload.settlementBasis,
         gameTypeRates: payload.gameTypeRates
           ? JSON.parse(JSON.stringify(payload.gameTypeRates))
@@ -1008,6 +1045,8 @@ export const useBusinessPartnerStore = defineStore(
         if (error) throw new Error(error)
         input = { ...input, gameTypeRates: JSON.parse(JSON.stringify(input.gameTypeRates)) }
       }
+      const invalid = validateCommercialInput(input, findMerchant(merchantId)?.agentId)
+      if (invalid) throw new Error(invalid)
       const versions = getMerchantTerms(merchantId)
       const term: MerchantCommercialTerm = {
         ...input,
@@ -1350,6 +1389,7 @@ export const useBusinessPartnerStore = defineStore(
       getMerchantLineGameConfigurations,
       getMerchantLineTests,
       getMerchantLineAuditLogs,
+      validateCommercialInput,
       createAgent,
       updateAgent,
       canAssignParent,

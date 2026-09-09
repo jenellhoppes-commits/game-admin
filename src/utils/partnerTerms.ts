@@ -6,6 +6,7 @@ export const businessDate = (date = new Date()) =>
   new Intl.DateTimeFormat('sv-SE', { timeZone: TERM_TIMEZONE }).format(date)
 
 export interface PartnerTermInput {
+  settlementMode?: string
   basis: string
   gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
   percent: number
@@ -44,6 +45,8 @@ export function validatePartnerTerm(
     input.percent > 100
   )
     return '請填寫有效計算基礎與 0 至 100 的比例'
+  if (input.gameTypeRates && !['累積', '清零'].includes(input.settlementMode || ''))
+    return '請選擇累積或清零'
   if (input.gameTypeRates && validateGameTypeRates(input.gameTypeRates))
     return validateGameTypeRates(input.gameTypeRates)
   if (!currencies.includes(input.settlementCurrency)) return '請選擇可用結算幣別'
@@ -112,4 +115,31 @@ export function describeGameTypeRates(term: {
       '未設定'
     )
   return '歷史全域條件 ' + (term.ratePercent ?? term.merchantTermPercent ?? '—') + '%'
+}
+
+export function costRatesAt(
+  terms: import('@/types/game-provider').AgentCommercialTerm[],
+  date: string
+) {
+  const term = terms
+    .filter(
+      (t) =>
+        ['Active', 'Scheduled'].includes(t.status) &&
+        t.effectiveFrom <= date &&
+        (!t.effectiveTo || date < t.effectiveTo)
+    )
+    .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom) || b.version - a.version)[0]
+  return term?.gameTypeRates || []
+}
+export function validateCostFloor(
+  rates: import('@/types/game-provider').GameTypeRate[],
+  costs: import('@/types/game-provider').GameTypeRate[]
+) {
+  for (const rate of rates) {
+    const cost = costs.find((c) => c.typeId === rate.typeId)
+    if (!cost) return rate.code + ' 尚無上級類型成本，請先由上級設定'
+    if (rate.percent < cost.percent)
+      return rate.code + ' 下開比例不得低於上級成本 ' + cost.percent + '%'
+  }
+  return ''
 }

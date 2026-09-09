@@ -286,6 +286,7 @@
   const applied = reactive({ keyword: '', level: '', status: '' })
   const conditions = ref<PartnerTermInput>({
     basis: 'GGR',
+    settlementMode: '',
     percent: 0,
     gameTypeRates: [],
     settlementCurrency: '',
@@ -351,6 +352,7 @@
     requestForm.parentId = CURRENT_AGENT_ID
     conditions.value = {
       basis: 'GGR',
+      settlementMode: '',
       percent: 0,
       gameTypeRates: [],
       settlementCurrency: '',

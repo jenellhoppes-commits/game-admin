@@ -11,6 +11,9 @@
           termBasisLabels[current.settlementBasis]
         }}</ElDescriptionsItem>
         <ElDescriptionsItem label="比例">{{ describeGameTypeRates(current) }}</ElDescriptionsItem>
+        <ElDescriptionsItem label="結算方式">{{
+          current.settlementMode || '未設定'
+        }}</ElDescriptionsItem>
         <ElDescriptionsItem label="結算幣別">{{ current.settlementCurrency }}</ElDescriptionsItem>
         <ElDescriptionsItem label="對帳週期">{{
           termCycleLabels[current.settlementCycle]
@@ -113,6 +116,7 @@
     reason = ref('')
   const form = ref<PartnerTermInput>({
     basis: 'GGR',
+    settlementMode: '',
     percent: 0,
     gameTypeRates: [],
     settlementCurrency: '',
@@ -156,7 +160,7 @@
   type Term = AgentCommercialTerm | MerchantCommercialTerm
 
   function describe(term: Term) {
-    return `${termBasisLabels[term.settlementBasis]} ${describeGameTypeRates(term)} · ${term.settlementCurrency} · ${termCycleLabels[term.settlementCycle]}`
+    return `${termBasisLabels[term.settlementBasis]} ${describeGameTypeRates(term)} · ${term.settlementMode || '未設定'} · ${term.settlementCurrency} · ${termCycleLabels[term.settlementCycle]}`
   }
   function describeJson(value?: string) {
     if (!value) return '—'
@@ -173,6 +177,7 @@
     const term = current.value || terms.value[0]
     form.value = {
       basis: 'GGR',
+      settlementMode: '',
       percent: 0,
       gameTypeRates: JSON.parse(JSON.stringify(term?.gameTypeRates || [])),
       settlementCurrency: term?.settlementCurrency || '',

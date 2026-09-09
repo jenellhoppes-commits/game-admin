@@ -398,6 +398,8 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
         currency: item.settlementCurrency,
         status: item.status,
         createdAt: item.createdAt,
+        settlementMode: item.settlementMode || '未設定',
+        previousAccumulatedAmount: item.previousAccumulatedAmount ?? '待定',
         amount: '未定案（正式金額口徑待確認）'
       }))
   )

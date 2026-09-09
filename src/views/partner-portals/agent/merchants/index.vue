@@ -241,6 +241,7 @@
   const applied = reactive({ ...draft })
   const conditions = ref<PartnerTermInput>({
     basis: 'GGR',
+    settlementMode: '',
     percent: 0,
     gameTypeRates: [],
     settlementCurrency: '',
@@ -295,6 +296,7 @@
   function openApplication() {
     conditions.value = {
       basis: 'GGR',
+      settlementMode: '',
       percent: 0,
       gameTypeRates: [],
       settlementCurrency: '',

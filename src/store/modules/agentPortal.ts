@@ -1,4 +1,9 @@
-import { validatePartnerTerm, type PartnerTermInput } from '@/utils/partnerTerms'
+import {
+  costRatesAt,
+  validateCostFloor,
+  validatePartnerTerm,
+  type PartnerTermInput
+} from '@/utils/partnerTerms'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useBusinessPartnerStore } from './businessPartner'
@@ -481,6 +486,13 @@ export const useAgentPortalStore = defineStore(
     }) => {
       if (!hasPermission('relations:manage')) return { ok: false, message: '沒有新增代理權限' }
       if (!input.conditions) return { ok: false, message: '請填寫商務條件' }
+      const floor = input.conditions.gameTypeRates
+        ? validateCostFloor(
+            input.conditions.gameTypeRates,
+            costRatesAt(businessStore.getTerms(CURRENT_AGENT_ID), input.conditions.effectiveFrom)
+          )
+        : ''
+      if (floor) return { ok: false, message: floor }
       const validation = validatePartnerTerm(input.conditions, settlementCurrencies.value)
       if (validation) return { ok: false, message: validation }
       if (input.parentId !== CURRENT_AGENT_ID)
@@ -514,6 +526,7 @@ export const useAgentPortalStore = defineStore(
       })
       parent.childAgentCount = businessStore.getDirectChildren(parent.id).length
       const term = businessStore.addCommercialTerm(id, {
+        settlementMode: input.conditions.settlementMode,
         settlementBasis: input.conditions.basis as AgentCommercialTerm['settlementBasis'],
         ratePercent: input.conditions.gameTypeRates ? 0 : input.conditions.percent,
         gameTypeRates: input.conditions.gameTypeRates
@@ -557,9 +570,17 @@ export const useAgentPortalStore = defineStore(
       if (!hasPermission('merchants:apply') || currentAgent.value?.status !== 'Active')
         return { ok: false, message: '沒有新增商戶權限' }
       if (!input.conditions) return { ok: false, message: '請填寫商務條件' }
+      const floor = input.conditions.gameTypeRates
+        ? validateCostFloor(
+            input.conditions.gameTypeRates,
+            costRatesAt(businessStore.getTerms(CURRENT_AGENT_ID), input.conditions.effectiveFrom)
+          )
+        : ''
+      if (floor) return { ok: false, message: floor }
       const validation = validatePartnerTerm(input.conditions, settlementCurrencies.value)
       if (validation) return { ok: false, message: validation }
       const term = {
+        settlementMode: input.conditions.settlementMode,
         settlementBasis: 'GGR' as const,
         merchantTermPercent: input.conditions.gameTypeRates ? 0 : input.conditions.percent,
         gameTypeRates: input.conditions.gameTypeRates
@@ -639,6 +660,13 @@ export const useAgentPortalStore = defineStore(
           ? directChildren.value.find((t) => t.id === input.targetId)
           : directMerchants.value.find((t) => t.id === input.targetId)
       if (!target) return { ok: false, message: '僅可修改直屬下級代理或直屬商戶條件' }
+      const floor = input.gameTypeRates
+        ? validateCostFloor(
+            input.gameTypeRates,
+            costRatesAt(businessStore.getTerms(CURRENT_AGENT_ID), input.effectiveFrom)
+          )
+        : ''
+      if (floor) return { ok: false, message: floor }
       const error = validatePartnerTerm(input, settlementCurrencies.value)
       if (error) return { ok: false, message: error }
       if (!input.reason.trim()) return { ok: false, message: '請填寫變更原因' }
@@ -656,6 +684,7 @@ export const useAgentPortalStore = defineStore(
       const previous = versions[0]
       const before = previous ? JSON.stringify(previous) : '無'
       const common = {
+        settlementMode: input.settlementMode,
         gameTypeRates: input.gameTypeRates
           ? JSON.parse(JSON.stringify(input.gameTypeRates))
           : undefined,

@@ -4,8 +4,12 @@
       <ElInput model-value="GGR（遊戲輸贏）" readonly />
     </ElFormItem>
     <ElFormItem label="各遊戲類型 GGR 比例" required style="grid-column: 1 / -1"
-      ><GameTypeRates v-model="model.gameTypeRates"
+      ><GameTypeRates v-model="model.gameTypeRates" :cost-rates="costs"
     /></ElFormItem>
+    <ElFormItem label="結算方式" required
+      ><ElSelect v-model="model.settlementMode" placeholder="請選擇"
+        ><ElOption label="累積" value="累積" /><ElOption label="清零" value="清零" /></ElSelect
+    ></ElFormItem>
     <ElFormItem label="結算幣別" required
       ><ElSelect v-model="model.settlementCurrency"
         ><ElOption
@@ -34,6 +38,13 @@
 </template>
 <script setup lang="ts">
   import './term-dialog.scss'
+  import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
+  import { CURRENT_AGENT_ID } from '@/store/modules/agentPortal'
+  import { costRatesAt } from '@/utils/partnerTerms'
+  const business = useBusinessPartnerStore()
+  const costs = computed(() =>
+    costRatesAt(business.getTerms(CURRENT_AGENT_ID), model.value.effectiveFrom || businessDate())
+  )
   import GameTypeRates from '@/components/business/GameTypeRates.vue'
   import { businessDate, termCycleLabels, type PartnerTermInput } from '@/utils/partnerTerms'
   const model = defineModel<PartnerTermInput>({ required: true })

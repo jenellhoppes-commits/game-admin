@@ -17,6 +17,15 @@
       align="right"
     />
     <ElTableColumn prop="batchId" label="結算批次" min-width="150" />
+    <ElTableColumn label="結算方式" min-width="110"
+      ><template #default="{ row }">{{ row.settlementMode || '未設定' }}</template></ElTableColumn
+    ><ElTableColumn label="上期累積金額" min-width="150"
+      ><template #default="{ row }">{{
+        row.previousAccumulatedAmount === undefined
+          ? '待定'
+          : money(row.previousAccumulatedAmount, row.settlementCurrency)
+      }}</template></ElTableColumn
+    >
     <ElTableColumn label="原始應結" min-width="145" align="right"
       ><template #default="scope">{{
         money(scope.row.grossAmount, scope.row.settlementCurrency)

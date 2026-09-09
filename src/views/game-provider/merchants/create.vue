@@ -118,10 +118,26 @@
               </ElSelect>
             </ElFormItem>
             <ElFormItem label="商戶條件" required>
-              <GameTypeRates v-model="form.gameTypeRates" />
+              <GameTypeRates
+                v-model="form.gameTypeRates"
+                :cost-rates="
+                  form.agentId
+                    ? costRatesAt(
+                        store.getTerms(form.agentId),
+                        form.effectiveFrom || businessDate()
+                      )
+                    : undefined
+                "
+              />
               <div class="form-help">目前以百分比保存，不在前端寫死結算公式。</div>
             </ElFormItem>
 
+            <ElFormItem label="結算方式" required
+              ><ElSelect v-model="form.settlementMode" placeholder="請選擇"
+                ><ElOption label="清零" value="清零" /><ElOption
+                  label="累積"
+                  value="累積" /></ElSelect
+            ></ElFormItem>
             <ElFormItem label="結算幣別" required>
               <ElSelect v-model="form.settlementCurrency" filterable class="w-full">
                 <ElOption
@@ -245,7 +261,7 @@
 
 <script setup lang="ts">
   import GameTypeRates from '@/components/business/GameTypeRates.vue'
-  import { describeGameTypeRates, validateGameTypeRates, businessDate } from '@/utils/partnerTerms'
+  import { describeGameTypeRates, businessDate, costRatesAt } from '@/utils/partnerTerms'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
@@ -327,6 +343,7 @@
     agentId: '',
     settlementBasis: 'GGR' as SettlementBasis,
     merchantTermPercent: 0,
+    settlementMode: '',
     gameTypeRates: [] as import('@/types/game-provider').GameTypeRate[],
     settlementCurrency: 'USDT',
     settlementCycle: 'Monthly' as SettlementCycle,
@@ -398,7 +415,7 @@
           form.settlementCurrency &&
           form.settlementCycle &&
           form.effectiveFrom &&
-          !validateGameTypeRates(form.gameTypeRates) &&
+          !store.validateCommercialInput(form, form.agentId) &&
           form.effectiveFrom >= businessDate()
       ),
       Boolean(form.walletMode && form.lineCurrency)
