@@ -118,19 +118,10 @@
               </ElSelect>
             </ElFormItem>
             <ElFormItem label="商戶條件" required>
-              <ElInputNumber
-                v-model="form.merchantTermPercent"
-                :min="0"
-                :max="100"
-                :precision="2"
-                :step="0.25"
-                class="w-full"
-              />
+              <GameTypeRates v-model="form.gameTypeRates" />
               <div class="form-help">目前以百分比保存，不在前端寫死結算公式。</div>
             </ElFormItem>
-            <ElFormItem label="與代理條件差額">
-              <ElInput :model-value="termSpreadLabel" disabled />
-            </ElFormItem>
+
             <ElFormItem label="結算幣別" required>
               <ElSelect v-model="form.settlementCurrency" filterable class="w-full">
                 <ElOption
@@ -210,9 +201,9 @@
             <ElDescriptionsItem label="所屬代理"
               >{{ selectedAgent?.name }}｜{{ selectedAgent?.code }}</ElDescriptionsItem
             >
-            <ElDescriptionsItem label="商務條件"
-              >{{ basisLabel }} {{ form.merchantTermPercent }}%</ElDescriptionsItem
-            >
+            <ElDescriptionsItem label="商務條件">{{
+              describeGameTypeRates(form)
+            }}</ElDescriptionsItem>
             <ElDescriptionsItem label="結算"
               >{{ form.settlementCurrency }}｜{{ cycleLabel }}</ElDescriptionsItem
             >
@@ -253,6 +244,8 @@
 </template>
 
 <script setup lang="ts">
+  import GameTypeRates from '@/components/business/GameTypeRates.vue'
+  import { describeGameTypeRates, validateGameTypeRates, businessDate } from '@/utils/partnerTerms'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
@@ -334,6 +327,7 @@
     agentId: '',
     settlementBasis: 'GGR' as SettlementBasis,
     merchantTermPercent: 0,
+    gameTypeRates: [] as import('@/types/game-provider').GameTypeRate[],
     settlementCurrency: 'USDT',
     settlementCycle: 'Monthly' as SettlementCycle,
     effectiveFrom: '',
@@ -348,16 +342,9 @@
   const agentTermLabel = computed(() => {
     const term = selectedAgentTerm.value
     if (!term) return '尚未選擇代理'
-    return `${basisText(term.settlementBasis)} ${term.ratePercent}%`
+    return `${basisText(term.settlementBasis)} ${describeGameTypeRates(term)}`
   })
-  const termSpread = computed(
-    () => (selectedAgentTerm.value?.ratePercent || 0) - form.merchantTermPercent
-  )
-  const termSpreadLabel = computed(() =>
-    selectedAgentTerm.value ? `${termSpread.value.toFixed(2)}%` : '—'
-  )
   const lineUid = computed(() => store.createLineUid(form.code || 'MERCHANT', form.lineCurrency))
-  const basisLabel = computed(() => basisText(form.settlementBasis))
   const cycleLabel = computed(() => cycleText(form.settlementCycle))
   const codeStateText = computed(() =>
     codeState.value === 'available'
@@ -389,7 +376,7 @@
     form.settlementBasis = term.settlementBasis
     form.settlementCurrency = term.settlementCurrency
     form.settlementCycle = term.settlementCycle
-    form.merchantTermPercent = Number(Math.max(0, term.ratePercent - 1).toFixed(2))
+    form.merchantTermPercent = 0
   }
   const validateStep = () => {
     validateCode()
@@ -411,18 +398,13 @@
           form.settlementCurrency &&
           form.settlementCycle &&
           form.effectiveFrom &&
-          form.merchantTermPercent >= 0 &&
-          form.merchantTermPercent <= (selectedAgentTerm.value?.ratePercent || 0)
+          !validateGameTypeRates(form.gameTypeRates) &&
+          form.effectiveFrom >= businessDate()
       ),
       Boolean(form.walletMode && form.lineCurrency)
     ]
     const valid = validations[activeStep.value] ?? true
-    if (!valid)
-      submitError.value =
-        activeStep.value === 1 &&
-        form.merchantTermPercent > (selectedAgentTerm.value?.ratePercent || 0)
-          ? '商戶條件不可高於所屬代理目前條件。'
-          : '請先完成本步驟的必填資料與欄位格式。'
+    if (!valid) submitError.value = '請完成必填欄位、各遊戲類型比例及有效生效日。'
     else submitError.value = ''
     return valid
   }

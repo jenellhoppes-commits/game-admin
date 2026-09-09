@@ -1,3 +1,4 @@
+import { gameTypeMockData } from '@/mock/game-provider'
 import type { SettlementBasis, SettlementCycle } from '@/types/game-provider'
 
 export const TERM_TIMEZONE = 'Asia/Taipei'
@@ -6,6 +7,7 @@ export const businessDate = (date = new Date()) =>
 
 export interface PartnerTermInput {
   basis: string
+  gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
   percent: number
   settlementCurrency: string
   settlementCycle: string
@@ -42,6 +44,8 @@ export function validatePartnerTerm(
     input.percent > 100
   )
     return '請填寫有效計算基礎與 0 至 100 的比例'
+  if (input.gameTypeRates && validateGameTypeRates(input.gameTypeRates))
+    return validateGameTypeRates(input.gameTypeRates)
   if (!currencies.includes(input.settlementCurrency)) return '請選擇可用結算幣別'
   if (!Object.hasOwn(termCycleLabels, input.settlementCycle)) return '請選擇對帳週期'
   const date = new Date(input.effectiveFrom + 'T00:00:00Z')
@@ -77,4 +81,35 @@ export function advancePartnerTerms<T extends DatedTerm>(terms: T[], today = bus
     activated.push(term)
   }
   return activated
+}
+
+export function validateGameTypeRates(rates: import('@/types/game-provider').GameTypeRate[]) {
+  if (rates.some((r) => !gameTypeMockData.some((t) => t.id === r.typeId && t.status === 'Active')))
+    return '請選擇總後台有效的遊戲類型'
+  if (!rates.length) return '請至少設定一個遊戲類型的 GGR 比例'
+  if (new Set(rates.map((r) => r.typeId)).size !== rates.length) return '遊戲類型不可重複'
+  if (
+    rates.some(
+      (r) =>
+        !r.typeId ||
+        !Number.isFinite(r.percent) ||
+        r.percent < 0 ||
+        r.percent > 100 ||
+        Math.abs(r.percent * 100 - Math.round(r.percent * 100)) > 0.000001
+    )
+  )
+    return '各類型比例需為 0 至 100，最多兩位小數'
+  return ''
+}
+export function describeGameTypeRates(term: {
+  gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
+  ratePercent?: number
+  merchantTermPercent?: number
+}) {
+  if (term.gameTypeRates)
+    return (
+      term.gameTypeRates.map((r) => r.code + ' ' + r.name + ' ' + r.percent + '%').join('；') ||
+      '未設定'
+    )
+  return '歷史全域條件 ' + (term.ratePercent ?? term.merchantTermPercent ?? '—') + '%'
 }

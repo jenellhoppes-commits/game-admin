@@ -1,7 +1,7 @@
 import { useGameCatalogStore } from './gameCatalog'
 import { defineStore } from 'pinia'
 import { computed, ref, onScopeDispose } from 'vue'
-import { advancePartnerTerms, businessDate } from '@/utils/partnerTerms'
+import { advancePartnerTerms, businessDate, validateGameTypeRates } from '@/utils/partnerTerms'
 import { agentMockData, merchantRecords } from '@/mock/game-provider'
 import type {
   AgentCommercialTerm,
@@ -27,6 +27,7 @@ import type {
 } from '@/types/game-provider'
 
 export interface NewAgentPayload {
+  gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
   code: string
   name: string
   level: AgentLevel
@@ -43,6 +44,7 @@ export interface NewAgentPayload {
 }
 
 export interface NewMerchantPayload {
+  gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
   code: string
   name: string
   brandName?: string
@@ -579,6 +581,10 @@ export const useBusinessPartnerStore = defineStore(
 
     const createAgent = (payload: NewAgentPayload) => {
       if (payload.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
+      if (payload.gameTypeRates) {
+        const error = validateGameTypeRates(payload.gameTypeRates)
+        if (error) throw new Error(error)
+      }
       const now = formatNow()
       const parent = payload.parentAgentId ? findAgent(payload.parentAgentId) : undefined
       const requiredParentLevel =
@@ -612,6 +618,9 @@ export const useBusinessPartnerStore = defineStore(
         agentId: agent.id,
         version: 1,
         settlementBasis: payload.settlementBasis,
+        gameTypeRates: payload.gameTypeRates
+          ? JSON.parse(JSON.stringify(payload.gameTypeRates))
+          : undefined,
         ratePercent: payload.ratePercent,
         settlementCurrency: payload.settlementCurrency,
         settlementCycle: payload.settlementCycle,
@@ -724,6 +733,11 @@ export const useBusinessPartnerStore = defineStore(
       >
     ) => {
       if (input.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
+      if (input.gameTypeRates) {
+        const error = validateGameTypeRates(input.gameTypeRates)
+        if (error) throw new Error(error)
+        input = { ...input, gameTypeRates: JSON.parse(JSON.stringify(input.gameTypeRates)) }
+      }
       const versions = getTerms(agentId)
       const term: AgentCommercialTerm = {
         ...input,
@@ -752,6 +766,7 @@ export const useBusinessPartnerStore = defineStore(
         AgentCommercialTerm,
         | 'settlementBasis'
         | 'ratePercent'
+        | 'gameTypeRates'
         | 'settlementCurrency'
         | 'settlementCycle'
         | 'effectiveFrom'
@@ -776,6 +791,18 @@ export const useBusinessPartnerStore = defineStore(
     const activateCommercialTerm = (termId: string, reason: string) => {
       const term = commercialTerms.value.find((item) => item.id === termId)
       if (!term) return
+      if (term.gameTypeRates && term.effectiveFrom > businessDate()) {
+        term.autoEffective = true
+        term.status = 'Scheduled'
+        addAudit(term.agentId, {
+          action: '排程商務條件生效',
+          operator: 'Super Admin',
+          reason,
+          result: 'Success',
+          after: JSON.stringify(term)
+        })
+        return
+      }
       commercialTerms.value.forEach((item) => {
         if (item.agentId === term.agentId && item.status === 'Active') {
           item.status = 'Expired'
@@ -800,6 +827,10 @@ export const useBusinessPartnerStore = defineStore(
 
     const createMerchant = (payload: NewMerchantPayload) => {
       if (payload.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
+      if (payload.gameTypeRates) {
+        const error = validateGameTypeRates(payload.gameTypeRates)
+        if (error) throw new Error(error)
+      }
       const agent = findAgent(payload.agentId)
       const agentTerm = getCurrentTerm(payload.agentId)
       if (!agent || !agentTerm || !isMerchantCodeAvailable(payload.code)) return
@@ -838,6 +869,9 @@ export const useBusinessPartnerStore = defineStore(
         merchantId: merchant.id,
         version: 1,
         settlementBasis: payload.settlementBasis,
+        gameTypeRates: payload.gameTypeRates
+          ? JSON.parse(JSON.stringify(payload.gameTypeRates))
+          : undefined,
         agentTermPercent: agentTerm.ratePercent,
         merchantTermPercent: payload.merchantTermPercent,
         settlementCurrency: payload.settlementCurrency,
@@ -969,6 +1003,11 @@ export const useBusinessPartnerStore = defineStore(
       >
     ) => {
       if (input.settlementBasis !== 'GGR') throw new Error('商務條件僅支援 GGR')
+      if (input.gameTypeRates) {
+        const error = validateGameTypeRates(input.gameTypeRates)
+        if (error) throw new Error(error)
+        input = { ...input, gameTypeRates: JSON.parse(JSON.stringify(input.gameTypeRates)) }
+      }
       const versions = getMerchantTerms(merchantId)
       const term: MerchantCommercialTerm = {
         ...input,
@@ -994,6 +1033,18 @@ export const useBusinessPartnerStore = defineStore(
     const activateMerchantCommercialTerm = (termId: string, reason: string) => {
       const term = merchantCommercialTerms.value.find((item) => item.id === termId)
       if (!term) return
+      if (term.gameTypeRates && term.effectiveFrom > businessDate()) {
+        term.autoEffective = true
+        term.status = 'Scheduled'
+        addMerchantAudit(term.merchantId, {
+          action: '排程商務條件生效',
+          operator: 'Super Admin',
+          reason,
+          result: 'Success',
+          after: JSON.stringify(term)
+        })
+        return
+      }
       merchantCommercialTerms.value.forEach((item) => {
         if (item.merchantId === term.merchantId && item.status === 'Active') {
           item.status = 'Expired'

@@ -148,7 +148,7 @@
                 }}</template></ElTableColumn
               ><ElTableColumn label="代理條件" width="105"
                 ><template #default="{ row }"
-                  ><strong>{{ row.ratePercent }}%</strong></template
+                  ><strong>{{ describeGameTypeRates(row) }}</strong></template
                 ></ElTableColumn
               ><ElTableColumn
                 prop="settlementCurrency"
@@ -205,13 +205,15 @@
               ><ElTableColumn prop="agentName" label="所屬代理" min-width="140" /><ElTableColumn
                 label="商戶條件"
                 width="110"
-                ><template #default="{ row }"
-                  >{{ row.merchantTermPercent }}%</template
-                ></ElTableColumn
+                ><template #default="{ row }">{{
+                  describeGameTypeRates(store.getCurrentMerchantTerm(row.id) || {})
+                }}</template></ElTableColumn
               ><ElTableColumn label="代理價差" width="105"
-                ><template #default="{ row }"
-                  >{{ (row.merchantTermPercent - row.agentTermPercent).toFixed(2) }}%</template
-                ></ElTableColumn
+                ><template #default="{ row }">{{
+                  store.getCurrentMerchantTerm(row.id)?.gameTypeRates
+                    ? '依類型查看條件'
+                    : '歷史全域條件'
+                }}</template></ElTableColumn
               ><ElTableColumn label="線路數" width="85"
                 ><template #default="{ row }">{{ row.lines.length }}</template></ElTableColumn
               ><ElTableColumn label="狀態" width="110"
@@ -371,12 +373,7 @@
           ><ElSelect v-model="termForm.settlementBasis" class="w-full"
             ><ElOption label="GGR" value="GGR" /></ElSelect></ElFormItem
         ><ElFormItem label="代理條件" prop="ratePercent"
-          ><ElInputNumber
-            v-model="termForm.ratePercent"
-            :min="0"
-            :max="100"
-            :precision="2"
-            class="w-full" /></ElFormItem
+          ><GameTypeRates v-model="termForm.gameTypeRates" /></ElFormItem
         ><ElFormItem label="結算幣別" prop="settlementCurrency"
           ><ElSelect v-model="termForm.settlementCurrency" class="w-full"
             ><ElOption
@@ -502,6 +499,9 @@
 </template>
 
 <script setup lang="ts">
+  import '@/views/partner-portals/agent/components/term-dialog.scss'
+  import GameTypeRates from '@/components/business/GameTypeRates.vue'
+  import { describeGameTypeRates, validateGameTypeRates, businessDate } from '@/utils/partnerTerms'
   import type { FormInstance, FormRules } from 'element-plus'
   import { ElMessage } from 'element-plus'
   import { useWindowSize } from '@vueuse/core'
@@ -569,7 +569,7 @@
     {
       label: '目前代理條件',
       value: currentTerm.value
-        ? `${basisText(currentTerm.value.settlementBasis)} ${currentTerm.value.ratePercent}%`
+        ? `${basisText(currentTerm.value.settlementBasis)} ${describeGameTypeRates(currentTerm.value)}`
         : '未設定',
       note: currentTerm.value
         ? `${currentTerm.value.settlementCurrency}／${cycleText(currentTerm.value.settlementCycle)}`
@@ -629,7 +629,8 @@
   }
   const termForm = reactive({
     settlementBasis: 'GGR' as SettlementBasis,
-    ratePercent: 6.5,
+    ratePercent: 0,
+    gameTypeRates: [] as import('@/types/game-provider').GameTypeRate[],
     settlementCurrency: 'USDT',
     settlementCycle: 'Monthly' as SettlementCycle,
     effectiveFrom: '',
@@ -688,7 +689,8 @@
   const openTermDrawer = () => {
     Object.assign(termForm, {
       settlementBasis: 'GGR',
-      ratePercent: currentTerm.value?.ratePercent || 6.5,
+      ratePercent: 0,
+      gameTypeRates: JSON.parse(JSON.stringify(currentTerm.value?.gameTypeRates || [])),
       settlementCurrency: currentTerm.value?.settlementCurrency || 'USDT',
       settlementCycle: currentTerm.value?.settlementCycle || 'Monthly',
       effectiveFrom: '',
@@ -698,7 +700,13 @@
   }
   const saveTerm = async () => {
     if (!agent.value || !(await termFormRef.value?.validate().catch(() => false))) return
-    store.addCommercialTerm(agent.value.id, { ...termForm })
+    const error = validateGameTypeRates(termForm.gameTypeRates)
+    if (error) return ElMessage.warning(error)
+    if (termForm.effectiveFrom < businessDate()) return ElMessage.warning('生效日不可早於本日')
+    store.addCommercialTerm(agent.value.id, {
+      ...termForm,
+      gameTypeRates: JSON.parse(JSON.stringify(termForm.gameTypeRates))
+    })
     termVisible.value = false
     ElMessage.success('商務條件新版本已建立為草稿')
   }
@@ -711,7 +719,7 @@
     if (!activatingTerm.value || !termActivateReason.value.trim()) return
     store.activateCommercialTerm(activatingTerm.value.id, termActivateReason.value)
     termActivateVisible.value = false
-    ElMessage.success('商務條件版本已生效')
+    ElMessage.success('條件版本已確認，依生效日套用')
   }
   const openParentDialog = () => {
     newParentId.value = agent.value?.parentAgentId || ''

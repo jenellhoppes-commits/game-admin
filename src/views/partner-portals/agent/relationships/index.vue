@@ -287,6 +287,7 @@
   const conditions = ref<PartnerTermInput>({
     basis: 'GGR',
     percent: 0,
+    gameTypeRates: [],
     settlementCurrency: '',
     settlementCycle: '',
     effectiveFrom: ''
@@ -351,6 +352,7 @@
     conditions.value = {
       basis: 'GGR',
       percent: 0,
+      gameTypeRates: [],
       settlementCurrency: '',
       settlementCycle: '',
       effectiveFrom: ''

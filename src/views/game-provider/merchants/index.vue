@@ -69,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+  import { describeGameTypeRates } from '@/utils/partnerTerms'
   import {
     ElButton,
     ElDropdown,
@@ -235,7 +236,7 @@
         : term.settlementBasis === 'Turnover'
           ? '營業額'
           : 'GGR'
-    return `${basis} ${term.merchantTermPercent}%`
+    return `${basis} ${describeGameTypeRates(term)}`
   }
   const integrationText = (row: MerchantRecord) => {
     if (row.lines.some((line) => line.environment === 'Production')) return '正式環境'

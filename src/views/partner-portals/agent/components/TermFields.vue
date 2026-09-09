@@ -3,8 +3,8 @@
     <ElFormItem label="計算基礎" required>
       <ElInput model-value="GGR（遊戲輸贏）" readonly />
     </ElFormItem>
-    <ElFormItem label="比例（%）" required
-      ><ElInputNumber v-model="model.percent" :min="0" :max="100" :precision="2"
+    <ElFormItem label="各遊戲類型 GGR 比例" required style="grid-column: 1 / -1"
+      ><GameTypeRates v-model="model.gameTypeRates"
     /></ElFormItem>
     <ElFormItem label="結算幣別" required
       ><ElSelect v-model="model.settlementCurrency"
@@ -34,6 +34,7 @@
 </template>
 <script setup lang="ts">
   import './term-dialog.scss'
+  import GameTypeRates from '@/components/business/GameTypeRates.vue'
   import { businessDate, termCycleLabels, type PartnerTermInput } from '@/utils/partnerTerms'
   const model = defineModel<PartnerTermInput>({ required: true })
   defineProps<{ currencies: string[] }>()

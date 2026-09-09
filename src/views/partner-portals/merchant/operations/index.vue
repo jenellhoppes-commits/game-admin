@@ -17,6 +17,26 @@
         :name="pane.key"
         :label="pane.label"
     /></ElTabs>
+    <ElCard v-if="kind === 'reconciliation'" shadow="never"
+      ><h3>我的商務條件（唯讀）</h3
+      ><ElTable :data="ownTerms"
+        ><ElTableColumn prop="version" label="版本" width="80" /><ElTableColumn
+          label="各遊戲類型 GGR 比例"
+          min-width="280"
+          ><template #default="{ row }">{{ describeGameTypeRates(row) }}</template></ElTableColumn
+        ><ElTableColumn prop="effectiveFrom" label="生效日" min-width="120" /><ElTableColumn
+          prop="effectiveTo"
+          label="截止日"
+          min-width="120"
+        /><ElTableColumn prop="settlementCurrency" label="結算幣別" /><ElTableColumn label="週期"
+          ><template #default="{ row }">{{
+            termCycleLabels[row.settlementCycle as keyof typeof termCycleLabels]
+          }}</template></ElTableColumn
+        ><ElTableColumn label="狀態"
+          ><template #default="{ row }">{{ termStatusLabels[row.status] }}</template></ElTableColumn
+        ></ElTable
+      ></ElCard
+    >
     <ElCard shadow="never">
       <ScopedTable :key="kind + tab" :rows="rows" :columns="columns" :filter-keys="filterKeys"
         ><template #actions="{ row }"
@@ -139,6 +159,12 @@
   </div>
 </template>
 <script setup lang="ts">
+  import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
+  import { describeGameTypeRates, termCycleLabels, termStatusLabels } from '@/utils/partnerTerms'
+  const business = useBusinessPartnerStore()
+  const ownTerms = computed(() =>
+    store.merchant ? business.getMerchantTerms(store.merchant.id) : []
+  )
   import { ElMessage } from 'element-plus'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import ScopedTable from '../components/ScopedTable.vue'

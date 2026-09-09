@@ -515,7 +515,10 @@ export const useAgentPortalStore = defineStore(
       parent.childAgentCount = businessStore.getDirectChildren(parent.id).length
       const term = businessStore.addCommercialTerm(id, {
         settlementBasis: input.conditions.basis as AgentCommercialTerm['settlementBasis'],
-        ratePercent: input.conditions.percent,
+        ratePercent: input.conditions.gameTypeRates ? 0 : input.conditions.percent,
+        gameTypeRates: input.conditions.gameTypeRates
+          ? JSON.parse(JSON.stringify(input.conditions.gameTypeRates))
+          : undefined,
         settlementCurrency: input.conditions.settlementCurrency,
         settlementCycle: input.conditions.settlementCycle as AgentCommercialTerm['settlementCycle'],
         effectiveFrom: input.conditions.effectiveFrom,
@@ -558,7 +561,10 @@ export const useAgentPortalStore = defineStore(
       if (validation) return { ok: false, message: validation }
       const term = {
         settlementBasis: 'GGR' as const,
-        merchantTermPercent: input.conditions.percent,
+        merchantTermPercent: input.conditions.gameTypeRates ? 0 : input.conditions.percent,
+        gameTypeRates: input.conditions.gameTypeRates
+          ? JSON.parse(JSON.stringify(input.conditions.gameTypeRates))
+          : undefined,
         settlementCurrency: input.conditions.settlementCurrency,
         settlementCycle: input.conditions.settlementCycle as AgentCommercialTerm['settlementCycle'],
         agentTermPercent: businessStore.getCurrentTerm(CURRENT_AGENT_ID)?.ratePercent || 0
@@ -650,6 +656,9 @@ export const useAgentPortalStore = defineStore(
       const previous = versions[0]
       const before = previous ? JSON.stringify(previous) : '無'
       const common = {
+        gameTypeRates: input.gameTypeRates
+          ? JSON.parse(JSON.stringify(input.gameTypeRates))
+          : undefined,
         settlementBasis: input.basis as AgentCommercialTerm['settlementBasis'],
         settlementCurrency: input.settlementCurrency,
         settlementCycle: input.settlementCycle as AgentCommercialTerm['settlementCycle'],
@@ -659,7 +668,10 @@ export const useAgentPortalStore = defineStore(
       }
       let term
       if (kind === 'agent') {
-        term = businessStore.addCommercialTerm(target.id, { ...common, ratePercent: input.percent })
+        term = businessStore.addCommercialTerm(target.id, {
+          ...common,
+          ratePercent: input.gameTypeRates ? 0 : input.percent
+        })
         term.status = 'Scheduled'
         term.createdBy = currentStaff.value?.name || CURRENT_AGENT_ID
         const audit = businessStore.auditLogs[target.id]?.[0]
@@ -674,7 +686,7 @@ export const useAgentPortalStore = defineStore(
           id: 'MTERM-' + target.id + '-' + String(version).padStart(3, '0'),
           merchantId: target.id,
           version,
-          merchantTermPercent: input.percent,
+          merchantTermPercent: input.gameTypeRates ? 0 : input.percent,
           agentTermPercent: businessStore.getCurrentTerm(CURRENT_AGENT_ID)?.ratePercent || 0,
           status: 'Scheduled' as const,
           createdBy: currentStaff.value?.name || CURRENT_AGENT_ID,

@@ -10,7 +10,7 @@
         <ElDescriptionsItem label="計算基礎">{{
           termBasisLabels[current.settlementBasis]
         }}</ElDescriptionsItem>
-        <ElDescriptionsItem label="比例">{{ percent(current) }}%</ElDescriptionsItem>
+        <ElDescriptionsItem label="比例">{{ describeGameTypeRates(current) }}</ElDescriptionsItem>
         <ElDescriptionsItem label="結算幣別">{{ current.settlementCurrency }}</ElDescriptionsItem>
         <ElDescriptionsItem label="對帳週期">{{
           termCycleLabels[current.settlementCycle]
@@ -98,6 +98,7 @@
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
   import type { AgentCommercialTerm, MerchantCommercialTerm } from '@/types/game-provider'
   import {
+    describeGameTypeRates,
     termBasisLabels,
     termCycleLabels,
     termStatusLabels,
@@ -113,6 +114,7 @@
   const form = ref<PartnerTermInput>({
     basis: 'GGR',
     percent: 0,
+    gameTypeRates: [],
     settlementCurrency: '',
     settlementCycle: '',
     effectiveFrom: ''
@@ -152,11 +154,9 @@
     return [...logs, ...audits].sort((a, b) => b.time.localeCompare(a.time))
   })
   type Term = AgentCommercialTerm | MerchantCommercialTerm
-  function percent(term: Term) {
-    return 'ratePercent' in term ? term.ratePercent : term.merchantTermPercent
-  }
+
   function describe(term: Term) {
-    return `${termBasisLabels[term.settlementBasis]} ${percent(term)}% · ${term.settlementCurrency} · ${termCycleLabels[term.settlementCycle]}`
+    return `${termBasisLabels[term.settlementBasis]} ${describeGameTypeRates(term)} · ${term.settlementCurrency} · ${termCycleLabels[term.settlementCycle]}`
   }
   function describeJson(value?: string) {
     if (!value) return '—'
@@ -173,7 +173,8 @@
     const term = current.value || terms.value[0]
     form.value = {
       basis: 'GGR',
-      percent: term ? percent(term) : 0,
+      percent: 0,
+      gameTypeRates: JSON.parse(JSON.stringify(term?.gameTypeRates || [])),
       settlementCurrency: term?.settlementCurrency || '',
       settlementCycle: term?.settlementCycle || '',
       effectiveFrom: ''

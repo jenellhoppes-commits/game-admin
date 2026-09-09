@@ -147,14 +147,7 @@
               ></ElCol>
               <ElCol :xs="24" :sm="12"
                 ><ElFormItem label="代理條件" prop="ratePercent"
-                  ><ElInputNumber
-                    v-model="form.ratePercent"
-                    :min="0"
-                    :max="100"
-                    :precision="2"
-                    :step="0.25"
-                    class="w-full"
-                  /><div class="form-help"
+                  ><GameTypeRates v-model="form.gameTypeRates" /><div class="form-help"
                     >條件值以百分比保存，實際基礎依左側選項。</div
                   ></ElFormItem
                 ></ElCol
@@ -205,7 +198,7 @@
             ><div
               ><dt>上級代理</dt><dd>{{ selectedParent?.name || '無' }}</dd></div
             ><div
-              ><dt>代理條件</dt><dd>{{ basisLabel }} {{ form.ratePercent }}%</dd></div
+              ><dt>代理條件</dt><dd>{{ describeGameTypeRates(form) }}</dd></div
             ><div
               ><dt>結算設定</dt><dd>{{ form.settlementCurrency }}／{{ cycleLabel }}</dd></div
             ><div
@@ -239,6 +232,8 @@
 </template>
 
 <script setup lang="ts">
+  import GameTypeRates from '@/components/business/GameTypeRates.vue'
+  import { describeGameTypeRates, validateGameTypeRates, businessDate } from '@/utils/partnerTerms'
   import type { FormInstance, FormRules } from 'element-plus'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
@@ -271,7 +266,8 @@
     level: 'L1' as AgentLevel,
     parentAgentId: '',
     settlementBasis: 'GGR' as SettlementBasis,
-    ratePercent: 6.5,
+    ratePercent: 0,
+    gameTypeRates: [] as import('@/types/game-provider').GameTypeRate[],
     settlementCurrency: 'USDT',
     settlementCycle: 'Monthly' as SettlementCycle,
     effectiveFrom: ''
@@ -284,7 +280,7 @@
     { label: '合作開始日', completed: Boolean(form.cooperationStartDate) },
     { label: '代理層級', completed: Boolean(form.level) },
     { label: '上級代理', completed: form.level === 'L1' || Boolean(form.parentAgentId) },
-    { label: '代理條件', completed: form.ratePercent >= 0 },
+    { label: '代理條件', completed: !validateGameTypeRates(form.gameTypeRates) },
     { label: '生效日期', completed: Boolean(form.effectiveFrom) }
   ])
   const completedCount = computed(() => requiredItems.value.filter((item) => item.completed).length)
@@ -307,9 +303,6 @@
       : form.level === 'L2'
         ? 'L2 必須隸屬 L1，可建立 L3 與商戶。'
         : 'L3 必須隸屬 L2，只可建立商戶，不可再建立下級代理。'
-  )
-  const basisLabel = computed(
-    () => ({ GGR: 'GGR', 'Valid Bet': '有效投注', Turnover: '營業額' })[form.settlementBasis]
   )
   const cycleLabel = computed(
     () =>
@@ -370,6 +363,11 @@
 
   const saveAgent = async (destination: 'stay' | 'detail') => {
     submitError.value = ''
+    const error = validateGameTypeRates(form.gameTypeRates)
+    if (error || form.effectiveFrom < businessDate()) {
+      submitError.value = error || '生效日不可早於本日'
+      return
+    }
     validateCodeState()
     if (!(await formRef.value?.validate().catch(() => false)) || codeState.value === 'duplicate') {
       submitError.value = '尚有必填資料或欄位格式不正確，請完成後再儲存。'
@@ -399,7 +397,8 @@
       )
       store.updateDraftCommercialTerm(agent.id, {
         settlementBasis: form.settlementBasis,
-        ratePercent: form.ratePercent,
+        ratePercent: 0,
+        gameTypeRates: JSON.parse(JSON.stringify(form.gameTypeRates)),
         settlementCurrency: form.settlementCurrency,
         settlementCycle: form.settlementCycle,
         effectiveFrom: form.effectiveFrom

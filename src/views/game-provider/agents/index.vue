@@ -135,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+  import { describeGameTypeRates } from '@/utils/partnerTerms'
   import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElMessage } from 'element-plus'
   import { storeToRefs } from 'pinia'
   import { useWindowSize } from '@vueuse/core'
@@ -263,7 +264,7 @@
   const termText = (agent: AgentRecord) => {
     const term = store.getCurrentTerm(agent.id)
     return term
-      ? `${term.settlementBasis === 'Valid Bet' ? '有效投注' : term.settlementBasis === 'Turnover' ? '營業額' : 'GGR'} ${term.ratePercent}%`
+      ? `${term.settlementBasis === 'Valid Bet' ? '有效投注' : term.settlementBasis === 'Turnover' ? '營業額' : 'GGR'} ${describeGameTypeRates(term)}`
       : '未設定'
   }
   const allColumns: ColumnOption[] = [

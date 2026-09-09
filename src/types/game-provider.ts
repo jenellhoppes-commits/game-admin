@@ -104,7 +104,15 @@ export interface AgentRecord {
   updatedAt?: string
 }
 
+export interface GameTypeRate {
+  typeId: string
+  code: string
+  name: string
+  percent: number
+}
+
 export interface AgentCommercialTerm {
+  gameTypeRates?: GameTypeRate[]
   autoEffective?: boolean
   id: string
   agentId: string
@@ -199,6 +207,7 @@ export interface MerchantRecord {
 }
 
 export interface MerchantCommercialTerm {
+  gameTypeRates?: GameTypeRate[]
   autoEffective?: boolean
   id: string
   merchantId: string
