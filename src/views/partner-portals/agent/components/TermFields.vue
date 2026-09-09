@@ -8,7 +8,7 @@
     /></ElFormItem>
     <ElFormItem label="結算方式" required
       ><ElSelect v-model="model.settlementMode" placeholder="請選擇"
-        ><ElOption label="累積" value="累積" /><ElOption label="清零" value="清零" /></ElSelect
+        ><ElOption label="清零" value="清零" /><ElOption label="累積" value="累積" /></ElSelect
     ></ElFormItem>
     <ElFormItem label="結算幣別" required
       ><ElSelect v-model="model.settlementCurrency"

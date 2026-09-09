@@ -489,3 +489,37 @@ test('有資料獎池fixture：僅自身同池同線同幣流水與派發、申�
 })
 
 console.log(`${checks} merchant-stage3 invariant groups passed`)
+
+test('結算方式與上期累積金額採用單據資料，缺值不當零', () => {
+  const { portal, finance } = setup()
+  const visible = portal.reconciliations[0]
+  assert(visible)
+  const source = finance.merchantReconciliations.find((row) => row.id === visible.id)!
+  const original = source.finalSettlementAmount
+  source.settlementMode = '累積'
+  source.previousAccumulatedAmount = 1234.5
+  const mapped = portal.reconciliations.find((row) => row.id === source.id)!
+  assert.equal(mapped.settlementMode, '累積')
+  assert.equal(mapped.previousAccumulatedAmount, 1234.5)
+  assert.equal(
+    merchantField(mapped, 'previousAccumulatedAmount', () => 2),
+    `1,234.50 ${mapped.settlementCurrency}`
+  )
+  source.settlementMode = '清零'
+  source.previousAccumulatedAmount = 0
+  assert.equal(portal.reconciliations.find((row) => row.id === source.id)!.settlementMode, '清零')
+  assert.equal(
+    merchantField(
+      { previousAccumulatedAmount: 0, currency: 'USD' },
+      'previousAccumulatedAmount',
+      () => 2
+    ),
+    '0.00 USD'
+  )
+  delete source.previousAccumulatedAmount
+  assert.equal(
+    portal.reconciliations.find((row) => row.id === source.id)!.previousAccumulatedAmount,
+    '待定'
+  )
+  assert.equal(source.finalSettlementAmount, original)
+})

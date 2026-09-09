@@ -358,6 +358,8 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
         payoutAmount: item.payoutAmount,
         ggr: item.ggr,
         settlementCurrency: item.snapshot.settlementCurrency,
+        settlementMode: item.settlementMode || '未設定',
+        previousAccumulatedAmount: item.previousAccumulatedAmount ?? '待定',
         status: item.status,
         lockedAt: item.lockedAt,
         version: `${item.snapshot.formulaVersion}/${item.snapshot.calculatedAt}`,

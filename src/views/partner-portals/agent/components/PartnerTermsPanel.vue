@@ -29,6 +29,11 @@
           ><template #default="{ row }">V{{ row.version }}</template></ElTableColumn
         >
         <ElTableColumn prop="effectiveFrom" label="生效日" min-width="130" />
+        <ElTableColumn label="結算方式" min-width="110"
+          ><template #default="{ row }">{{
+            row.settlementMode || '未設定'
+          }}</template></ElTableColumn
+        >
         <ElTableColumn label="條件" min-width="220"
           ><template #default="{ row }">{{ describe(row) }}</template></ElTableColumn
         >
@@ -38,6 +43,11 @@
       <ArtTable :data="terms" height="auto" :show-table-header="false" empty-text="尚無條件版本">
         <ElTableColumn label="版本" width="80"
           ><template #default="{ row }">V{{ row.version }}</template></ElTableColumn
+        >
+        <ElTableColumn label="結算方式" min-width="110"
+          ><template #default="{ row }">{{
+            row.settlementMode || '未設定'
+          }}</template></ElTableColumn
         >
         <ElTableColumn label="條件" min-width="230"
           ><template #default="{ row }">{{ describe(row) }}</template></ElTableColumn
@@ -177,7 +187,7 @@
     const term = current.value || terms.value[0]
     form.value = {
       basis: 'GGR',
-      settlementMode: '',
+      settlementMode: term?.settlementMode || '',
       percent: 0,
       gameTypeRates: JSON.parse(JSON.stringify(term?.gameTypeRates || [])),
       settlementCurrency: term?.settlementCurrency || '',

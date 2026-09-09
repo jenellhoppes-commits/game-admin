@@ -125,6 +125,13 @@ export function merchantStatusType(value: unknown): 'success' | 'warning' | 'dan
 export function merchantField(row: object, key: string, precision: (currency: string) => number) {
   const record = row as Record<string, unknown>
   const value = record[key]
+  if (key === 'previousAccumulatedAmount') {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return '待定'
+    const currency = String(record.settlementCurrency || record.currency || '')
+    return currency
+      ? `${formatMerchantAmount(value, precision(currency))} ${currency}`
+      : String(value)
+  }
   if (key === 'payoutAmount' && record.gameName && record.status === 'In Progress') return '待結算'
   if (value === undefined || value === null || value === '') return '未提供'
   if (typeof value === 'boolean') return value ? '是' : '否'

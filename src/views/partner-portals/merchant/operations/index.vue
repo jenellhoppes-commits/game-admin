@@ -342,6 +342,9 @@
           c('lineUid', '線路', 220),
           c('period', '期間'),
           c('currency', '原幣'),
+          c('settlementCurrency', '結算幣'),
+          c('settlementMode', '結算方式'),
+          c('previousAccumulatedAmount', '上期累積金額', 180),
           c('betAmount', '投注'),
           c('payoutAmount', '派彩'),
           c('status', '對帳狀態'),
@@ -361,7 +364,7 @@
         : [
             c('id', '結算單'),
             c('settlementMode', '結算方式'),
-            c('previousAccumulatedAmount', '上期累積金額'),
+            c('previousAccumulatedAmount', '上期累積金額', 180),
             c('reconciliationId', '對帳單'),
             c('period', '期間'),
             c('currency', '結算幣'),
