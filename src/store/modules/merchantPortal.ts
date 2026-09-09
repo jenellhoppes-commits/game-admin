@@ -64,6 +64,15 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
     )
   )
   const lineIds = computed(() => new Set(sourceLines.value.map((line) => line.uid)))
+  const grantedGameIds = computed(
+    () =>
+      new Set(
+        business
+          .getMerchantGameConfigurations(CURRENT_MERCHANT_ID)
+          .filter((config) => config.enabled)
+          .map((config) => config.gameId)
+      )
+  )
   const lines = computed(() =>
     sourceLines.value.map((line) => ({
       id: line.uid,
@@ -75,33 +84,36 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
       credentialStatus: line.credentialStatus,
       enabledGames: business
         .getMerchantLineGameConfigurations(line.uid)
-        .filter((config) => config.enabled).length,
+        .filter((config) => config.enabled && grantedGameIds.value.has(config.gameId)).length,
       updatedAt: line.updatedAt
     }))
   )
   const configurations = computed(() =>
     sourceLines.value.flatMap((line) =>
-      business.getMerchantLineGameConfigurations(line.uid).map((config) => ({
-        id: `${line.uid}/${config.gameId}`,
-        lineUid: line.uid,
-        currency: line.currency,
-        gameId: config.gameId,
-        enabled: config.enabled,
-        rtpPlanName: config.rtpPlanName,
-        limitPlanId: config.limitPlan,
-        limitPlan:
-          catalog.limitPlans.find((p) => p.id === config.limitPlan)?.name || config.limitPlan,
-        minBet: catalog.limitPlans.find((p) => p.id === config.limitPlan)?.minBet,
-        maxBet: catalog.limitPlans.find((p) => p.id === config.limitPlan)?.maxBet,
-        updatedAt: config.updatedAt
-      }))
+      business
+        .getMerchantLineGameConfigurations(line.uid)
+        .filter((config) => grantedGameIds.value.has(config.gameId))
+        .map((config) => ({
+          id: `${line.uid}/${config.gameId}`,
+          lineUid: line.uid,
+          currency: line.currency,
+          gameId: config.gameId,
+          enabled: config.enabled,
+          rtpPlanName: config.rtpPlanName,
+          limitPlanId: config.limitPlan,
+          limitPlan:
+            catalog.limitPlans.find((p) => p.id === config.limitPlan)?.name || config.limitPlan,
+          minBet: catalog.limitPlans.find((p) => p.id === config.limitPlan)?.minBet,
+          maxBet: catalog.limitPlans.find((p) => p.id === config.limitPlan)?.maxBet,
+          updatedAt: config.updatedAt
+        }))
     )
   )
   const games = computed(() => {
     const granted = business.getMerchantGameConfigurations(CURRENT_MERCHANT_ID)
     return granted.flatMap((config) => {
       const game = catalog.findGame(config.gameId)
-      if (!game || !lineIds.value.size) return []
+      if (!game || !config.enabled || !lineIds.value.size) return []
       const gameLines = configurations.value.filter((item) => item.gameId === game.id)
       return [
         {
@@ -110,7 +122,7 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
           name: game.displayName,
           type: game.typeId,
           status: game.status,
-          enabled: config.enabled,
+          enabled: config.enabled && !config.platformClosed,
           rtpPlanName: config.rtpPlanName,
           devices: game.supportedDevices?.join('、') || '未提供',
           locale: game.defaultLocale,
@@ -586,7 +598,7 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
     if (!config) return { ok: false, message: '沒有可關閉的商戶遊戲配置' }
     // Closing affects availability only; keep existing RTP and limit snapshots untouched.
     const operatedAt = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' })
-    config.enabled = false
+    config.platformClosed = true
     config.updatedAt = operatedAt
     for (const line of sourceLines.value) {
       const lineConfig = business

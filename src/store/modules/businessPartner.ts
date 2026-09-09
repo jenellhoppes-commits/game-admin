@@ -1039,7 +1039,7 @@ export const useBusinessPartnerStore = defineStore(
             (item) => item.gameId === gameId
           )
           if (lineConfig) {
-            lineConfig.enabled = config.enabled
+            lineConfig.enabled = config.enabled && !config.platformClosed
             lineConfig.rtpPlanName = config.rtpPlanName
             lineConfig.updatedAt = config.updatedAt
           }

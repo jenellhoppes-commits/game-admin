@@ -153,6 +153,7 @@ export interface MerchantLine {
 }
 
 export interface MerchantGameConfiguration {
+  platformClosed?: boolean
   gameId: string
   merchantId: string
   enabled: boolean

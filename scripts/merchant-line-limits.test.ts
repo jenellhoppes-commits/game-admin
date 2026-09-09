@@ -31,6 +31,38 @@ assert.equal(portal.setLimitPlan(config.lineUid, config.gameId, plan.id).ok, fal
 assert.equal(JSON.stringify(catalog.games), masterBefore)
 assert.equal(JSON.stringify(useTransactionCenterStore().bets), transactionsBefore)
 assert(portal.limitLogs.length > 0)
+// Revoking authorization hides current operations without erasing historical data.
+const grant = business
+  .getMerchantGameConfigurations('M00001')
+  .find((c) => c.gameId === config.gameId)!
+const history = JSON.stringify(useTransactionCenterStore().bets)
+business.updateMerchantGameConfiguration(
+  'M00001',
+  config.gameId,
+  { enabled: false },
+  '驗證取消授權'
+)
+assert(!portal.games.some((g) => g.id === config.gameId))
+assert(!portal.configurations.some((c) => c.gameId === config.gameId))
+assert.equal(portal.availableLimitPlans(config.lineUid, config.gameId).length, 0)
+assert.equal(portal.setLimitPlan(config.lineUid, config.gameId, plan.id).ok, false)
+assert.equal(JSON.stringify(useTransactionCenterStore().bets), history)
+business.updateMerchantGameConfiguration('M00001', config.gameId, { enabled: true }, '恢復授權')
+assert(portal.closePlatformGame(config.gameId).ok)
+assert.equal(grant.enabled, true)
+assert(portal.games.some((g) => g.id === config.gameId && !g.enabled))
+business.updateMerchantGameConfiguration(
+  'M00001',
+  config.gameId,
+  { rtpPlanName: grant.rtpPlanName },
+  '更新 RTP'
+)
+assert(
+  business
+    .getMerchantLineGameConfigurations(config.lineUid)
+    .filter((c) => c.gameId === config.gameId)
+    .every((c) => !c.enabled)
+)
 const currency = portal.availableCurrencies.find(
   (c) => !merchant.lines.some((l) => l.currency === c)
 )!
