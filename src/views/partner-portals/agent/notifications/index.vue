@@ -1,7 +1,8 @@
 <template>
   <div class="agent-page">
     <AppPageHeader title="公告通知" />
-    <ArtSearchBar label-position="top"
+    <ArtSearchBar
+      label-position="top"
       :model-value="draft"
       @update:model-value="Object.assign(draft, $event)"
       :items="items"
@@ -64,7 +65,7 @@
   const store = useAgentPortalStore()
   const sampleContent: Record<string, string> = {
     'NT-A01':
-      '請至本代理對帳／結算頁核對期間、幣別、金額及快照。如有差異，請於單據內回報；差異處理完成並符合確認條件後，再確認本版本。實際可確認狀態以單據為準。',
+      '請至本代理對帳／結算頁核對期間、幣別、金額及快照。財務會在核帳／交付時記錄調整金額與原因，交付確認後鎖定單據。',
     'NT-A02':
       '代理關係申請已受理。請至代理關係頁查看申請紀錄；待審核期間不會改變現行代理關係，結果以申請狀態為準。',
     'NT-A03':
@@ -112,10 +113,14 @@
     visible.value = true
     store.markNoticeRead(id)
   }
-function changePageSize(value: number) { size.value = value; page.value = 1 }
+  function changePageSize(value: number) {
+    size.value = value
+    page.value = 1
+  }
 </script>
 <style scoped lang="scss">
   @use '../shared';
+
   .notice-body {
     margin-top: 20px;
     line-height: 1.8;

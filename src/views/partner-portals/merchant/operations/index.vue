@@ -9,7 +9,6 @@
         ></template
       ></AppPageHeader
     >
-    <SettlementCarryDemo v-if="kind === 'reconciliation'" />
     <ElAlert :title="definition.note" type="info" :closable="false" />
     <ElTabs v-model="tab"
       ><ElTabPane
@@ -74,9 +73,22 @@
             {{ rate?.toCurrency }}；內部來源、調整與備註不對外提供。</p
           ></template
         >
-        <template v-if="kind === 'reconciliation' && tab === 'reconciliations' && reconciliation">
+        <template v-if="kind === 'reconciliation' && reconciliation">
+          <DeliverySummary
+            :delivery="reconciliation.delivery"
+            :currency="reconciliation.settlementCurrency"
+          />
           <ElDescriptions :column="1" border>
             <ElDescriptionsItem label="計算版本">{{ reconciliation.version }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="收付模式">{{
+              reconciliation.collection?.mode === 'PlatformCollect' ? '平台代收' : '代理統收'
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="付款方">{{
+              reconciliation.collection?.payerName || '—'
+            }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="收款方">{{
+              reconciliation.collection?.payeeName || '—'
+            }}</ElDescriptionsItem>
             <ElDescriptionsItem label="計算時間">{{
               reconciliation.calculatedAt
             }}</ElDescriptionsItem>
@@ -102,42 +114,7 @@
               ><span v-if="!reconciliation.rateSnapshotIds.length">未提供</span></ElDescriptionsItem
             >
           </ElDescriptions>
-          <ElAlert :title="reconciliation.confirmationBlock" type="warning" :closable="false" />
-          <ElButton disabled>確認此版本</ElButton>
-          <h3>{{ reconciliation.lockedAt ? '提出更正申請' : '回報差異' }}</h3>
-          <ElForm label-position="top" @submit.prevent="reportDifference">
-            <ElFormItem label="關聯交易／局號"
-              ><ElInput v-model="difference.reference"
-            /></ElFormItem>
-            <ElFormItem label="爭議幣別"
-              ><ElSelect v-model="difference.currency"
-                ><ElOption
-                  v-for="currency in [
-                    ...new Set([reconciliation.currency, reconciliation.settlementCurrency])
-                  ]"
-                  :key="currency"
-                  :label="currency"
-                  :value="currency" /></ElSelect
-            ></ElFormItem>
-            <ElFormItem label="爭議金額"
-              ><ElInputNumber
-                v-model="difference.amount"
-                :precision="precision(difference.currency)"
-            /></ElFormItem>
-            <ElFormItem label="說明"
-              ><ElInput v-model="difference.reason" type="textarea"
-            /></ElFormItem>
-
-            <ElButton type="primary" native-type="submit">建立原型差異申請</ElButton>
-          </ElForm>
-          <ScopedTable
-            :rows="
-              store.requests.filter(
-                (item) => item.category === '差異' && item.target === reconciliation!.id
-              )
-            "
-            :columns="requestColumns"
-          />
+          <p>財務於核帳／交付時記錄調整與收付，確認後鎖定。</p>
         </template>
         <template v-if="kind === 'jackpots' && tab === 'pools'"
           ><ElForm label-position="top" @submit.prevent="requestPool"
@@ -165,7 +142,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import SettlementCarryDemo from '@/components/business/SettlementCarryDemo.vue'
+  import DeliverySummary from '@/components/business/game-provider/DeliverySummary.vue'
   import { useBusinessPartnerStore } from '@/store/modules/businessPartner'
   import { describeGameTypeRates, termCycleLabels, termStatusLabels } from '@/utils/partnerTerms'
   const business = useBusinessPartnerStore()
@@ -204,12 +181,10 @@
     },
     reconciliation: {
       title: '對帳／結算',
-      note: '僅本商戶及授權線路單據。確認層級與結算公式尚待確認；已鎖定不代表付款。',
+      note: '僅本商戶及授權線路單據。計算依據與交付結果一併查看；已鎖定不代表已收付。',
       tabs: [
         { key: 'reconciliations', label: '對帳單' },
-        { key: 'differences', label: '差異處理' },
-        { key: 'statements', label: '結算單' },
-        { key: 'requests', label: '差異／更正申請' }
+        { key: 'statements', label: '結算單' }
       ]
     },
     jackpots: {
@@ -350,7 +325,6 @@
           c('betAmount', '投注'),
           c('payoutAmount', '派彩'),
           c('status', '對帳狀態'),
-          c('unresolved', '未解差異'),
           c('lockedAt', '鎖定時間')
         ]
       : tab.value === 'differences'
@@ -393,70 +367,25 @@
   const notice = computed(() => store.notices.find((item) => item.id === selectedId.value))
   const rate = computed(() => store.rates.find((item) => item.id === selectedId.value))
   const reconciliation = computed(() =>
-    store.reconciliations.find((item) => item.id === selectedId.value)
-  )
-  const difference = reactive({ reference: '', currency: '', amount: 0, reason: '' })
-  // Capture when opening, never silently adopt a version changed while editing.
-  const differenceVersion = ref('')
-  const differenceLocked = ref(false)
-  watch(
-    selectedId,
-    () => {
-      const record = reconciliation.value
-      differenceVersion.value = record?.version || ''
-      differenceLocked.value = Boolean(record?.lockedAt)
-      Object.assign(difference, {
-        reference: '',
-        currency: record?.currency || '',
-        amount: 0,
-        reason: ''
-      })
-    },
-    { immediate: true }
+    store.reconciliations.find(
+      (item) =>
+        item.id ===
+        (tab.value === 'statements'
+          ? store.statements.find((statement) => statement.id === selectedId.value)
+              ?.reconciliationId
+          : selectedId.value)
+    )
   )
   const poolReason = ref(''),
     inviteVisible = ref(false),
     inviteForm = reactive({ name: '', account: '' })
-  const precision = (currency: string) =>
-    settings.currencies.find((item) => item.code === currency)?.decimalPlaces ?? 2
   function open(id: string) {
     router.replace({ query: { detail: id } })
     if (kind.value === 'notifications') store.markNoticeRead(id)
-    Object.assign(difference, {
-      reference: '',
-      currency: store.reconciliations.find((item) => item.id === id)?.currency || '',
-      amount: 0,
-      reason: ''
-    })
     poolReason.value = ''
   }
   function close() {
     router.replace({ query: {} })
-  }
-  function reportDifference() {
-    const record = reconciliation.value
-    if (
-      record &&
-      (record.version !== differenceVersion.value ||
-        Boolean(record.lockedAt) !== differenceLocked.value)
-    )
-      return ElMessage.error('對帳版本或鎖定狀態已變更，請關閉並重新開啟明細後再回報')
-    if (
-      !record ||
-      !difference.reference.trim() ||
-      !Number.isFinite(difference.amount) ||
-      ![record.currency, record.settlementCurrency].includes(difference.currency)
-    )
-      return ElMessage.error('請填寫關聯參照、金額與正確幣別')
-    const response = store.submitRequest({
-      category: '差異',
-      target: record.id,
-      action: record.lockedAt ? '更正申請' : '回報對帳差異',
-      reason: difference.reason,
-      expectedVersion: differenceVersion.value,
-      proposed: JSON.stringify({ ...difference, version: differenceVersion.value })
-    })
-    ElMessage[response.ok ? 'success' : 'error'](response.message)
   }
   function requestPool() {
     const response = store.submitRequest({

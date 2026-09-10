@@ -182,6 +182,7 @@ export interface MerchantLineGameConfiguration {
 }
 
 export interface MerchantRecord {
+  collectionMode?: 'AgentCollect' | 'PlatformCollect'
   /** Requested betting currency before any line is provisioned. */
   requestedCurrency?: string
   id: string
@@ -286,6 +287,15 @@ export interface FinanceCalculationSnapshot {
 }
 
 export interface ReconciliationMetrics {
+  collection?: {
+    mode: 'AgentCollect' | 'PlatformCollect'
+    effectiveFrom?: string
+    payerId: string
+    payerName: string
+    payeeId: string
+    payeeName: string
+    platformReceivable: boolean
+  }
   previousAccumulatedAmount?: number
   settlementMode?: string
   memberCount: number
@@ -304,6 +314,24 @@ export interface ReconciliationMetrics {
   actualSettlementAmount?: number
   roundingAdjustment?: number
   confirmationNote?: string
+  retainedForNextPeriod?: boolean
+  priorCorrections?: { sourceId: string; amount: number; reason: string; createdAt: string }[]
+  retainedSettlementAmount?: number
+  delivery?: {
+    operatorId?: string
+    actualCollectorId?: string
+    actualCollectorName?: string
+    systemAmount: number
+    adjustment: number
+    adjusted: number
+    actual: number
+    remaining: number
+    carried: number
+    paymentStatus: string
+    reason: string
+    deliveredAt: string
+    nextGgr?: number
+  }
 }
 
 export interface MerchantReconciliationRecord extends ReconciliationMetrics {

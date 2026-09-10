@@ -362,6 +362,8 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
         previousAccumulatedAmount: item.previousAccumulatedAmount ?? '待定',
         status: item.status,
         lockedAt: item.lockedAt,
+        delivery: item.delivery,
+        collection: item.collection,
         version: `${item.snapshot.formulaVersion}/${item.snapshot.calculatedAt}`,
         rateSnapshotIds: [...item.snapshot.exchangeRateSnapshotIds],
         exchangeRate: item.snapshot.exchangeRate,
@@ -381,6 +383,7 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
       .map((item) => ({
         id: item.id,
         reconciliationId: item.reconciliationId,
+        delivery: finance.findMerchantReconciliation(item.reconciliationId)?.delivery,
         type: item.type,
         currency: item.currency,
         differenceAmount: item.differenceAmount,
@@ -398,11 +401,13 @@ export const useMerchantPortalStore = defineStore('merchantPortalStore', () => {
         lineUid: item.lineUid,
         period: item.period,
         currency: item.settlementCurrency,
-        status: item.status,
         createdAt: item.createdAt,
         settlementMode: item.settlementMode || '未設定',
         previousAccumulatedAmount: item.previousAccumulatedAmount ?? '待定',
-        amount: '未定案（正式金額口徑待確認）'
+        status: finance.findMerchantReconciliation(item.reconciliationId)?.status || item.status,
+        amount:
+          finance.findMerchantReconciliation(item.reconciliationId)?.delivery?.adjusted ??
+          item.finalAmount
       }))
   )
   const currencies = computed(() => [

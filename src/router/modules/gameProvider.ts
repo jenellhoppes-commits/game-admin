@@ -478,14 +478,6 @@ export const gameProviderRoutes: AppRouteRecord[] = [
         '/game-provider/finance/reconciliation/detail'
       ),
       page(
-        'reconciliation/differences',
-        'ReconciliationDifferences',
-        '差異處理',
-        'ri:file-warning-line',
-        '/reconciliation-differences',
-        '/game-provider/finance/reconciliation/differences'
-      ),
-      page(
         'reconciliation/logs',
         'ReconciliationChangeLogs',
         '異動紀錄',

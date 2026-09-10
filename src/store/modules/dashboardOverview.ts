@@ -136,11 +136,13 @@ export const useDashboardOverviewStore = defineStore('dashboardOverviewStore', (
     },
     {
       id: 'difference',
-      title: '對帳差異',
-      count: financeStore.unresolvedDifferences.length,
-      note: '需完成差異確認',
-      tone: financeStore.unresolvedDifferences.length ? 'warning' : 'info',
-      path: '/finance/reconciliation/differences'
+      title: '待核帳／交付',
+      count: financeStore.merchantReconciliations.filter(
+        (item) => item.status === 'Pending Confirmation'
+      ).length,
+      note: '財務核帳並確認交付',
+      tone: 'info',
+      path: '/finance/reconciliation/merchants'
     },
     {
       id: 'system',

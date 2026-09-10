@@ -1,0 +1,2227 @@
+<!doctype html>
+<html lang="zh-Hant"
+  ><meta charset="utf-8" /><title>02_代理後台規格文件</title
+  ><body style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.4"
+    ><h1>代理後台 規格文件</h1
+    ><p
+      >本版更新：2026-09-10
+      結算規則同步。已修訂差異流程、模式權限、整數交付、收款方與登錄方、鎖定及驗收界線。原型通過不等於正式後端完成。</p
+    ><p>營運後台 · PRODUCT REQUIREMENTS DOCUMENT</p
+    ><p>AGT｜v1.1｜2026-09-10｜正式需求基線（待決策事項獨立管理）</p
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">文件項目</th
+        ><th style="text-align: left; vertical-align: top">內容</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">文件性質</td
+        ><td style="text-align: left; vertical-align: top"
+          >功能規格書；供後端開發、QA 與營運核對，不是正式系統已上線證明</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">與現有文件關係</td
+        ><td style="text-align: left; vertical-align: top"
+          >整合截至 2026-09-10 使用者確認；同範圍舊原型 PRD
+          有衝突時以本版已確認規則為準。舊文件與歷史條件保留。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">本版目的</td
+        ><td style="text-align: left; vertical-align: top"
+          >將三後台演示與已確認業務規則轉為資料需求、狀態、操作及可執行驗收條件</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">適用範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >代理儀錶板、代理關係、直屬代理條件、商戶管理、商戶摘要與條件、代理報表、匯率報表、對帳／結算、公告通知、帳號與權限</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">不在本版範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >UIUX、前端排版、API 路徑／schema、未決營運策略、真實付款代辦、遊戲引擎實作</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">上游依據</td
+        ><td style="text-align: left; vertical-align: top"
+          >本次對話決議；<a href="https://cooperfu615-desinger.github.io/sop-share/"
+            >平台規格書撰寫規範</a
+          >；<a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/dashboard">演示</a
+          >；程式基準 a2faba0，部署紀錄 2d11c69。</td
+        ></tr
+      ></table
+    ><h2>目錄</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">章節</th
+        ><th style="text-align: left; vertical-align: top">內容</th
+        ><th style="text-align: left; vertical-align: top">主要讀者</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">1</td
+        ><td style="text-align: left; vertical-align: top">這頁是什麼</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">2</td
+        ><td style="text-align: left; vertical-align: top">這頁不做什麼</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">3</td
+        ><td style="text-align: left; vertical-align: top">名詞說明</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">4</td
+        ><td style="text-align: left; vertical-align: top">畫面內容</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">5</td
+        ><td style="text-align: left; vertical-align: top">欄位說明</td
+        ><td style="text-align: left; vertical-align: top">後端、QA、營運</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">6</td
+        ><td style="text-align: left; vertical-align: top">狀態說明</td
+        ><td style="text-align: left; vertical-align: top">後端、QA、營運</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">7</td
+        ><td style="text-align: left; vertical-align: top">查詢、排序與分頁</td
+        ><td style="text-align: left; vertical-align: top">後端、QA、營運</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">8</td
+        ><td style="text-align: left; vertical-align: top">操作與跳轉</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">9</td
+        ><td style="text-align: left; vertical-align: top">頁面狀態</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">10</td
+        ><td style="text-align: left; vertical-align: top">User Story — 使用者</td
+        ><td style="text-align: left; vertical-align: top">QA、後端、營運</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">11</td
+        ><td style="text-align: left; vertical-align: top">User Story — 開發人員</td
+        ><td style="text-align: left; vertical-align: top">QA、後端、營運</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">12</td
+        ><td style="text-align: left; vertical-align: top">User Story — QA 驗證者</td
+        ><td style="text-align: left; vertical-align: top">QA、後端、營運</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">13</td
+        ><td style="text-align: left; vertical-align: top">驗收標準</td
+        ><td style="text-align: left; vertical-align: top">QA、後端、營運</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">14</td
+        ><td style="text-align: left; vertical-align: top">這頁需要的資料</td
+        ><td style="text-align: left; vertical-align: top">後端、QA、營運</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">15</td
+        ><td style="text-align: left; vertical-align: top">待確認事項</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">16</td
+        ><td style="text-align: left; vertical-align: top">版本沿革</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">17</td
+        ><td style="text-align: left; vertical-align: top">交付檢查表</td
+        ><td style="text-align: left; vertical-align: top">全部</td></tr
+      ></table
+    ><h2>1. 這頁是什麼</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">功能 ID</th
+        ><th style="text-align: left; vertical-align: top">使用者要做的事</th
+        ><th style="text-align: left; vertical-align: top">核心規則</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-01</td
+        ><td style="text-align: left; vertical-align: top">代理儀錶板</td
+        ><td style="text-align: left; vertical-align: top"
+          >直屬、後代、覆蓋商戶按唯一對象去重；不顯示已移除的新增商戶待審；關係待辦只計停用／移轉等仍需審核項。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-02</td
+        ><td style="text-align: left; vertical-align: top">代理關係</td
+        ><td style="text-align: left; vertical-align: top"
+          >僅授權樹；本代理只可建立自己的直屬下級。L3
+          不可再建；同上級名稱不重複，代碼由系統唯一產生。新增與 V1 條件一次成功或全失敗。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-03</td
+        ><td style="text-align: left; vertical-align: top">直屬代理條件</td
+        ><td style="text-align: left; vertical-align: top"
+          >自身條件唯讀；直屬下級可直接修改；間接不可改。逐類型檢查下開成本；必填生效日與原因；新版本不走申請。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-04</td
+        ><td style="text-align: left; vertical-align: top">商戶管理</td
+        ><td style="text-align: left; vertical-align: top"
+          >直接新增，不送審；商戶代碼 2–24 字英數及
+          -、_，正規化大寫且唯一；名稱必填。直接填各類型條件，不能選其他商戶既有條件。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-05</td
+        ><td style="text-align: left; vertical-align: top">商戶摘要與條件</td
+        ><td style="text-align: left; vertical-align: top"
+          >直屬可改條件，間接依授權唯讀；不提供會員個資、逐筆下注、資金交易、串接秘密、RTP
+          或限紅操作。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-06</td
+        ><td style="text-align: left; vertical-align: top">代理報表</td
+        ><td style="text-align: left; vertical-align: top"
+          >授權樹集合去重；直屬與間接互斥；逐原幣彙總。參考金額標示指定文字與匯率版本；未確定分配算法不虛構正式收益。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-07</td
+        ><td style="text-align: left; vertical-align: top">匯率報表</td
+        ><td style="text-align: left; vertical-align: top"
+          >只能查詢；不得新增、修改、刪除、停用、鎖定或產生快照。不提供來源成本、加減點等內部資料。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-08</td
+        ><td style="text-align: left; vertical-align: top">對帳／結算</td
+        ><td style="text-align: left; vertical-align: top"
+          >查看自身上繳與授權直屬單據；代理統收且具財務權限可登錄直屬交付，平台代收唯讀。平台兩模式皆可操作；負
+          GGR 與未收款分開承接。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-09</td
+        ><td style="text-align: left; vertical-align: top">公告通知</td
+        ><td style="text-align: left; vertical-align: top"
+          >僅授權代理公告；已讀狀態跟隨使用者，不得把其他員工一併標已讀。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-10</td
+        ><td style="text-align: left; vertical-align: top">帳號與權限</td
+        ><td style="text-align: left; vertical-align: top"
+          >員工不能取得超過所屬代理的資料；停用後不可執行操作。正式角色細項另列決策，原型邀請不等於正式帳號發放。</td
+        ></tr
+      ></table
+    ><h3>共通業務規則</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">規則</th
+        ><th style="text-align: left; vertical-align: top">主題</th
+        ><th style="text-align: left; vertical-align: top">內容</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C01</td
+        ><td style="text-align: left; vertical-align: top">身分與資料範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >同一登入入口依帳號身分進入總後台、代理或商戶後台。服務端依已驗證身分判斷資料與操作範圍；客戶端傳入其他對象識別不會擴張授權。列表、摘要、詳細、下載及修改適用相同範圍。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C02</td
+        ><td style="text-align: left; vertical-align: top">唯一設定來源</td
+        ><td style="text-align: left; vertical-align: top"
+          >遊戲類型、幣別、RTP
+          方案及限紅方案由總後台維護。代理、商戶只使用授權且有效的同一來源。新設定不覆蓋歷史注單、條件版本及結算快照。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C03</td
+        ><td style="text-align: left; vertical-align: top">商務計算基準</td
+        ><td style="text-align: left; vertical-align: top"
+          >新增及修改條件只接受
+          GGR。有效投注與總投注不可作新商務條件基準；投注等營運統計指標仍保留。舊非 GGR
+          與歷史全域條件保留歷史，不自動轉換。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C04</td
+        ><td style="text-align: left; vertical-align: top">各遊戲類型獨立條件</td
+        ><td style="text-align: left; vertical-align: top"
+          >每個版本至少一個類型；同類型不可重複。SLOT 5%、LIVE 8%
+          為確認範例，不是全部對象預設費率。比例範圍 0–100%，最多兩位小數。留空為未設定，不能當
+          0%。版本共用結算幣別、週期、生效日、結算方式與原因。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C05</td
+        ><td style="text-align: left; vertical-align: top">下開成本下限</td
+        ><td style="text-align: left; vertical-align: top"
+          >上級給本代理的同類型比例是成本。下開直屬代理或商戶的比例必須大於或等於適用上級成本。5%
+          成本允許 5% 或 6%，拒絕 4.99%。缺少該類型成本時拒絕，不套用其他類型或舊全域比例。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C06</td
+        ><td style="text-align: left; vertical-align: top">日期與版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >每次建立、修改條件必填生效日；沿用 Asia/Taipei
+          業務日期。過去或無效日期拒絕；同一對象同日不可有重複有效／待生效版本。新版本從生效日開始，前版本截止日不含新版本生效當日。總後台草稿經確認後排程；代理直接保存版本。同日生效，未來待生效；服務端負責到期切換及持久紀錄。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C07</td
+        ><td style="text-align: left; vertical-align: top">歷史與稽核</td
+        ><td style="text-align: left; vertical-align: top"
+          >任何版本切換不可回寫已鎖定對帳、已保存交易及歷史結果。修改留存對象、操作人、時間、動作、原因、前後值、結果及關聯版本；失敗不留下半套業務資料。重送不得重複建立或結轉。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C08</td
+        ><td style="text-align: left; vertical-align: top">原幣與參考換算</td
+        ><td style="text-align: left; vertical-align: top"
+          >列表、明細、總計使用同一查詢範圍，按原幣分組。使用者可選一個幣別預覽，必須標示「該金額只可參考」並提供匯率日期／版本。缺匯率不填
+          0，不把部分換算當全部總額。預覽不改應付金額。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C09</td
+        ><td style="text-align: left; vertical-align: top">清零與累積</td
+        ><td style="text-align: left; vertical-align: top"
+          >新條件必填清零或累積，不能使用「累計」。累積承接負 GGR 下期扣抵；清零下期不承接負
+          GGR。兩種模式均保留「保留至下期交收」，均承接尚未交收金額。既有待交收款不可因清零被刪除。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">C10</td
+        ><td style="text-align: left; vertical-align: top">核帳交付與鎖定</td
+        ><td style="text-align: left; vertical-align: top"
+          >產生結算單 → 核帳／交付 →
+          確認後鎖定。無獨立差異案件；非零手動調整須原因。平台兩種模式均可操作，代理僅代理統收可操作授權直屬單。實收整數捨去小數，餘額可結轉；鎖定不代表收款。</td
+        ></tr
+      ></table
+    ><h3>結轉計算與可重現例子</h3
+    ><p
+      >本節定義已確認的單一幣別、同類型、同費率跨期規則。跨費率及跨模式切換列於待確認，不自行推算。</p
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">項目</th
+        ><th style="text-align: left; vertical-align: top">規則</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">扣抵後 GGR</td
+        ><td style="text-align: left; vertical-align: top"
+          >上期累積 GGR ＋ 本期 GGR；本期 GGR 本身不包含以前期別。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">本期新增交收金額</td
+        ><td style="text-align: left; vertical-align: top"
+          >扣抵後 GGR 大於 0 時乘適用類型比例；否則為 0。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">合計待交收金額</td
+        ><td style="text-align: left; vertical-align: top"
+          >上期待交收金額 ＋ 本期新增交收金額。上期待交收款已經計價，不再乘比例。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">結轉下期待交收金額</td
+        ><td style="text-align: left; vertical-align: top"
+          >合計待交收金額 − 本期實際交收金額。可先部分交付，再將剩餘款保留至下期；未交付時實收為
+          0。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">下期累積 GGR</td
+        ><td style="text-align: left; vertical-align: top"
+          >累積模式承接 min(扣抵後 GGR, 0)；清零模式為 0。正 GGR 計價後不再承接成 GGR。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">隔離</td
+        ><td style="text-align: left; vertical-align: top"
+          >按交易對象、幣別、遊戲類型及適用條件版本追溯。不同幣別不可直接相加；不得把其他對象餘額帶入。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">演示界線</td
+        ><td style="text-align: left; vertical-align: top"
+          >結算單已整合計算快照，獨立結轉演示已移除。部分交付、整數捨小數、手動調整與鎖定屬本地原型；完整跨期出帳與正式後端驗權未完成。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">模式／期別</th
+        ><th style="text-align: left; vertical-align: top">上期 GGR</th
+        ><th style="text-align: left; vertical-align: top">本期 GGR</th
+        ><th style="text-align: left; vertical-align: top">扣抵後</th
+        ><th style="text-align: left; vertical-align: top">上期待交收</th
+        ><th style="text-align: left; vertical-align: top">新增 5%</th
+        ><th style="text-align: left; vertical-align: top">動作／下期待交收</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">累積 P1</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">-100,000</td
+        ><td style="text-align: left; vertical-align: top">-100,000</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">保留／0，負 GGR -100,000 承接</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">累積 P2</td
+        ><td style="text-align: left; vertical-align: top">-100,000</td
+        ><td style="text-align: left; vertical-align: top">60,000</td
+        ><td style="text-align: left; vertical-align: top">-40,000</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">保留／0，負 GGR -40,000 承接</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">累積 P3</td
+        ><td style="text-align: left; vertical-align: top">-40,000</td
+        ><td style="text-align: left; vertical-align: top">100,000</td
+        ><td style="text-align: left; vertical-align: top">60,000</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">3,000</td
+        ><td style="text-align: left; vertical-align: top">保留／3,000，GGR 不再承接</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">累積 P4</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">20,000</td
+        ><td style="text-align: left; vertical-align: top">20,000</td
+        ><td style="text-align: left; vertical-align: top">3,000</td
+        ><td style="text-align: left; vertical-align: top">1,000</td
+        ><td style="text-align: left; vertical-align: top">保留／4,000</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">累積 P5</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">4,000</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">全額交收 4,000／0</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">清零 P1</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">100,000</td
+        ><td style="text-align: left; vertical-align: top">100,000</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">5,000</td
+        ><td style="text-align: left; vertical-align: top">保留／5,000</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">清零 P2</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">-40,000</td
+        ><td style="text-align: left; vertical-align: top">-40,000</td
+        ><td style="text-align: left; vertical-align: top">5,000</td
+        ><td style="text-align: left; vertical-align: top">0</td
+        ><td style="text-align: left; vertical-align: top">保留／5,000；下期 GGR 0</td></tr
+      ></table
+    ><p
+      >金額範例以 USD 整數呈現。若 GGR 1,000,000，上游成本 5% 為 50,000，下開 6% 為
+      60,000，該同基礎例子的差額為 10,000。此例不代表已決定跨類型負數互抵或所有代理樹分潤分配。</p
+    ><h2>2. 這頁不做什麼</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">不做的事</th
+        ><th style="text-align: left; vertical-align: top">由誰負責</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">以演示保存結果宣稱正式付款</td
+        ><td style="text-align: left; vertical-align: top"
+          >正式財務入帳／交收服務及其負責團隊</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">以參考換算改正式對帳金額</td
+        ><td style="text-align: left; vertical-align: top">正式結算計算與版本快照</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">把其他商戶或其他代理樹資料當自己的</td
+        ><td style="text-align: left; vertical-align: top">服務端授權與對象範圍驗證</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">自行補定待決的跨期、跨類型策略</td
+        ><td style="text-align: left; vertical-align: top">需求方與 PM 決議並更新 Q 編號</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >修改自身上游成本、間接下級條件、RTP 或限紅</td
+        ><td style="text-align: left; vertical-align: top"
+          >上級／總後台；限紅依權限由商戶或總後台操作</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">新增商戶或直屬代理送審</td
+        ><td style="text-align: left; vertical-align: top"
+          >已改直接建立；停用／移轉另沿用審核</td
+        ></tr
+      ></table
+    ><h2>3. 名詞說明</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">名詞</th
+        ><th style="text-align: left; vertical-align: top">說明</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">GGR／商務比例</td
+        ><td style="text-align: left; vertical-align: top"
+          >GGR 為計價基礎；比例是付給上級的成本百分比，與 RTP 不同。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">RTP</td
+        ><td style="text-align: left; vertical-align: top"
+          >遊戲核定返還方案；例 96.2% 不是商務費率 5%。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">線路／限紅</td
+        ><td style="text-align: left; vertical-align: top"
+          >線路固定一交易幣；限紅設定以商戶×線路×遊戲選方案。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">商戶授權／本平台關閉</td
+        ><td style="text-align: left; vertical-align: top"
+          >總後台取消授權使商戶遊戲中心看不到；商戶自行關閉仍保留後台可見性。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">上期累積 GGR／上期待交收</td
+        ><td style="text-align: left; vertical-align: top"
+          >前者未計價負 GGR，後者已計價未交收款；例如 -40,000 與 3,000 不能直接視為同一種餘額。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">確認／鎖定／交收</td
+        ><td style="text-align: left; vertical-align: top"
+          >確認是帳務版本核對；鎖定限制改寫；交收才減少待交收金額。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">版本／快照</td
+        ><td style="text-align: left; vertical-align: top"
+          >條件版本與實際交易、結算使用快照分離；新版本不回寫歷史。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">直屬／間接</td
+        ><td style="text-align: left; vertical-align: top"
+          >直接父子或直接代理商戶關係為直屬；後代中的其他對象為間接，不重複計算。</td
+        ></tr
+      ></table
+    ><h2>4. 畫面內容</h2
+    ><p
+      >本版以整個後台為文件單位，第 1、4、14 章以功能 ID
+      對照同一模組。只用演示位置辨認需求，不定義顏色、字級、間距或前端組件。示例 M00001
+      是定位用資料，不是權限或正式固定對象。</p
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">功能 ID</th
+        ><th style="text-align: left; vertical-align: top">演示位置</th
+        ><th style="text-align: left; vertical-align: top">區塊／資料內容</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-01</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/dashboard"
+            >代理儀錶板</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >期間／代理商戶摘要／待辦／原幣彙總；直屬下級、後代代理、直屬商戶、覆蓋商戶、GGR、待辦</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-02</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/relationships"
+            >代理關係</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >代理樹／選中代理詳細／新增下級；名稱 1–80 字、上級、層級、備註、商務條件</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-03</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/relationships"
+            >直屬代理條件</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >選中節點 →
+          商務條件／條件歷史／操作紀錄；類型比例、上級成本、結算幣、週期、模式、生效日、版本</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-04</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/merchants"
+            >商戶管理</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >查詢／直屬間接商戶／新增直屬商戶；商戶代碼、名稱、錢包、投注幣別、各類型條件、生效日</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-05</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/merchants/M00001"
+            >商戶摘要與條件</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >商戶摘要 →
+          基本資料／商務條件／歷史／操作紀錄；商戶、關係、直接代理、條件版本、分幣彙總</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-06</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/reports/operations"
+            >代理報表</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >代理／商戶分析、查詢、參考換算、列表與總計；期間、範圍、幣別、投注、派彩、GGR、局數</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-07</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a
+            href="https://jenellhoppes-commits.github.io/game-admin/#/agent/reports/exchange-rates"
+            >匯率報表</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >正式適用匯率／歷史快照／詳細；基準幣、目標幣、正式率、期間、版本</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-08</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/reconciliation"
+            >對帳／結算</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >自身上繳／直屬對帳／結算與計算依據／交付結果；期別、狀態、條件版本、快照、GGR、待交收、差異</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-09</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/notifications"
+            >公告通知</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >公告列表／詳細／已讀；公告、適用對象、發布時間、閱讀狀態</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-10</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://jenellhoppes-commits.github.io/game-admin/#/agent/access"
+            >帳號與權限</a
+          ></td
+        ><td style="text-align: left; vertical-align: top"
+          >本代理帳號／角色／範圍；帳號、名稱、角色、狀態、授權範圍</td
+        ></tr
+      ></table
+    ><h2>5. 欄位說明</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">欄位</th
+        ><th style="text-align: left; vertical-align: top">內容與驗證</th
+        ><th style="text-align: left; vertical-align: top">無資料時顯示</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">對象識別／名稱</td
+        ><td style="text-align: left; vertical-align: top"
+          >代理、商戶、會員或遊戲的唯一身分；名稱不是授權依據</td
+        ><td style="text-align: left; vertical-align: top">未提供；必要識別缺失禁止提交</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">遊戲類型</td
+        ><td style="text-align: left; vertical-align: top"
+          >總後台類型代碼及名稱，例如 SLOT／電子遊戲</td
+        ><td style="text-align: left; vertical-align: top">未設定，不借用其他類型</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">GGR 比例</td
+        ><td style="text-align: left; vertical-align: top"
+          >依類型百分比；新建 0–100%，兩位小數；下開須符合成本</td
+        ><td style="text-align: left; vertical-align: top">未設定，非 0%</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">條件版本／生效期間</td
+        ><td style="text-align: left; vertical-align: top"
+          >版本、起日、截止日；截止不包含新版本起日</td
+        ><td style="text-align: left; vertical-align: top">歷史缺日期顯示未提供；不可補造</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">結算幣別／週期</td
+        ><td style="text-align: left; vertical-align: top">有效結算幣；日結、週結、半月結、月結</td
+        ><td style="text-align: left; vertical-align: top">未設定，建立時拒絕</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">結算方式</td
+        ><td style="text-align: left; vertical-align: top">清零／累積；新條件必填</td
+        ><td style="text-align: left; vertical-align: top">未設定，不自選模式</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">錢包類型</td
+        ><td style="text-align: left; vertical-align: top"
+          >Seamless 單一錢包／Transfer 轉帳錢包；商戶層級</td
+        ><td style="text-align: left; vertical-align: top">未設定，不代表任一模式</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">線路／交易幣別</td
+        ><td style="text-align: left; vertical-align: top"
+          >一線路一交易幣別；商戶身分和線路歸屬必須一致</td
+        ><td style="text-align: left; vertical-align: top">尚無線路；可申請第一條</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">RTP 方案</td
+        ><td style="text-align: left; vertical-align: top"
+          >商戶 × 遊戲核定方案、值與版本；非商務 GGR 費率</td
+        ><td style="text-align: left; vertical-align: top">未配置，不填 0%</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">限紅方案</td
+        ><td style="text-align: left; vertical-align: top"
+          >商戶 × 線路 × 遊戲所選方案；最低／最高投注及幣別</td
+        ><td style="text-align: left; vertical-align: top">未配置；無相符啟用方案不可保存</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">本期 GGR</td
+        ><td style="text-align: left; vertical-align: top"
+          >本期來源統計，未加入歷史 GGR 或歷史款項</td
+        ><td style="text-align: left; vertical-align: top">未提供，非 0</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">上期累積 GGR</td
+        ><td style="text-align: left; vertical-align: top">尚未扣抵完的負 GGR；與已計價款分離</td
+        ><td style="text-align: left; vertical-align: top"
+          >首期須有明確零餘額依據；缺來源顯示待確認</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">扣抵後 GGR</td
+        ><td style="text-align: left; vertical-align: top">上期累積 GGR 加本期 GGR</td
+        ><td style="text-align: left; vertical-align: top">缺任一必要輸入則無法計算</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">上期待交收金額</td
+        ><td style="text-align: left; vertical-align: top">以前各期已計價尚未交收款的承接餘額</td
+        ><td style="text-align: left; vertical-align: top">未提供，不以 0 代替</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">本期新增交收金額</td
+        ><td style="text-align: left; vertical-align: top">本期扣抵後正 GGR 依條件計價結果</td
+        ><td style="text-align: left; vertical-align: top">必要費率或快照缺少時無法計算</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">合計待交收金額</td
+        ><td style="text-align: left; vertical-align: top">上期待交收加本期新增；不重複計價</td
+        ><td style="text-align: left; vertical-align: top">無法計算，不能確認正式交收</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">本期實際交收金額</td
+        ><td style="text-align: left; vertical-align: top">本期完成交收的金額；保留為 0</td
+        ><td style="text-align: left; vertical-align: top">尚未交收／未提供，區分真實零值</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">結轉下期待交收金額</td
+        ><td style="text-align: left; vertical-align: top"
+          >合計減本期實際交收；後期以上期欄位承接</td
+        ><td style="text-align: left; vertical-align: top">未完成計算</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">匯率／快照</td
+        ><td style="text-align: left; vertical-align: top"
+          >基準幣、目標幣、適用率、生效期間、版本</td
+        ><td style="text-align: left; vertical-align: top">未提供；不產生假換算</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">差異</td
+        ><td style="text-align: left; vertical-align: top"
+          >關聯參照、金額、原幣、原因、處理狀態及版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >無差異／未提供，依查詢成功與否區分</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">稽核</td
+        ><td style="text-align: left; vertical-align: top"
+          >操作人、時間、動作、原因、前後值、結果</td
+        ><td style="text-align: left; vertical-align: top">未提供；不以目前帳號補歷史操作人</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">代理名稱／系統代碼</td
+        ><td style="text-align: left; vertical-align: top"
+          >名稱 1–80 字；同上級唯一；代碼系統產生</td
+        ><td style="text-align: left; vertical-align: top">缺名稱拒絕建立</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">商戶代碼</td
+        ><td style="text-align: left; vertical-align: top">2–24 字英數 - _；轉大寫，重複拒絕</td
+        ><td style="text-align: left; vertical-align: top">缺代碼拒絕建立</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">直屬／間接</td
+        ><td style="text-align: left; vertical-align: top">直接父子關係或授權後代；不得重複加總</td
+        ><td style="text-align: left; vertical-align: top">查詢成功無關係顯示無資料</td></tr
+      ></table
+    ><p
+      >數值 0 只用於來源已確認為零；未提供、無權限與計算失敗不得轉為零。ID
+      用於關聯與稽核，不以名稱做資料關聯。</p
+    ><p
+      >各欄位是否提供以第 1 章角色權限為準；共通名詞不額外授予操作。代理端不提供
+      RTP／限紅配置欄位或會員明細。商戶端商務條件、RTP 及匯率均唯讀。</p
+    ><h2>6. 狀態說明</h2
+    ><p>代碼以目前領域狀態供理解；正式服務命名由技術文件定義，不改變以下語意。不同層級不得互推。</p
+    ><h3>條件版本</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">值</th
+        ><th style="text-align: left; vertical-align: top">顯示文字</th
+        ><th style="text-align: left; vertical-align: top">意思</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Draft</td
+        ><td style="text-align: left; vertical-align: top">草稿</td
+        ><td style="text-align: left; vertical-align: top">總後台尚未確認；不取代現行條件</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Scheduled</td
+        ><td style="text-align: left; vertical-align: top">待生效</td
+        ><td style="text-align: left; vertical-align: top">已確認未來生效日</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Active</td
+        ><td style="text-align: left; vertical-align: top">生效中</td
+        ><td style="text-align: left; vertical-align: top">目前業務日適用</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Expired</td
+        ><td style="text-align: left; vertical-align: top">已到期</td
+        ><td style="text-align: left; vertical-align: top">保留歷史唯讀</td></tr
+      ></table
+    ><h3>對帳</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">值</th
+        ><th style="text-align: left; vertical-align: top">顯示文字</th
+        ><th style="text-align: left; vertical-align: top">意思</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Draft</td
+        ><td style="text-align: left; vertical-align: top">草稿</td
+        ><td style="text-align: left; vertical-align: top">尚未提交確認</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Pending Confirmation</td
+        ><td style="text-align: left; vertical-align: top">待確認</td
+        ><td style="text-align: left; vertical-align: top">必要資料完整後可確認</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Difference</td
+        ><td style="text-align: left; vertical-align: top">有差異</td
+        ><td style="text-align: left; vertical-align: top">存在未處理差異，阻擋確認</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Confirmed</td
+        ><td style="text-align: left; vertical-align: top">已確認</td
+        ><td style="text-align: left; vertical-align: top">確認單據版本，非付款完成</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Locked</td
+        ><td style="text-align: left; vertical-align: top">已鎖定</td
+        ><td style="text-align: left; vertical-align: top">歷史固定，不覆寫</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Cancelled</td
+        ><td style="text-align: left; vertical-align: top">已取消</td
+        ><td style="text-align: left; vertical-align: top">不視為正常有效單據</td></tr
+      ></table
+    ><h3>差異</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">值</th
+        ><th style="text-align: left; vertical-align: top">顯示文字</th
+        ><th style="text-align: left; vertical-align: top">意思</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Open</td
+        ><td style="text-align: left; vertical-align: top">待處理</td
+        ><td style="text-align: left; vertical-align: top">尚未指派處理</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Investigating</td
+        ><td style="text-align: left; vertical-align: top">調查中</td
+        ><td style="text-align: left; vertical-align: top">核對來源</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Waiting Partner</td
+        ><td style="text-align: left; vertical-align: top">待對方回覆</td
+        ><td style="text-align: left; vertical-align: top">等待代理／商戶</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Waiting Internal</td
+        ><td style="text-align: left; vertical-align: top">待內部回覆</td
+        ><td style="text-align: left; vertical-align: top">等待內部資料</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Resolved</td
+        ><td style="text-align: left; vertical-align: top">已解決</td
+        ><td style="text-align: left; vertical-align: top">已有處理依據</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Accepted</td
+        ><td style="text-align: left; vertical-align: top">已接受</td
+        ><td style="text-align: left; vertical-align: top">接受差異結論</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Closed</td
+        ><td style="text-align: left; vertical-align: top">已關閉</td
+        ><td style="text-align: left; vertical-align: top">保留歷史</td></tr
+      ></table
+    ><h3>線路申請</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">值</th
+        ><th style="text-align: left; vertical-align: top">顯示文字</th
+        ><th style="text-align: left; vertical-align: top">意思</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Pending</td
+        ><td style="text-align: left; vertical-align: top">待審核</td
+        ><td style="text-align: left; vertical-align: top">尚未建立可投注線路</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Approved</td
+        ><td style="text-align: left; vertical-align: top">已核准</td
+        ><td style="text-align: left; vertical-align: top">產生唯一待配置線路</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Rejected</td
+        ><td style="text-align: left; vertical-align: top">已駁回</td
+        ><td style="text-align: left; vertical-align: top">保留原因，不建立線路</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Cancelled</td
+        ><td style="text-align: left; vertical-align: top">已取消</td
+        ><td style="text-align: left; vertical-align: top">保留舊申請，不視為核准</td></tr
+      ></table
+    ><h3>總後台商戶遊戲授權</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">值</th
+        ><th style="text-align: left; vertical-align: top">顯示文字</th
+        ><th style="text-align: left; vertical-align: top">意思</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">enabled=true</td
+        ><td style="text-align: left; vertical-align: top">總後台已授權</td
+        ><td style="text-align: left; vertical-align: top">商戶可見並依權限使用</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">enabled=false</td
+        ><td style="text-align: left; vertical-align: top">總後台未授權</td
+        ><td style="text-align: left; vertical-align: top">商戶遊戲中心不可見，不刪歷史交易</td></tr
+      ></table
+    ><h3>商戶自己平台的展示狀態</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">值</th
+        ><th style="text-align: left; vertical-align: top">顯示文字</th
+        ><th style="text-align: left; vertical-align: top">意思</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">platformClosed=true</td
+        ><td style="text-align: left; vertical-align: top">本平台已關閉</td
+        ><td style="text-align: left; vertical-align: top">商戶後台仍可見；本平台不展示</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">platformClosed=false</td
+        ><td style="text-align: left; vertical-align: top">本平台開啟</td
+        ><td style="text-align: left; vertical-align: top">仍須符合主遊戲、授權與線路條件</td></tr
+      ></table
+    ><h3>方案</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">值</th
+        ><th style="text-align: left; vertical-align: top">顯示文字</th
+        ><th style="text-align: left; vertical-align: top">意思</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Draft</td
+        ><td style="text-align: left; vertical-align: top">草稿</td
+        ><td style="text-align: left; vertical-align: top">不可提供新選用</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Active</td
+        ><td style="text-align: left; vertical-align: top">啟用</td
+        ><td style="text-align: left; vertical-align: top">符合遊戲及幣別時可選</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Disabled</td
+        ><td style="text-align: left; vertical-align: top">停用</td
+        ><td style="text-align: left; vertical-align: top">不可新選；已用歷史保留</td></tr
+      ></table
+    ><h3>匯率</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">值</th
+        ><th style="text-align: left; vertical-align: top">顯示文字</th
+        ><th style="text-align: left; vertical-align: top">意思</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Draft</td
+        ><td style="text-align: left; vertical-align: top">草稿</td
+        ><td style="text-align: left; vertical-align: top">未正式發布</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Published</td
+        ><td style="text-align: left; vertical-align: top">已發布</td
+        ><td style="text-align: left; vertical-align: top">正式適用版本</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Locked</td
+        ><td style="text-align: left; vertical-align: top">已鎖定</td
+        ><td style="text-align: left; vertical-align: top">歷史結算引用固定快照</td></tr
+      ></table
+    ><h3>交收演示狀態</h3
+    ><p
+      >尚未確認 → 已確認 → 保留至下期／全額交收 →
+      下一期尚未確認。這是操作順序，正式帳務入帳狀態碼由後端文件定義。已確認不等於
+      Paid。已關閉授權也不等於刪除歷史。</p
+    ><h2>7. 查詢、排序與分頁</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">欄位／控制</th
+        ><th style="text-align: left; vertical-align: top">型態</th
+        ><th style="text-align: left; vertical-align: top">規則</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">資料期間</td
+        ><td style="text-align: left; vertical-align: top">日期區間</td
+        ><td style="text-align: left; vertical-align: top"
+          >按查詢提交；起日不晚於訖日；本日、昨日、本週、上週、本月、上月。正式週界與時區見
+          Q-01。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">對象代碼／名稱</td
+        ><td style="text-align: left; vertical-align: top">文字</td
+        ><td style="text-align: left; vertical-align: top"
+          >僅搜尋已授權範圍；不透過回應透露未授權對象存在。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">幣別／線路／遊戲類型</td
+        ><td style="text-align: left; vertical-align: top">選項</td
+        ><td style="text-align: left; vertical-align: top"
+          >來源為總後台主檔；線路與對象從屬一致。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">狀態／版本</td
+        ><td style="text-align: left; vertical-align: top">選項或版本識別</td
+        ><td style="text-align: left; vertical-align: top"
+          >依第 6 章狀態分組，不混用不同層級狀態。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">觸發／重置</td
+        ><td style="text-align: left; vertical-align: top">操作</td
+        ><td style="text-align: left; vertical-align: top"
+          >查詢按鈕提交；重置清除使用者條件，不清除強制權限範圍。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">排序</td
+        ><td style="text-align: left; vertical-align: top">結果控制</td
+        ><td style="text-align: left; vertical-align: top"
+          >原型各頁保留其排序；正式穩定預設排序、可排序欄位及時間相同時次序於 Q-12
+          確認。不得因分頁造成重複或漏列。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">分頁</td
+        ><td style="text-align: left; vertical-align: top">結果控制</td
+        ><td style="text-align: left; vertical-align: top"
+          >演示預設每頁 20 筆；總筆數是全查詢範圍，不是本頁數。正式上限見 Q-12。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">列表總計</td
+        ><td style="text-align: left; vertical-align: top">彙總</td
+        ><td style="text-align: left; vertical-align: top"
+          >總計來自完整同查詢集合，不只目前分頁；依幣別分組。</td
+        ></tr
+      ></table
+    ><h2>8. 操作與跳轉</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">點擊位置</th
+        ><th style="text-align: left; vertical-align: top">前往／結果</th
+        ><th style="text-align: left; vertical-align: top">帶入參數</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">代理儀錶板</td
+        ><td style="text-align: left; vertical-align: top">期間／代理商戶摘要／待辦／原幣彙總</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-01；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">代理關係</td
+        ><td style="text-align: left; vertical-align: top">代理樹／選中代理詳細／新增下級</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-02；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">直屬代理條件</td
+        ><td style="text-align: left; vertical-align: top"
+          >選中節點 → 商務條件／條件歷史／操作紀錄</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-03；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">商戶管理</td
+        ><td style="text-align: left; vertical-align: top">查詢／直屬間接商戶／新增直屬商戶</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-04；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">商戶摘要與條件</td
+        ><td style="text-align: left; vertical-align: top"
+          >商戶摘要 → 基本資料／商務條件／歷史／操作紀錄</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-05；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">代理報表</td
+        ><td style="text-align: left; vertical-align: top"
+          >代理／商戶分析、查詢、參考換算、列表與總計</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-06；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">匯率報表</td
+        ><td style="text-align: left; vertical-align: top">正式適用匯率／歷史快照／詳細</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-07；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">對帳／結算</td
+        ><td style="text-align: left; vertical-align: top"
+          >自身上繳／直屬對帳／結算與計算依據／交付結果</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-08；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">公告通知</td
+        ><td style="text-align: left; vertical-align: top">公告列表／詳細／已讀</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-09；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">帳號與權限</td
+        ><td style="text-align: left; vertical-align: top">本代理帳號／角色／範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >AGT-10；登入身分、授權對象識別；列表詳細帶選中紀錄
+          ID；報表帶期間／幣別／授權範圍；返回帶原查詢及頁碼。</td
+        ></tr
+      ></table
+    ><p
+      >異動提交另帶目標版本、必要原因及生效日；服務端重新檢查身分、目前版本與資料狀態。失敗保留可修正的輸入，不回報成功。</p
+    ><h2>9. 頁面狀態</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">狀態</th
+        ><th style="text-align: left; vertical-align: top">可觀察結果</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">載入中</td
+        ><td style="text-align: left; vertical-align: top"
+          >尚無可採用結果；不得將未回傳金額作 0 送出。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">查無資料</td
+        ><td style="text-align: left; vertical-align: top">查詢成功、筆數 0；與錯誤區分。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">載入失敗</td
+        ><td style="text-align: left; vertical-align: top"
+          >回報失敗並可重試；不把舊資料當最新。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">局部失敗</td
+        ><td style="text-align: left; vertical-align: top"
+          >可用區塊保留；缺失區塊標出，必要快照失敗阻擋財務確認。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">無權限</td
+        ><td style="text-align: left; vertical-align: top"
+          >不回傳目標資料；直接網址、下載與操作同樣拒絕。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">版本衝突</td
+        ><td style="text-align: left; vertical-align: top"
+          >原資料已更新；要求重新讀取，不覆蓋他人異動。</td
+        ></tr
+      ></table
+    ><h2>10. User Story — 使用者</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U01 新增代理原子性</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要一次建立直屬代理及條件。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN L1 代理有 SLOT 5% 成本。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 建立下級但未填生效日。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 拒絕且不留下代理或 V1 半套資料。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U02 最大層級</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要在允許層級內建立下級。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 登入 L3。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 提交建立直屬下級。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">THEN 拒絕，不建立 L4。</td></tr></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U03 直屬範圍</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要只修改自己的直屬對象。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN A1 的下級 A2 及間接 A3。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN A1 修改 A3 條件。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 拒絕，A3 版本不變。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U04 成本相等</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要以等於成本的條件下開。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理 SLOT 成本 5%。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 建立 SLOT 5% 直屬條件。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 成功，該同基礎差額為 0。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U05 成本缺少</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要在成本資料齊全後發放條件。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理未設定 LIVE 成本。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 下開 LIVE 8%。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 拒絕，不使用 SLOT 或歷史全域成本。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U06 商戶直接建立</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要填寫條件直接建立商戶。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理可建立商戶。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >WHEN 填代碼、名稱、SLOT 6%、日期、模式、錢包、幣別後保存。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 建立商戶與獨立 V1；無新增商戶待審單。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U07 商戶代碼唯一</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要避免建立重複商戶。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 已有 MER_01。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 新增 mer_01。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 正規化後拒絕重複。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U08 自己的條件唯讀</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要查閱上級提供給我的條件。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理自身版本 V1。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 送出修改自身比例。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">THEN 拒絕，V1 不變。</td></tr></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U09 彙總去重</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要查看不重複的授權商戶統計。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >GIVEN 同商戶在授權樹可由多條查詢結果取得。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 計算覆蓋及間接摘要。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 同一商戶只計一次，直屬與間接不重複。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-U10 資料限制</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為代理後台使用者，我要查看授權範圍的商務彙總。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 代理有商戶彙總權。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >WHEN 要求會員個資、逐筆注單、資金交易或重播。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 不提供明細及敏感資料。</td></tr
+      ></table
+    ><h2>11. User Story — 開發人員</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D01 新增代理原子性</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實新增代理原子性的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN L1 代理有 SLOT 5% 成本。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 建立下級但未填生效日。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 拒絕且不留下代理或 V1 半套資料。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D02 最大層級</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實最大層級的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 登入 L3。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 提交建立直屬下級。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">THEN 拒絕，不建立 L4。</td></tr></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D03 直屬範圍</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實直屬範圍的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN A1 的下級 A2 及間接 A3。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN A1 修改 A3 條件。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 拒絕，A3 版本不變。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D04 成本相等</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實成本相等的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理 SLOT 成本 5%。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 建立 SLOT 5% 直屬條件。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 成功，該同基礎差額為 0。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D05 成本缺少</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實成本缺少的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理未設定 LIVE 成本。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 下開 LIVE 8%。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 拒絕，不使用 SLOT 或歷史全域成本。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D06 商戶直接建立</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實商戶直接建立的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理可建立商戶。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >WHEN 填代碼、名稱、SLOT 6%、日期、模式、錢包、幣別後保存。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 建立商戶與獨立 V1；無新增商戶待審單。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D07 商戶代碼唯一</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實商戶代碼唯一的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 已有 MER_01。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 新增 mer_01。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 正規化後拒絕重複。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D08 自己的條件唯讀</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實自己的條件唯讀的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理自身版本 V1。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 送出修改自身比例。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">THEN 拒絕，V1 不變。</td></tr></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D09 彙總去重</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實彙總去重的資料與權限規則。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >GIVEN 同商戶在授權樹可由多條查詢結果取得。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 計算覆蓋及間接摘要。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 同一商戶只計一次，直屬與間接不重複。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-D10 資料限制</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為後端開發人員，我要落實資料限制的資料與權限規則。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 代理有商戶彙總權。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >WHEN 要求會員個資、逐筆注單、資金交易或重播。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 不提供明細及敏感資料。</td></tr
+      ></table
+    ><h2>12. User Story — QA 驗證者</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q01 新增代理原子性</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證新增代理原子性的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN L1 代理有 SLOT 5% 成本。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 建立下級但未填生效日。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 拒絕且不留下代理或 V1 半套資料。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q02 最大層級</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證最大層級的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 登入 L3。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 提交建立直屬下級。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">THEN 拒絕，不建立 L4。</td></tr></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q03 直屬範圍</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證直屬範圍的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN A1 的下級 A2 及間接 A3。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN A1 修改 A3 條件。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 拒絕，A3 版本不變。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q04 成本相等</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證成本相等的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理 SLOT 成本 5%。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 建立 SLOT 5% 直屬條件。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 成功，該同基礎差額為 0。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q05 成本缺少</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證成本缺少的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理未設定 LIVE 成本。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 下開 LIVE 8%。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 拒絕，不使用 SLOT 或歷史全域成本。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q06 商戶直接建立</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證商戶直接建立的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理可建立商戶。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >WHEN 填代碼、名稱、SLOT 6%、日期、模式、錢包、幣別後保存。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 建立商戶與獨立 V1；無新增商戶待審單。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q07 商戶代碼唯一</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證商戶代碼唯一的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 已有 MER_01。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 新增 mer_01。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 正規化後拒絕重複。</td></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q08 自己的條件唯讀</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證自己的條件唯讀的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 本代理自身版本 V1。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 送出修改自身比例。</td></tr
+      ><tr><td style="text-align: left; vertical-align: top">THEN 拒絕，V1 不變。</td></tr></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q09 彙總去重</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證彙總去重的結果。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >GIVEN 同商戶在授權樹可由多條查詢結果取得。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">WHEN 計算覆蓋及間接摘要。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >THEN 同一商戶只計一次，直屬與間接不重複。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr><th style="text-align: left; vertical-align: top">US-Q10 資料限制</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >身為 QA，我要驗證資料限制的結果。</td
+        ></tr
+      ><tr><td style="text-align: left; vertical-align: top">GIVEN 代理有商戶彙總權。</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >WHEN 要求會員個資、逐筆注單、資金交易或重播。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">THEN 不提供明細及敏感資料。</td></tr
+      ></table
+    ><h3>最新結算補充規格</h3
+    ><p
+      >本文件整合最新決議。標記為「規格」的內容不代表原型已完整實現；驗收範圍見文末。取代平台不能操作商戶單、平台代收不開放、獨立差異案件等舊規格。</p
+    ><h4>1. 流程</h4
+    ><p
+      >產生結算單 → 財務核帳／交付 →
+      確認後鎖定。計算依據與結算單合併呈現；不再設獨立差異案件、差異處理或結轉演示區。</p
+    ><h4>2. 商務條件</h4
+    ><p
+      >只採 GGR，按遊戲類型分別設定比例，例如 SLOT 5%、LIVE 8%。這是商務成本比例，不是遊戲
+      RTP。下開給直屬代理或商戶的比例不得低於自身同類型成本。條件變更必有生效日並保存版本，不覆蓋歷史結算。</p
+    ><p
+      >例：相同幣別、期間及類型的 GGR 1,000,000，代理成本 5%，下開 6%；上繳 50,000、向下應收
+      60,000、條件差額
+      10,000。例子不含差異、退款、負數抵扣與匯率。不能把條件差額直接視為平台已支付的傭金。</p
+    ><p
+      >按對帳對象、期間、遊戲類型及幣別區分計算，不跨幣直接相加，不把商戶明細與代理彙總重複計入平台應收。結算週期沿用合約；正式切帳時區、遲到事件及取消／退款／獎池口徑須明確定義。</p
+    ><h4>3. 模式及權限</h4
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">角色</th
+        ><th style="text-align: left; vertical-align: top">代理統收</th
+        ><th style="text-align: left; vertical-align: top">平台代收</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">平台</td
+        ><td style="text-align: left; vertical-align: top">設定、查看、核帳、交付</td
+        ><td style="text-align: left; vertical-align: top">設定、查看、核帳、交付</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">授權代理</td
+        ><td style="text-align: left; vertical-align: top">自己的直屬單據可核帳／交付</td
+        ><td style="text-align: left; vertical-align: top">同範圍唯讀</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">商戶</td
+        ><td style="text-align: left; vertical-align: top">自己的單據與交付結果唯讀</td
+        ><td style="text-align: left; vertical-align: top">自己的單據與交付結果唯讀</td></tr
+      ></table
+    ><p
+      >平台可記錄實際收款方為平台或單據對應代理；代理操作時收款方固定本代理。登錄方與實際收款方分開。兩方共用原單，一方鎖定後另一方不得重複確認。模式本身不自動產生傭金支付、現金轉帳或已付款狀態。</p
+    ><p
+      >模式變更保留生效日及紀錄。原型目前是總後台選商戶初始模式及設定未鎖定單據的本期模式（適用該期起日），完整未來生效排程尚未完成。</p
+    ><h4>4. 結算欄位與核帳</h4
+    ><p
+      >結算單呈現單號、對象、期間、類型、交易幣／結算幣、模式、付款方與對應收款方；計算快照保存
+      GGR、商務比例／版本、匯率／版本、精度、捨入及計算時間。</p
+    ><p
+      >交付欄位：系統應結（唯讀）、上期退款／回調、差異調整、調整原因、調整後應結、實際收款方、實收／實付、剩餘款及保留至下期。非零差異必填原因。差異由人核對外部帳目後輸入，不由系統自動推定。</p
+    ><p
+      >調整後應結＝系統應結＋本單承接回調＋本次差異（回調若已含於系統應結不可重複加算）。原型不允許實收超過正的可交付金額；溢收處置仍需另訂規格。</p
+    ><p
+      >所有幣別的實收／實付直接捨去小數、不四捨五入。系統應結與差異仍保留計算精度。例：應結
+      1,000.99、交付 1,000、剩餘 0.99，可保留至下期。負 GGR 不填成負的實收。</p
+    ><h4>5. 累積與清零</h4><p>負 GGR 與未交付款項是兩個不同餘額。</p
+    ><p
+      >累積：上期負 GGR＋本期 GGR＝扣抵後
+      GGR；若仍為負，繼續承接；若轉正，按當期適用條件計算應結。清零：當期負 GGR
+      不承接下期。兩種模式均可保留尚未交付的正金額，清零不是免除欠款。</p
+    ><p
+      >必要欄位：上期累積 GGR、本期 GGR、扣抵後 GGR、結轉下期
+      GGR；上期待交付金額、本期新增應結、上期退款／回調、差異調整、合計待交付、本期實際交付、剩餘及結轉下期待交付。不同類型／幣別不任意互抵。</p
+    ><h4>6. 狀態與鎖定</h4
+    ><p
+      >對帳主要狀態為待確認、已鎖定；收付另列未收付、部分收付、已收付、已結轉下期。已鎖定不等於已收款；已結轉不等於已付款。</p
+    ><p
+      >鎖定後不改原計算、模式、調整或交付；更正以後續期間上期退款／回調連結原單。原型會檢查同一對象、線路與幣別且目標單未確認。完整稽核應包含正式操作者帳號、時間及修改前後值。</p
+    ><h4>7. 本次驗收結果與限制</h4
+    ><p
+      >已通過資料層自動驗收：平台在兩種模式可操作；代理統收代理可操作；平台代收代理拒絕且原單不變；非授權收款方拒絕；實際收款方與登錄方分開；整數實收；重複交付／鎖定後改模式拒絕；代理商戶共用結果及授權範圍；差異必填原因；回調不覆寫來源。型別檢查通過。</p
+    ><p
+      >尚不能宣稱完成：多期 GGR
+      及未收款自動承接、正式按類型出帳及跨版本條件算法、完整模式生效排程、同一單鎖定後分次補收流程、傭金付款、自動持久化跨瀏覽器同步、後端原子鎖與正式操作者驗權。原型仍使用示範金額，登錄身份目前記錄平台／代理來源而非正式員工身份。</p
+    ><p>本節為 v1.1 最新結算基線；正式後端待完成事項不得因原型測試通過而標 Done。</p
+    ><h2>13. 驗收標準</h2
+    ><p
+      >以下是正式驗收條件，不是已測試通過的宣告。每份文件的 AC 編號獨立；跨文件引用使用
+      AGT/AC-##。</p
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">ID</th
+        ><th style="text-align: left; vertical-align: top">主題</th
+        ><th style="text-align: left; vertical-align: top">驗收敘述</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-01</td
+        ><td style="text-align: left; vertical-align: top">新增代理原子性</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given L1 代理有 SLOT 5% 成本；When 建立下級但未填生效日；Then 拒絕且不留下代理或 V1
+          半套資料。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-02</td
+        ><td style="text-align: left; vertical-align: top">最大層級</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 登入 L3；When 提交建立直屬下級；Then 拒絕，不建立 L4。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-03</td
+        ><td style="text-align: left; vertical-align: top">直屬範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given A1 的下級 A2 及間接 A3；When A1 修改 A3 條件；Then 拒絕，A3 版本不變。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-04</td
+        ><td style="text-align: left; vertical-align: top">成本相等</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 本代理 SLOT 成本 5%；When 建立 SLOT 5% 直屬條件；Then 成功，該同基礎差額為 0。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-05</td
+        ><td style="text-align: left; vertical-align: top">成本缺少</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 本代理未設定 LIVE 成本；When 下開 LIVE 8%；Then 拒絕，不使用 SLOT
+          或歷史全域成本。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-06</td
+        ><td style="text-align: left; vertical-align: top">商戶直接建立</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 本代理可建立商戶；When 填代碼、名稱、SLOT 6%、日期、模式、錢包、幣別後保存；Then
+          建立商戶與獨立 V1；無新增商戶待審單。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-07</td
+        ><td style="text-align: left; vertical-align: top">商戶代碼唯一</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 已有 MER_01；When 新增 mer_01；Then 正規化後拒絕重複。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-08</td
+        ><td style="text-align: left; vertical-align: top">自己的條件唯讀</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 本代理自身版本 V1；When 送出修改自身比例；Then 拒絕，V1 不變。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-09</td
+        ><td style="text-align: left; vertical-align: top">彙總去重</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 同商戶在授權樹可由多條查詢結果取得；When 計算覆蓋及間接摘要；Then
+          同一商戶只計一次，直屬與間接不重複。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-10</td
+        ><td style="text-align: left; vertical-align: top">資料限制</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 代理有商戶彙總權；When 要求會員個資、逐筆注單、資金交易或重播；Then
+          不提供明細及敏感資料。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-11</td
+        ><td style="text-align: left; vertical-align: top">負 GGR 多期扣抵</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 累積、5%、期初 0；When 依序確認 -100,000、60,000、100,000 並保留；Then
+          前三期新增交收為 0、0、3,000；負 GGR 餘額為 -100,000、-40,000、0。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-12</td
+        ><td style="text-align: left; vertical-align: top">保留款不重計價</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 上期待交收 3,000，本期正 GGR 20,000，5%；When 確認並保留；Then 新增
+          1,000、合計及下期待交收 4,000，不是 1,150。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-13</td
+        ><td style="text-align: left; vertical-align: top">清零也保留款</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 清零、上期待交收 5,000、本期 GGR -40,000；When 確認並保留；Then 下期負 GGR
+          0，待交收 5,000。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-14</td
+        ><td style="text-align: left; vertical-align: top">已交收不再帶入</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 合計待交收 4,000；When 全額交收後進下期；Then 本期實際交收 4,000，下期期初待交收
+          0。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-15</td
+        ><td style="text-align: left; vertical-align: top">模式權限與調整原因</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 代理統收／平台代收單據；When 平台核帳交付；Then
+          兩者皆允許。代理僅可操作授權直屬代理統收單，平台代收須拒絕且資料不變；非零差異未填原因亦拒絕。商戶均唯讀。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-16</td
+        ><td style="text-align: left; vertical-align: top">重送防重複</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 同一單據版本已保留一次；When 重送相同保留操作；Then
+          餘額只承接一次，返回既有結果或明確拒絕。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-17</td
+        ><td style="text-align: left; vertical-align: top">歷史不改寫</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 已鎖定帳單使用 V1 和 FX1；When 新條件 V2 及匯率 FX2 生效；Then 舊單仍 V1／FX1
+          及原金額。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-18</td
+        ><td style="text-align: left; vertical-align: top">匯率缺少</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given USD 有匯率、TWD 缺少；When 要求合併換算；Then TWD
+          標無法換算；不能顯示完整換算總額或以 0 補值。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-19</td
+        ><td style="text-align: left; vertical-align: top">權限及查詢失敗</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 使用者無對象授權；另一次服務失敗；When 分別讀取資料；Then
+          分別回報無權限、載入失敗；不混同成功空列表。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-20</td
+        ><td style="text-align: left; vertical-align: top">未知期初</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 未提供上期累積及待交收來源；When 開啟正式帳單並要求計算；Then
+          標待確認，不能自動把未知金額當 0。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">ID</th
+        ><th style="text-align: left; vertical-align: top">主題</th
+        ><th style="text-align: left; vertical-align: top">驗收敘述</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-21</td
+        ><td style="text-align: left; vertical-align: top">唯讀匯率</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 代理具有查看正式率權；When 提交修改、刪除或產生快照；Then
+          全部拒絕，且讀取結果不含內部成本與加減點。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-22</td
+        ><td style="text-align: left; vertical-align: top">公告已讀</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 同代理帳號 U1、U2 均未讀 N1；When U1 閱讀 N1；Then 只有 U1 已讀，U2 仍未讀。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-23</td
+        ><td style="text-align: left; vertical-align: top">停用員工</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given U1 可查看本代理資料；When 停用 U1 後再次要求資料；Then
+          拒絕，不繼續提供原授權資料。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AC-24</td
+        ><td style="text-align: left; vertical-align: top">未來條件</td
+        ><td style="text-align: left; vertical-align: top"
+          >Given 本代理直屬 A2 有 V1；When 保存明日生效 V2；Then 今天仍 V1；明日 V2，歷史 V1
+          不覆寫。</td
+        ></tr
+      ></table
+    ><h2>14. 這頁需要的資料</h2
+    ><p>功能層資料需求如下。正式 API、資料欄位名稱、儲存 schema 與鎖定技術由後端技術設計定義。</p
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">能力</th
+        ><th style="text-align: left; vertical-align: top">輸入</th
+        ><th style="text-align: left; vertical-align: top">輸出</th
+        ><th style="text-align: left; vertical-align: top">規則</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-01 代理儀錶板</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >直屬下級、後代代理、直屬商戶、覆蓋商戶、GGR、待辦；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >直屬、後代、覆蓋商戶按唯一對象去重；不顯示已移除的新增商戶待審；關係待辦只計停用／移轉等仍需審核項。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-02 代理關係</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >名稱 1–80 字、上級、層級、備註、商務條件；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >僅授權樹；本代理只可建立自己的直屬下級。L3
+          不可再建；同上級名稱不重複，代碼由系統唯一產生。新增與 V1 條件一次成功或全失敗。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-03 直屬代理條件</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >類型比例、上級成本、結算幣、週期、模式、生效日、版本；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >自身條件唯讀；直屬下級可直接修改；間接不可改。逐類型檢查下開成本；必填生效日與原因；新版本不走申請。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-04 商戶管理</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >商戶代碼、名稱、錢包、投注幣別、各類型條件、生效日；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >直接新增，不送審；商戶代碼 2–24 字英數及
+          -、_，正規化大寫且唯一；名稱必填。直接填各類型條件，不能選其他商戶既有條件。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-05 商戶摘要與條件</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >商戶、關係、直接代理、條件版本、分幣彙總；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >直屬可改條件，間接依授權唯讀；不提供會員個資、逐筆下注、資金交易、串接秘密、RTP
+          或限紅操作。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-06 代理報表</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >期間、範圍、幣別、投注、派彩、GGR、局數；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >授權樹集合去重；直屬與間接互斥；逐原幣彙總。參考金額標示指定文字與匯率版本；未確定分配算法不虛構正式收益。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-07 匯率報表</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >基準幣、目標幣、正式率、期間、版本；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >只能查詢；不得新增、修改、刪除、停用、鎖定或產生快照。不提供來源成本、加減點等內部資料。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-08 對帳／結算</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >期別、狀態、條件版本、快照、GGR、待交收、差異；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >查看自身上繳與授權直屬單據；代理統收且具財務權限可登錄直屬交付，平台代收唯讀。平台兩模式皆可操作；負
+          GGR 與未收款分開承接。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-09 公告通知</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >公告、適用對象、發布時間、閱讀狀態；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >僅授權代理公告；已讀狀態跟隨使用者，不得把其他員工一併標已讀。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">AGT-10 帳號與權限</td
+        ><td style="text-align: left; vertical-align: top"
+          >登入身分、授權對象；查詢條件或符合權限的修改內容</td
+        ><td style="text-align: left; vertical-align: top"
+          >帳號、名稱、角色、狀態、授權範圍；可操作資格、結果及資料版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >員工不能取得超過所屬代理的資料；停用後不可執行操作。正式角色細項另列決策，原型邀請不等於正式帳號發放。</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">共通能力</th
+        ><th style="text-align: left; vertical-align: top">輸入</th
+        ><th style="text-align: left; vertical-align: top">輸出</th
+        ><th style="text-align: left; vertical-align: top">規則</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">版本計算</td
+        ><td style="text-align: left; vertical-align: top">對象、類型、計算期間、條件與歷史快照</td
+        ><td style="text-align: left; vertical-align: top">適用版本及可追溯計價</td
+        ><td style="text-align: left; vertical-align: top"
+          >無相符成本或版本不可猜值；C03–C07</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">結轉</td
+        ><td style="text-align: left; vertical-align: top"
+          >期初來源、本期 GGR、模式、比例、已交收資訊</td
+        ><td style="text-align: left; vertical-align: top">第 5 章各餘額與期別關聯</td
+        ><td style="text-align: left; vertical-align: top"
+          >一次承接；重送一致；不能混合幣別；C09–C10</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">異動</td
+        ><td style="text-align: left; vertical-align: top">身分、目標、舊版本、原因與新值</td
+        ><td style="text-align: left; vertical-align: top">成功或拒絕、更新版本、稽核</td
+        ><td style="text-align: left; vertical-align: top"
+          >原子成功；並發衝突不靜默覆蓋；未授權拒絕</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">彙總及下載</td
+        ><td style="text-align: left; vertical-align: top">完整查詢範圍</td
+        ><td style="text-align: left; vertical-align: top">原幣總計、資料期間與版本</td
+        ><td style="text-align: left; vertical-align: top">列表與總計範圍相同；下載再驗權</td></tr
+      ></table
+    ><h2>15. 待確認事項</h2
+    ><p
+      >查得到的已依對話及原型整理。以下不填推測答案；決議後更新原編號、日期及影響，不刪問題。所有待決項需
+      PM 指派單一負責人及期限後才可排入受影響開發。</p
+    ><h3>待產品決策</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">編號</th
+        ><th style="text-align: left; vertical-align: top">問題</th
+        ><th style="text-align: left; vertical-align: top">影響／等待對象</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-01</td
+        ><td style="text-align: left; vertical-align: top"
+          >期別截止時刻、半月區間、報表週起日及正式業務時區是否統一</td
+        ><td style="text-align: left; vertical-align: top"
+          >目前條件日期沿用 Asia/Taipei；出帳排程與跨日歸期不得自行定案</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-02</td
+        ><td style="text-align: left; vertical-align: top"
+          >跨生效版本、結算模式切換時，負 GGR 餘額如何延續及分段計價</td
+        ><td style="text-align: left; vertical-align: top"
+          >同費率範例已確定；變更費率後的舊負數歸屬需決議</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-03</td
+        ><td style="text-align: left; vertical-align: top"
+          >各遊戲類型負 GGR 是否互抵及代理多層的正式分配與取整順序</td
+        ><td style="text-align: left; vertical-align: top">不可把 SLOT／LIVE 自動合併計價</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-04</td
+        ><td style="text-align: left; vertical-align: top"
+          >上級成本調高使已存在下級低於成本時的處置</td
+        ><td style="text-align: left; vertical-align: top"
+          >新建／修改須檢查下限已確定；不可擅自改下級歷史費率</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-05</td
+        ><td style="text-align: left; vertical-align: top"
+          >部分交付及保留已確認；鎖定後分次補收、撤銷、退回與沖正的完整流程待決</td
+        ><td style="text-align: left; vertical-align: top"
+          >後續退款／回調須連結原單，不修改原已鎖定結果；無自動最低交付門檻。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-06</td
+        ><td style="text-align: left; vertical-align: top"
+          >首期正式期初餘額與舊全域條件轉換的核准方式</td
+        ><td style="text-align: left; vertical-align: top"
+          >不可把未知餘額視為零；舊全域費率不可自動分派各類型</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-09</td
+        ><td style="text-align: left; vertical-align: top"
+          >員工細分角色矩陣、歷史查閱與下載保存期限</td
+        ><td style="text-align: left; vertical-align: top"
+          >資料範圍不超過所屬組織已確定；操作權明細須需求方拍板</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-11</td
+        ><td style="text-align: left; vertical-align: top"
+          >已配置方案後停用方案、主遊戲維護時，存量線路採何生效策略</td
+        ><td style="text-align: left; vertical-align: top"
+          >新保存拒絕不可用方案已確定；即時撤銷、緩衝及投注中局處置未定</td
+        ></tr
+      ></table
+    ><h3>待外部輸入</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">編號</th
+        ><th style="text-align: left; vertical-align: top">問題</th
+        ><th style="text-align: left; vertical-align: top">影響／等待對象</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-07</td
+        ><td style="text-align: left; vertical-align: top"
+          >正式 GGR 對取消、退款、Jackpot、補單的入帳口徑與來源時間</td
+        ><td style="text-align: left; vertical-align: top"
+          >等待遊戲交易／財務來源定義；投注減派彩僅為目前演示觀察</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-08</td
+        ><td style="text-align: left; vertical-align: top">正式收付憑證、入帳結果與匯率使用介面</td
+        ><td style="text-align: left; vertical-align: top"
+          >實收所有幣別直接去小數已確認；計算中間精度、正式憑證及入帳串接待後端定義。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-10</td
+        ><td style="text-align: left; vertical-align: top"
+          >既有總後台各模組正式服務契約、監控規則運算與通知供應服務</td
+        ><td style="text-align: left; vertical-align: top"
+          >等待後端／QA 基線；程式原型不能證明正式服務已完成</td
+        ></tr
+      ></table
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">編號</th
+        ><th style="text-align: left; vertical-align: top">待產品決策</th
+        ><th style="text-align: left; vertical-align: top">影響</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Q-12</td
+        ><td style="text-align: left; vertical-align: top"
+          >正式各列表預設排序、可排序欄、每頁筆數上限及下載限制</td
+        ><td style="text-align: left; vertical-align: top"
+          >原型預設 20 筆已可查；正式負載與查閱上限須產品／後端共同確認</td
+        ></tr
+      ></table
+    ><h2>16. 版本沿革</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">版本</th
+        ><th style="text-align: left; vertical-align: top">日期</th
+        ><th style="text-align: left; vertical-align: top">內容</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">v1.1</td
+        ><td style="text-align: left; vertical-align: top">2026-09-09</td
+        ><td style="text-align: left; vertical-align: top"
+          >依指定 SOP 首次整理正式後端／QA 功能基線；整合各類型
+          GGR、成本下限、生效版本、限紅與多期交收。以本次對話最新決議優先。</td
+        ></tr
+      ></table
+    ><h2>17. 交付檢查表</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">檢查面</th
+        ><th style="text-align: left; vertical-align: top">完成條件</th
+        ><th style="text-align: left; vertical-align: top">確認</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">結構</td
+        ><td style="text-align: left; vertical-align: top">六列控制表、目錄及 1–17 章均存在</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >列明演示模組位置，未編寫 UIUX 或 API schema</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">資料</td
+        ><td style="text-align: left; vertical-align: top">每個列出欄位均定義無資料語意</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">狀態</td
+        ><td style="text-align: left; vertical-align: top">條件、授權、對帳與交收不混為同一狀態</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Stories</td
+        ><td style="text-align: left; vertical-align: top"
+          >三個視角各 10 則，有具體 Given／When／Then</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">驗收</td
+        ><td style="text-align: left; vertical-align: top">24 條 AC 可重現且與資料規則連結</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">待確認</td
+        ><td style="text-align: left; vertical-align: top">待產品決策與外部輸入分開，不偽造決議</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">正式後端驗收</td
+        ><td style="text-align: left; vertical-align: top">所有正式服務、入帳與授權測試已通過</td
+        ><td style="text-align: left; vertical-align: top">否；須依 Plane 測試階段驗證</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">需求簽核</td
+        ><td style="text-align: left; vertical-align: top">需求方已核准本版所有待決項</td
+        ><td style="text-align: left; vertical-align: top">否；待逐項決議</td></tr
+      ></table
+    ><h3>商戶收付模式編輯補充（2026-09-10）</h3
+    ><p
+      >總後台「商戶管理 → 商戶詳細 →
+      編輯基本資料」與新增流程均提供必填的收付模式（代理統收／平台代收），編輯時帶入現值，儲存需填修改原因並記錄前後值。商戶預設模式適用後續新建帳單；既有帳單保留自身模式快照，平台可在未鎖定帳單內另行修改，鎖定帳單不得改動。代理統收允許授權代理操作，平台代收時代理唯讀；平台兩種模式均可操作。原型已補齊編輯欄位並通過型別檢查及模式權限測試；正式新期帳單產生與模式生效排程仍屬後端待實作驗收。</p
+    ></body
+  ></html
+>

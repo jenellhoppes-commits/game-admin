@@ -35,6 +35,12 @@
               />
               <div class="field-state" :class="codeState">{{ codeStateText }}</div>
             </ElFormItem>
+            <ElFormItem label="收付模式" required
+              ><ElSelect v-model="form.collectionMode"
+                ><ElOption label="代理統收" value="AgentCollect" /><ElOption
+                  label="平台代收"
+                  value="PlatformCollect" /></ElSelect
+            ></ElFormItem>
             <ElFormItem label="商戶名稱" required>
               <ElInput v-model="form.name" maxlength="80" placeholder="輸入商戶名稱" />
             </ElFormItem>
@@ -348,6 +354,7 @@
     settlementCurrency: 'USDT',
     settlementCycle: 'Monthly' as SettlementCycle,
     effectiveFrom: '',
+    collectionMode: 'AgentCollect' as 'AgentCollect' | 'PlatformCollect',
     walletMode: 'Seamless' as WalletMode,
     lineCurrency: 'USDT',
     createSandbox: true

@@ -129,7 +129,7 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: '/finance/adjustments',
     name: 'LegacySettlementAdjustments',
-    redirect: '/finance/reconciliation/differences',
+    redirect: '/finance/reconciliation/merchants',
     meta: { title: '調整項目（舊）', isHideTab: true }
   },
   {

@@ -1,0 +1,15 @@
+{
+  "version": "1.1",
+  "date": "2026-09-10",
+  "files": [
+    "01_遊戲商總後台規格文件.md",
+    "02_代理後台規格文件.md",
+    "03_商戶後台規格文件.md",
+    "04_Plane專案開立.md",
+    "05_Plane工單開立.md"
+  ],
+  "cloudTextVerified": true,
+  "googleDocument": "https://docs.google.com/document/d/1frhoi11l_pEIDc3-T1W4l2lYJxzVGq4xlGy2CP4reoE/edit",
+  "canonical": "The five Markdown files; source-data.json and old generators are historical v1.0 inputs.",
+  "planeCreated": false
+}

@@ -52,6 +52,9 @@
                 />
               </ElDescriptionsItem>
               <ElDescriptionsItem label="錢包模式">{{ merchant.walletMode }}</ElDescriptionsItem>
+              <ElDescriptionsItem label="收付模式">{{
+                merchant.collectionMode === 'PlatformCollect' ? '平台代收' : '代理統收'
+              }}</ElDescriptionsItem>
               <ElDescriptionsItem label="國家／時區">
                 {{ merchant.country }}／{{ merchant.timezone }}
               </ElDescriptionsItem>
@@ -252,6 +255,13 @@
         <div class="form-grid">
           <ElFormItem label="商戶名稱" required><ElInput v-model="editForm.name" /></ElFormItem>
           <ElFormItem label="品牌名稱"><ElInput v-model="editForm.brandName" /></ElFormItem>
+          <ElFormItem label="收付模式" required>
+            <ElSelect v-model="editForm.collectionMode">
+              <ElOption label="代理統收" value="AgentCollect" />
+              <ElOption label="平台代收" value="PlatformCollect" />
+            </ElSelect>
+            <div class="text-xs text-gray-400">適用於後續新建帳單；既有帳單保留原收付模式。</div>
+          </ElFormItem>
           <ElFormItem label="國家／地區" required
             ><ElInput v-model="editForm.country"
           /></ElFormItem>
@@ -448,6 +458,7 @@
   const terms = computed(() => store.getMerchantTerms(merchant.value.id))
   const reconciliations = computed(() => store.getMerchantReconciliations(merchant.value.id))
   const editForm = reactive({
+    collectionMode: 'AgentCollect' as 'AgentCollect' | 'PlatformCollect',
     name: '',
     brandName: '',
     country: '',
@@ -530,6 +541,7 @@
     router.replace({ query: { ...route.query, tab: String(tab) } })
   const openEdit = () => {
     Object.assign(editForm, {
+      collectionMode: merchant.value.collectionMode || 'AgentCollect',
       name: merchant.value.name,
       brandName: merchant.value.brandName || '',
       country: merchant.value.country,
@@ -550,6 +562,7 @@
       merchant.value.id,
       {
         name: editForm.name.trim(),
+        collectionMode: editForm.collectionMode,
         brandName: editForm.brandName.trim(),
         country: editForm.country.trim(),
         timezone: editForm.timezone.trim(),

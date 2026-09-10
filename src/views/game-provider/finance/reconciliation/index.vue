@@ -16,10 +16,6 @@
         ><span>待確認</span><strong>{{ countStatus('Pending Confirmation') }}</strong
         ><small>可進行人工核對</small></button
       >
-      <button type="button" @click="setStatus('Difference')"
-        ><span>有差異</span><strong class="danger">{{ countStatus('Difference') }}</strong
-        ><small>須先完成差異處理</small></button
-      >
       <button type="button" @click="setStatus('Locked')"
         ><span>已鎖定</span><strong>{{ countStatus('Locked') }}</strong
         ><small>不可回改的歷史資料</small></button
@@ -85,18 +81,6 @@
             }}</strong></template
           >
         </ElTableColumn>
-        <ElTableColumn label="未解差異" width="95" align="center">
-          <template #default="scope">
-            <ElButton
-              v-if="scope.row.unresolvedDifferenceCount"
-              link
-              type="danger"
-              @click="openDifferences(scope.row.id)"
-              >{{ scope.row.unresolvedDifferenceCount }}</ElButton
-            >
-            <span v-else>0</span>
-          </template>
-        </ElTableColumn>
         <ElTableColumn label="狀態" width="115">
           <template #default="scope"
             ><ElTag :type="statusType(scope.row.status)" effect="light">{{
@@ -139,33 +123,30 @@
   const isMerchant = computed(() => route.name === 'MerchantReconciliation')
   const pageCopy = computed(() =>
     isMerchant.value
-        ? {
-            title: '商戶對帳',
-            description: '按商戶線路與交易幣別核對投注、派彩、獎池及應結金額。',
-            placeholder: '商戶、線路或對帳編號',
-            tableTitle: '商戶對帳清單'
-          }
-        : {
-            title: '代理對帳',
-            description: '彙總旗下商戶已確認結果，產生代理層級對帳資料。',
-            placeholder: '代理或對帳編號',
-            tableTitle: '代理對帳清單'
-          }
+      ? {
+          title: '商戶對帳',
+          description: '按商戶線路與交易幣別核對投注、派彩、獎池及應結金額。',
+          placeholder: '商戶、線路或對帳編號',
+          tableTitle: '商戶對帳清單'
+        }
+      : {
+          title: '代理對帳',
+          description: '彙總旗下商戶已確認結果，產生代理層級對帳資料。',
+          placeholder: '代理或對帳編號',
+          tableTitle: '代理對帳清單'
+        }
   )
   const filters = reactive({ keyword: '', period: '', status: '' })
   const pagination = reactive({ current: 1, size: 20 })
   const statusOptions: FinanceReconciliationStatus[] = [
     'Draft',
     'Pending Confirmation',
-    'Difference',
     'Confirmed',
     'Locked',
     'Cancelled'
   ]
   const records = computed(() =>
-    isMerchant.value
-        ? store.merchantReconciliations
-        : store.agentReconciliations
+    isMerchant.value ? store.merchantReconciliations : store.agentReconciliations
   )
   const filteredRows = computed(() =>
     records.value.filter((record) => {
@@ -202,18 +183,14 @@
   const recordName = (record: (typeof records.value)[number]) =>
     'merchantName' in record ? record.merchantName : record.agentName
   const openDetail = (id: string) =>
-    router.push(
-      `/finance/reconciliation/${isMerchant.value ? 'merchants' : 'agents'}/${id}`
-    )
-  const openDifferences = (id: string) =>
-    router.push({ path: '/finance/reconciliation/differences', query: { reconciliationId: id } })
+    router.push(`/finance/reconciliation/${isMerchant.value ? 'merchants' : 'agents'}/${id}`)
   const money = (value: number, currency: string) =>
     `${currency} ${new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 2 }).format(value)}`
   const statusLabel = (status: string) =>
     ({
       Draft: '草稿',
       'Pending Confirmation': '待確認',
-      Difference: '有差異',
+      Difference: '待確認',
       Confirmed: '已確認',
       Locked: '已鎖定',
       Cancelled: '已取消'
@@ -238,7 +215,7 @@
 
   .summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
   }
 

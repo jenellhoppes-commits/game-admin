@@ -485,13 +485,6 @@ Object.assign(businessModuleDefinitions, {
     '按代理關係與商務條件彙整商戶結算結果。',
     '建立對帳'
   ),
-  '/reconciliation-differences': skeletonModule(
-    '/finance/differences',
-    '差異處理',
-    '對帳／結算',
-    '管理交易遺漏、重複、退款、Jackpot、匯率與商務條件差異。',
-    '新增差異調整'
-  ),
   '/merchant-settlement-sheets': skeletonModule(
     '/finance/merchant-statements',
     '商戶結算單',

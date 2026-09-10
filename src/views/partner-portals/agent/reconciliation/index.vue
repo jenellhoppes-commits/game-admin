@@ -1,7 +1,7 @@
 <template>
   <div class="agent-page">
-    <AppPageHeader title="對帳／結算" description="查看並確認本代理單據；確認不代表付款完成。" />
-    <SettlementCarryDemo />
+    <AppPageHeader title="對帳／結算" description="查看本代理結算單、計算依據與財務交付結果。" />
+    <Collections />
     <ArtSearchBar
       label-position="top"
       :model-value="draft"
@@ -57,8 +57,21 @@
       size="min(760px, 100%)"
     >
       <template v-if="selected">
+        <DeliverySummary
+          :delivery="selected.delivery"
+          :currency="selected.snapshot.settlementCurrency"
+        />
         <ElDescriptions :column="1" border>
           <ElDescriptionsItem label="對帳單號">{{ selected.id }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="收付模式">{{
+            selected.collection?.mode === 'PlatformCollect' ? '平台代收' : '代理統收'
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="付款方">{{
+            selected.collection?.payerName || '—'
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="收款方">{{
+            selected.collection?.payeeName || '—'
+          }}</ElDescriptionsItem>
           <ElDescriptionsItem label="期間"
             >{{ selected.periodStart }} ～ {{ selected.periodEnd }}</ElDescriptionsItem
           >
@@ -93,67 +106,19 @@
           <ElDescriptionsItem label="匯率快照">{{
             selected.snapshot.exchangeRateSnapshotIds.join('、') || '尚未提供'
           }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="未解決差異"
-            >{{ selected.unresolvedDifferenceCount
-            }}<span v-if="store.hasPendingDifference(selected.id)"
-              >／另有本代理待處理回報</span
-            ></ElDescriptionsItem
-          >
           <ElDescriptionsItem label="確認時間">{{
             selected.confirmedAt || '—'
           }}</ElDescriptionsItem>
           <ElDescriptionsItem label="鎖定時間">{{ selected.lockedAt || '—' }}</ElDescriptionsItem>
         </ElDescriptions>
-        <ElDivider>差異回報</ElDivider>
-        <ArtTable
-          :data="differences"
-          :show-table-header="false"
-          height="auto"
-          empty-text="沒有差異紀錄"
-          ><ElTableColumn prop="id" label="差異編號" min-width="180" /><ElTableColumn
-            prop="source"
-            label="來源單據"
-            min-width="190" /><ElTableColumn
-            prop="reason"
-            label="原因"
-            min-width="200" /><ElTableColumn
-            prop="status"
-            label="處理狀態"
-            width="110" /><ElTableColumn prop="resolution" label="處理結果" min-width="180"
-        /></ArtTable>
-        <ElForm label-position="top">
-          <ElFormItem label="關聯參照"
-            ><ElInput v-model="form.reference" :disabled="!canReport"
-          /></ElFormItem>
-          <ElFormItem :label="`差異金額（${selected.currency}）`"
-            ><ElInputNumber v-model="form.amount" :disabled="!canReport"
-          /></ElFormItem>
-          <ElFormItem label="差異原因"
-            ><ElInput v-model="form.reason" type="textarea" :disabled="!canReport"
-          /></ElFormItem>
-          <ElButton :disabled="!canReport" @click="reportDifference">送出差異</ElButton>
-        </ElForm>
-        <ElDivider>確認本版本</ElDivider>
-        <p>未解決差異、缺少計算快照或旗下商戶尚未確認時，不能確認此單據。</p>
-        <ElInput
-          v-model="note"
-          aria-label="確認備註"
-          placeholder="確認備註"
-          :disabled="!store.canConfirmReconciliation(selected)"
-        />
-        <ElButton
-          type="primary"
-          :disabled="!store.canConfirmReconciliation(selected)"
-          @click="confirm"
-          >確認本版本金額</ElButton
-        >
+        <p>財務於核帳／交付時記錄調整與收付，確認後鎖定。</p>
       </template>
     </ElDrawer>
   </div>
 </template>
 <script setup lang="ts">
-  import SettlementCarryDemo from '@/components/business/SettlementCarryDemo.vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import Collections from './Collections.vue'
+  import DeliverySummary from '@/components/business/game-provider/DeliverySummary.vue'
   import AppPageHeader from '@/components/business/game-provider/app-page-header/index.vue'
   import { useAgentPortalStore } from '@/store/modules/agentPortal'
   import { useFinanceSettingsStore } from '@/store/modules/financeSettings'
@@ -162,7 +127,7 @@
   const labels: Record<string, string> = {
     Draft: '草稿',
     'Pending Confirmation': '待確認',
-    Difference: '差異處理中',
+    Difference: '待確認',
     Confirmed: '已確認',
     Locked: '已鎖定',
     Cancelled: '已取消'
@@ -172,9 +137,7 @@
   const page = ref(1),
     size = ref(20),
     visible = ref(false),
-    selectedId = ref(''),
-    note = ref('')
-  const form = reactive({ reference: '', amount: 0, reason: '' })
+    selectedId = ref('')
   const items = computed(() => [
     {
       key: 'period',
@@ -213,42 +176,6 @@
     )
   )
   const selected = computed(() => store.ownReconciliations.find((r) => r.id === selectedId.value))
-  const canReport = computed(
-    () =>
-      store.hasPermission('finance:confirm') &&
-      !!selected.value &&
-      !selected.value.lockedAt &&
-      ['Pending Confirmation', 'Difference'].includes(selected.value.status)
-  )
-  const differenceLabels: Record<string, string> = {
-    Open: '待處理',
-    Investigating: '調查中',
-    'Waiting Partner': '待合作方回覆',
-    'Waiting Internal': '內部處理中',
-    Resolved: '已解決',
-    Accepted: '已接受',
-    Closed: '已結案',
-    Pending: '待處理',
-    Approved: '已核准',
-    Rejected: '已退回'
-  }
-  const differences = computed(() => [
-    ...store.getReconciliationDifferences(selectedId.value).map((r) => ({
-      id: r.id,
-      source: r.merchantName + '／' + r.reconciliationId,
-      reason: r.description,
-      status: differenceLabels[r.status] || r.status,
-      resolution: r.resolution || '尚未提供'
-    })),
-    ...store.requests
-      .filter((r) => r.category === '差異' && r.targetId === selectedId.value)
-      .map((r) => ({
-        id: r.id,
-        reason: r.reason,
-        status: differenceLabels[r.status] || r.status,
-        resolution: r.status === 'Pending' ? '待處理' : '請依正式差異紀錄查看結果'
-      }))
-  ])
   function search() {
     Object.assign(applied, draft)
     page.value = 1
@@ -260,8 +187,6 @@
   function open(id: string) {
     selectedId.value = id
     visible.value = true
-    note.value = ''
-    Object.assign(form, { reference: '', amount: 0, reason: '' })
   }
   function money(value: number, currency: string) {
     const digits = finance.currencies.find((c) => c.code === currency)?.decimalPlaces ?? 2
@@ -270,35 +195,6 @@
       maximumFractionDigits: digits
     })
   }
-  function reportDifference() {
-    if (!selected.value || !canReport.value) return
-    const result = store.submitDifferenceRequest({
-      ...form,
-      reconciliationId: selected.value.id,
-      currency: selected.value.currency
-    })
-    ElMessage[result.ok ? 'success' : 'error'](result.message)
-    if (result.ok) Object.assign(form, { reference: '', amount: 0, reason: '' })
-  }
-  async function confirm() {
-    const record = selected.value
-    if (!record) return
-    try {
-      await ElMessageBox.confirm(
-        `確認 ${record.id} 的 ${money(record.finalSettlementAmount, record.currency)} ${record.currency}？`,
-        '確認對帳版本',
-        { confirmButtonText: '確認', cancelButtonText: '取消' }
-      )
-      const result = store.confirmOwnReconciliation(
-        record.id,
-        record.finalSettlementAmount,
-        note.value
-      )
-      ElMessage[result.ok ? 'success' : 'error'](result.message)
-    } catch {
-      /* 使用者取消 */
-    }
-  }
   function changePageSize(value: number) {
     size.value = value
     page.value = 1
@@ -306,11 +202,13 @@
 </script>
 <style scoped lang="scss">
   @use '../shared';
+
   .el-form {
     margin-top: 12px;
   }
+
   p {
-    line-height: 1.6;
     margin-bottom: 12px;
+    line-height: 1.6;
   }
 </style>

@@ -51,6 +51,7 @@ export interface NewAgentPayload {
 }
 
 export interface NewMerchantPayload {
+  collectionMode?: 'AgentCollect' | 'PlatformCollect'
   settlementMode?: string
   gameTypeRates?: import('@/types/game-provider').GameTypeRate[]
   code: string
@@ -879,6 +880,7 @@ export const useBusinessPartnerStore = defineStore(
         agentId: agent.id,
         agentName: agent.name,
         walletMode: payload.walletMode,
+        collectionMode: payload.collectionMode || 'AgentCollect',
         country: payload.country,
         timezone: payload.timezone,
         contact: payload.contact.trim(),

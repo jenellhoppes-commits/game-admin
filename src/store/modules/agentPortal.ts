@@ -608,6 +608,7 @@ export const useAgentPortalStore = defineStore(
         name,
         agentId: CURRENT_AGENT_ID,
         agentName: currentAgent.value!.name,
+        collectionMode: 'AgentCollect',
         walletMode: input.walletMode as 'Seamless' | 'Transfer',
         country: '',
         timezone: 'Asia/Taipei',

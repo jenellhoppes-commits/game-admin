@@ -123,6 +123,9 @@
         /></ElFormItem>
         <ElDivider content-position="left">商務條件</ElDivider>
         <TermFields v-model="conditions" :currencies="store.settlementCurrencies" />
+        <ElFormItem label="收付模式" required
+          ><ElInput model-value="代理統收（由直屬代理收款）" disabled
+        /></ElFormItem>
         <ElFormItem label="錢包類型" required>
           <ElSelect
             v-model="application.walletMode"

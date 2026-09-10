@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { calculateDelivery } from '@/utils/reconciliationDelivery'
 import { computed, ref } from 'vue'
 import { useBusinessPartnerStore } from './businessPartner'
 import { useGameCatalogStore } from './gameCatalog'
@@ -132,7 +133,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
             settlementCurrency,
             periodEndDate(period)
           )
-          const hasDifference = periodIndex === 0 && seed % 3 === 0
+          const hasDifference = false // 差異於交付時手動記錄，不再建立獨立案件
           const status: FinanceReconciliationStatus =
             periodIndex === 1 ? 'Locked' : hasDifference ? 'Difference' : 'Pending Confirmation'
           const id = `MRC-${period.replace('-', '')}-${String(merchantIndex * 2 + lineIndex + 1).padStart(4, '0')}`
@@ -1081,6 +1082,10 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
   ) => {
     const record = findDifference(id)
     if (!record) return false
+    const parent =
+      findMerchantReconciliation(record.reconciliationId) ||
+      findAgentReconciliation(record.reconciliationId)
+    if (parent?.status === 'Locked') return false
     const before = record.status
     record.status = status
     record.assignee = assignee ?? record.assignee
@@ -1097,6 +1102,10 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
   ) => {
     const difference = findDifference(id)
     if (!difference) return false
+    const lockedParent =
+      findMerchantReconciliation(difference.reconciliationId) ||
+      findAgentReconciliation(difference.reconciliationId)
+    if (lockedParent?.status === 'Locked') return false
     const before = difference.status
     difference.status = resolutionType === 'Use Partner Value' ? 'Accepted' : 'Resolved'
     difference.resolutionType = resolutionType
@@ -1136,7 +1145,7 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     const record = agentReconciliations.value.find(
       (item) => item.agentId === agentId && item.period === period
     )
-    if (!record || record.status === 'Locked') return
+    if (!record || ['Confirmed', 'Locked'].includes(record.status)) return
     const included = getIncludedMerchantReconciliations(record)
     record.unresolvedDifferenceCount = included.reduce(
       (total, item) => total + item.unresolvedDifferenceCount,
@@ -1168,6 +1177,209 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
       '旗下商戶對帳均已確認'
     )
     return true
+  }
+
+  const retainReconciliation = (id: string, note = '') => {
+    const merchant = findMerchantReconciliation(id)
+    const record = merchant || findAgentReconciliation(id)
+    if (!record || record.status !== 'Pending Confirmation' || record.unresolvedDifferenceCount > 0)
+      return false
+    if (
+      !merchant &&
+      getIncludedMerchantReconciliations(record as AgentReconciliationRecord).some(
+        (item) => !['Confirmed', 'Locked'].includes(item.status)
+      )
+    )
+      return false
+    if (!Number.isFinite(record.finalSettlementAmount)) return false
+    const before = record.status
+    // Retention is not a zero-payment rounding adjustment: preserve the original bill.
+    record.retainedForNextPeriod = true
+    record.retainedSettlementAmount = record.finalSettlementAmount
+    record.actualSettlementAmount = 0
+    record.confirmationNote = note.trim()
+    record.status = 'Confirmed'
+    record.confirmedAt = formatNow()
+    record.updatedAt = record.confirmedAt
+    addLog(
+      merchant ? 'Merchant Reconciliation' : 'Agent Reconciliation',
+      id,
+      '保留至下期',
+      before,
+      record.status,
+      `本期未交收；保留 ${record.snapshot.settlementCurrency} ${record.finalSettlementAmount}。${note.trim()}`
+    )
+    if (merchant) refreshAgent(merchant.agentId, merchant.period)
+    return true
+  }
+
+  const addPriorCorrection = (
+    sourceId: string,
+    targetId: string,
+    amount: number,
+    reason: string
+  ) => {
+    const sourceMerchant = findMerchantReconciliation(sourceId)
+    const targetMerchant = findMerchantReconciliation(targetId)
+    const source = sourceMerchant || findAgentReconciliation(sourceId)
+    const target = targetMerchant || findAgentReconciliation(targetId)
+    if (
+      !source ||
+      !target ||
+      source.status !== 'Locked' ||
+      ['Locked', 'Cancelled', 'Confirmed'].includes(target.status)
+    )
+      throw new Error('請選擇已鎖定來源與後續未確認單據')
+    if (
+      Boolean(sourceMerchant) !== Boolean(targetMerchant) ||
+      source.agentId !== target.agentId ||
+      sourceMerchant?.merchantId !== targetMerchant?.merchantId ||
+      sourceMerchant?.lineUid !== targetMerchant?.lineUid ||
+      source.currency !== target.currency ||
+      source.snapshot.settlementCurrency !== target.snapshot.settlementCurrency ||
+      target.periodStart <= source.periodEnd
+    )
+      throw new Error('回調僅限同一對象、線路及幣別的後續期間')
+    if (!Number.isFinite(amount) || amount === 0 || !reason.trim())
+      throw new Error('請填寫非零回調金額與原因')
+    const value = Number(amount.toFixed(target.snapshot.amountPrecision))
+    if (!value) throw new Error('回調金額小於幣別精度')
+    target.priorCorrections ||= []
+    target.priorCorrections.push({
+      sourceId,
+      amount: value,
+      reason: reason.trim(),
+      createdAt: formatNow()
+    })
+    addLog(
+      targetMerchant ? 'Merchant Reconciliation' : 'Agent Reconciliation',
+      targetId,
+      '上期退款／回調',
+      target.status,
+      target.status,
+      `來源 ${sourceId}；金額 ${value}；${reason.trim()}`
+    )
+    return true
+  }
+
+  const setCollectionMode = (id: string, mode: 'AgentCollect' | 'PlatformCollect') => {
+    const record = findMerchantReconciliation(id) || findAgentReconciliation(id)
+    if (!record?.collection || ['Locked', 'Cancelled'].includes(record.status))
+      throw new Error('已鎖定單據不可更改模式')
+    if (!['AgentCollect', 'PlatformCollect'].includes(mode)) throw new Error('收付模式無效')
+    const before = record.collection.mode
+    record.collection.mode = mode
+    record.collection.effectiveFrom = record.periodStart
+    addLog(
+      'merchantId' in record ? 'Merchant Reconciliation' : 'Agent Reconciliation',
+      id,
+      '設定本期收付模式',
+      before,
+      mode,
+      `平台操作；適用起日 ${record.periodStart}`
+    )
+  }
+  const deliverReconciliation = (
+    id: string,
+    adjustment: number,
+    actual: number,
+    reason: string,
+    retain: boolean,
+    collectorId = 'PLATFORM',
+    actualCollectorId = collectorId
+  ) => {
+    const merchant = findMerchantReconciliation(id)
+    const record = merchant || findAgentReconciliation(id)
+    if (!record || ['Locked', 'Cancelled'].includes(record.status))
+      throw new Error('此單據不可交付')
+    if (
+      !record.collection ||
+      (collectorId !== 'PLATFORM' &&
+        (record.collection.mode !== 'AgentCollect' || record.collection.payeeId !== collectorId))
+    )
+      throw new Error('代理僅可操作本代理的代理統收單據')
+    if (
+      !['PLATFORM', record.collection.payeeId].includes(actualCollectorId) ||
+      (collectorId !== 'PLATFORM' && actualCollectorId !== collectorId)
+    )
+      throw new Error('實際收款方不在允許範圍')
+    if (record.ggr < 0 && !['累積', '清零'].includes(record.settlementMode || ''))
+      throw new Error('負 GGR 尚未設定累積／清零方式，請先確認合約')
+    const result = calculateDelivery(
+      record.finalSettlementAmount +
+        (record.priorCorrections || []).reduce((sum, item) => sum + item.amount, 0),
+      adjustment,
+      actual,
+      reason,
+      retain,
+      record.snapshot.amountPrecision
+    )
+    const before = record.status
+    const time = formatNow()
+    actual = Math.trunc(actual)
+    record.delivery = {
+      operatorId: collectorId,
+      actualCollectorId,
+      actualCollectorName:
+        actualCollectorId === 'PLATFORM' ? '遊戲商平台' : record.collection.payeeName,
+      ...result,
+      systemAmount:
+        record.finalSettlementAmount +
+        (record.priorCorrections || []).reduce((sum, item) => sum + item.amount, 0),
+      adjustment,
+      actual,
+      reason: reason.trim(),
+      deliveredAt: time,
+      nextGgr:
+        record.settlementMode === '累積'
+          ? Math.min(0, record.ggr)
+          : record.settlementMode === '清零'
+            ? 0
+            : undefined
+    }
+    record.actualSettlementAmount = actual
+    record.retainedForNextPeriod = retain
+    record.retainedSettlementAmount = result.carried
+    record.confirmationNote = reason.trim()
+    record.status = 'Locked'
+    record.confirmedAt = time
+    record.lockedAt = time
+    record.updatedAt = time
+    addLog(
+      merchant ? 'Merchant Reconciliation' : 'Agent Reconciliation',
+      id,
+      '確認交付並鎖定',
+      before,
+      'Locked',
+      `系統 ${record.finalSettlementAmount}；差異 ${adjustment}；實收／實付 ${actual}；剩餘 ${result.remaining}；結轉 ${result.carried}。${reason.trim()}`
+    )
+    if (merchant) refreshAgent(merchant.agentId, merchant.period)
+    return true
+  }
+
+  for (const record of merchantReconciliations.value) {
+    record.collection ||= {
+      mode:
+        partnerStore.merchants.find((item) => item.id === record.merchantId)?.collectionMode ||
+        'AgentCollect',
+      payerId: record.merchantId,
+      payerName: record.merchantName,
+      payeeId: record.agentId,
+      payeeName: record.agentName,
+      platformReceivable: false
+    }
+  }
+  for (const record of agentReconciliations.value) {
+    const agent = partnerStore.agents.find((item) => item.id === record.agentId)
+    const parent = partnerStore.agents.find((item) => item.id === agent?.parentAgentId)
+    record.collection ||= {
+      mode: 'AgentCollect',
+      payerId: record.agentId,
+      payerName: record.agentName,
+      payeeId: agent ? agent.parentAgentId || 'PLATFORM' : 'UNRESOLVED',
+      payeeName: parent?.name || (agent && !agent.parentAgentId ? '遊戲商平台' : '收款對象待確認'),
+      platformReceivable: Boolean(agent && !agent.parentAgentId)
+    }
   }
 
   return {
@@ -1206,6 +1418,10 @@ export const useFinanceCenterStore = defineStore('financeCenterStore', () => {
     recalculateMerchant,
     confirmMerchant,
     confirmAgent,
+    retainReconciliation,
+    deliverReconciliation,
+    setCollectionMode,
+    addPriorCorrection,
     updateDifference,
     resolveDifference
   }

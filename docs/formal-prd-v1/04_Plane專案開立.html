@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="zh-Hant"
+  ><meta charset="utf-8" /><title>04_Plane專案開立</title
+  ><body style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.4"
+    ><h1>Plane 專案開立</h1
+    ><p
+      >本版更新：2026-09-10
+      結算規則同步。已修訂差異流程、模式權限、整數交付、收款方與登錄方、鎖定及驗收界線。原型通過不等於正式後端完成。</p
+    ><p>v1.1｜2026-09-10｜開立內容文件，尚未建立 Plane 專案</p
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">文件項目</th
+        ><th style="text-align: left; vertical-align: top">內容</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">文件性質</td
+        ><td style="text-align: left; vertical-align: top">平台專案建置與治理規格</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">與現有文件關係</td
+        ><td style="text-align: left; vertical-align: top"
+          >配合三份 PRD 及第五份工單內容；不是 Plane 實際專案或狀態回報</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">本版目的</td
+        ><td style="text-align: left; vertical-align: top"
+          >給 PM 可依序填寫的專案、Module、Epic 與流程定義</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">適用範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >遊戲商總後台、代理後台、商戶後台的正式後端與 QA</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">不在本版範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >實際建立專案、指定真實人員／工期、重開前端排版工作</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">上游依據</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a href="https://cooperfu615-desinger.github.io/sop-share/"
+            >平台 Plane 使用範例與 Plane 開立規則</a
+          >；三份 PRD v1.1</td
+        ></tr
+      ></table
+    ><h2>1. 專案基本資料</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">欄位</th
+        ><th style="text-align: left; vertical-align: top">填寫內容</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Project 名稱</td
+        ><td style="text-align: left; vertical-align: top"
+          >遊戲商三後台平台（提案名稱；建立前 PM 確認既有專案是否可沿用）</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Identifier</td
+        ><td style="text-align: left; vertical-align: top"
+          >GBO（提案，需在實際工作區確認可用；不是既有識別碼）</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">目標</td
+        ><td style="text-align: left; vertical-align: top"
+          >同一平台下完成總後台、代理、商戶的授權、商務條件、遊戲線路、限紅、報表及對帳結轉正式服務與驗證</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">需求方</td
+        ><td style="text-align: left; vertical-align: top"
+          >本次需求提出者；實際帳號由 PM 填入</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Lead／Owner</td
+        ><td style="text-align: left; vertical-align: top"
+          >PM 指派單一實際人員；不以多人字串代替 Assignee</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">成員</td
+        ><td style="text-align: left; vertical-align: top"
+          >PM、企劃、開發組長、後端工程師、QA 組長、QA、上線負責人；名單待 PM 指派</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">文件</td
+        ><td style="text-align: left; vertical-align: top"
+          ><a
+            href="https://docs.google.com/document/d/1frhoi11l_pEIDc3-T1W4l2lYJxzVGq4xlGy2CP4reoE/edit"
+            >三份 PRD 與工單文件</a
+          ></td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">程式庫</td
+        ><td style="text-align: left; vertical-align: top"
+          >https://github.com/jenellhoppes-commits/game-admin</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">演示</td
+        ><td style="text-align: left; vertical-align: top"
+          >https://jenellhoppes-commits.github.io/game-admin/#/dashboard</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">開始／截止</td
+        ><td style="text-align: left; vertical-align: top"
+          >待需求會議與開發估工填入；不以原型部署日當正式工期</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">初始狀態</td
+        ><td style="text-align: left; vertical-align: top"
+          >文件準備中；未對外宣稱正式後端 Done</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >後端功能與 QA；畫面僅為功能位置對照</td
+        ></tr
+      ></table
+    ><h2>2. 專案層級</h2
+    ><p
+      >Project → Module（功能版塊）→ Epic（有起訖的功能群）→ 需求工作單（父工作項）→
+      規格文件／開發／測試／驗收／上線五個階段子工作項。</p
+    ><p
+      >這是平台後台功能，不採「每款遊戲一個模組」的遊戲製作模式。三個後台共用規則，以角色 Label
+      區分，避免同一份結轉規則開三份互不相依的實作單。</p
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">Module</th
+        ><th style="text-align: left; vertical-align: top">Epic／本版交付</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">權限與管理員</td
+        ><td style="text-align: left; vertical-align: top">登入與帳號安全</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">遊戲中心</td
+        ><td style="text-align: left; vertical-align: top"
+          >分類與方案主檔、商戶遊戲授權、商戶限紅配置</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">商務管理</td
+        ><td style="text-align: left; vertical-align: top"
+          >代理關係、商戶建立、各類型商務條件、條件版本生效、幣別線路審核、串接資訊</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">會員管理</td
+        ><td style="text-align: left; vertical-align: top">會員資料</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">交易中心</td
+        ><td style="text-align: left; vertical-align: top">注單與交易</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">獎池管理</td
+        ><td style="text-align: left; vertical-align: top">獎池與派發</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">客服與風控</td
+        ><td style="text-align: left; vertical-align: top">告警與案件、審核紀錄</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">財務對帳</td
+        ><td style="text-align: left; vertical-align: top"
+          >核帳交付與模式權限、跨期交收結轉、供應商移除</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">報表中心</td
+        ><td style="text-align: left; vertical-align: top">分幣營運分析、參考幣別預覽</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">匯率管理</td
+        ><td style="text-align: left; vertical-align: top">幣別與匯率快照</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">平台管理</td
+        ><td style="text-align: left; vertical-align: top">公告通知、系統設定與稽核</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">交付管理</td
+        ><td style="text-align: left; vertical-align: top">三後台正式交付</td></tr
+      ></table
+    ><h2>3. 欄位與標籤</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">欄位</th
+        ><th style="text-align: left; vertical-align: top">規則</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Type</td
+        ><td style="text-align: left; vertical-align: top"
+          >每單一個；本次需求父單使用 Feature。Bug 另有重現及修復驗證。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Priority</td
+        ><td style="text-align: left; vertical-align: top"
+          >P0–P3；本文件不虛構正式優先度。先依相依順序安排，由 PM 指派。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Status</td
+        ><td style="text-align: left; vertical-align: top"
+          >使用平台範例 Backlog／Todo／In Progress／In
+          Review／Done，與工作區既有狀態對照後建立；不可同時把部門名當狀態。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Label</td
+        ><td style="text-align: left; vertical-align: top"
+          >總後台、代理後台、商戶後台、後端、QA、企劃、財務規則、權限；可複選，不取代 Module。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Reviewer</td
+        ><td style="text-align: left; vertical-align: top"
+          >開發、QA、上線子單必填組長／審核人；不得實作者自行跳過審核。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Cycle</td
+        ><td style="text-align: left; vertical-align: top"
+          >同專案不重疊；只建目前與下一個；按固定作業階段，不能預排整條功能生命週期。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">相依</td
+        ><td style="text-align: left; vertical-align: top"
+          >以 blocked by 記錄；待規格拍板才開發、送測後才建立／啟動測試。</td
+        ></tr
+      ></table
+    ><h2>4. 五階段開立時機與完成定義</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">階段</th
+        ><th style="text-align: left; vertical-align: top">建立／啟動時機</th
+        ><th style="text-align: left; vertical-align: top">單一負責角色／審核角色</th
+        ><th style="text-align: left; vertical-align: top">完成證據</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">需求父單</td
+        ><td style="text-align: left; vertical-align: top">PM 確認需求登錄</td
+        ><td style="text-align: left; vertical-align: top">PM／需求方</td
+        ><td style="text-align: left; vertical-align: top">正式交付後才 Done</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">規格文件</td
+        ><td style="text-align: left; vertical-align: top">先與父單建立</td
+        ><td style="text-align: left; vertical-align: top">企劃／PM</td
+        ><td style="text-align: left; vertical-align: top">規格會議拍板，Q 決策及版本有紀錄</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">開發</td
+        ><td style="text-align: left; vertical-align: top">規格拍板且開發組長回報起訖後</td
+        ><td style="text-align: left; vertical-align: top">指定工程師／開發組長</td
+        ><td style="text-align: left; vertical-align: top"
+          >技術文件、PR、單測、自測與已知限制，已送測</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">測試</td
+        ><td style="text-align: left; vertical-align: top">開發送測時建立／啟動</td
+        ><td style="text-align: left; vertical-align: top">指定 QA／QA 組長</td
+        ><td style="text-align: left; vertical-align: top"
+          >功能與迴歸、金額專項、Bug 關閉及複驗證據</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">驗收</td
+        ><td style="text-align: left; vertical-align: top">測試通過後</td
+        ><td style="text-align: left; vertical-align: top">PM（單一 Assignee）／需求方參與簽核</td
+        ><td style="text-align: left; vertical-align: top">需求方驗收紀錄與版本</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">上線</td
+        ><td style="text-align: left; vertical-align: top">驗收及上線安排通過後</td
+        ><td style="text-align: left; vertical-align: top">指定上線人／組長及 PM</td
+        ><td style="text-align: left; vertical-align: top"
+          >部署版本、驗證、回復方式、交付文件包</td
+        ></tr
+      ></table
+    ><h2>5. 狀態轉移</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">工作項</th
+        ><th style="text-align: left; vertical-align: top">Backlog／Todo</th
+        ><th style="text-align: left; vertical-align: top">In Progress</th
+        ><th style="text-align: left; vertical-align: top">In Review</th
+        ><th style="text-align: left; vertical-align: top">Done</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">父單</td
+        ><td style="text-align: left; vertical-align: top">未確認／已確認</td
+        ><td style="text-align: left; vertical-align: top">任一子單執行</td
+        ><td style="text-align: left; vertical-align: top">需求驗收中</td
+        ><td style="text-align: left; vertical-align: top">交付完成</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">規格</td
+        ><td style="text-align: left; vertical-align: top">待企劃</td
+        ><td style="text-align: left; vertical-align: top">撰寫／討論</td
+        ><td style="text-align: left; vertical-align: top">規格會議審查</td
+        ><td style="text-align: left; vertical-align: top">拍板</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">開發</td
+        ><td style="text-align: left; vertical-align: top">待組長安排</td
+        ><td style="text-align: left; vertical-align: top">開發中</td
+        ><td style="text-align: left; vertical-align: top">自測及組長審查</td
+        ><td style="text-align: left; vertical-align: top">已送測</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">測試</td
+        ><td style="text-align: left; vertical-align: top">待接手</td
+        ><td style="text-align: left; vertical-align: top">測試中</td
+        ><td style="text-align: left; vertical-align: top">修復複驗</td
+        ><td style="text-align: left; vertical-align: top">測試通過</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">驗收</td
+        ><td style="text-align: left; vertical-align: top">待驗收</td
+        ><td style="text-align: left; vertical-align: top">驗收中</td
+        ><td style="text-align: left; vertical-align: top">依工作區簽核規則</td
+        ><td style="text-align: left; vertical-align: top">需求方通過</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">上線</td
+        ><td style="text-align: left; vertical-align: top">待發布</td
+        ><td style="text-align: left; vertical-align: top">部署中</td
+        ><td style="text-align: left; vertical-align: top">依組長檢查</td
+        ><td style="text-align: left; vertical-align: top">上線且文件交付</td></tr
+      ></table
+    ><p
+      >審查不通過退回 In
+      Progress，直接在工作單記錄具體修改原因；聊天不能取代審核紀錄。原型部署成功不能把正式開發、測試或上線子單標
+      Done。</p
+    ><h2>6. 依序建置與排程</h2><p>1. PM 確認沿用／建立專案、識別碼、實際人員及狀態對照。</p
+    ><p>2. 建立功能 Module 與 Epic；先確認工作區是否支援 Epic／Work Item Types。</p
+    ><p>3. 依第五份文件建立本期需求父單與規格子單。</p
+    ><p>4. 解決影響實作的 Q；開發組長拆估並填開始日／預計送測日。</p
+    ><p
+      >5. 先做授權與主檔，再做商務、線路遊戲、交易報表，最後做正式結轉與跨後台驗證。依第五份 blocked
+      by 為準。</p
+    ><p>6. 開發送測時建立 QA 子單；Bug 保留重現、版本與複驗。</p
+    ><p>7. QA 通過後需求方驗收；完成上線與交付文件包才關父單。</p
+    ><h2>7. 需要 PM 確認的工作區設定</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">問題</th
+        ><th style="text-align: left; vertical-align: top">處理</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top"
+          >實際 Project／Identifier／成員／日期／Priority</td
+        ><td style="text-align: left; vertical-align: top"
+          >目前均未取得，不填假資料；建單前由 PM 補齊。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Epic Pro 功能與階層支援</td
+        ><td style="text-align: left; vertical-align: top"
+          >SOP 說明需啟用 Work Item Types；實際方案與階層未查證，不預設可用。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Module 規則文字差異</td
+        ><td style="text-align: left; vertical-align: top"
+          >通用段落要求所有對應單掛 Module；平台 Epic 段落說子單重複掛載待測。此文件先列每單目標
+          Module，正式掛載方式由 PM 依工作區驗證後決議。</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">Status 詞彙差異</td
+        ><td style="text-align: left; vertical-align: top"
+          >通用規則列細階段，平台範例採五態；本文件依平台範例草擬，須與既有工作區映射，不另造兩套流程。</td
+        ></tr
+      ></table
+    ><h2>8. 交付檢查</h2
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">檢查</th
+        ><th style="text-align: left; vertical-align: top">結果</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">專案、Module、Epic、父子單關係已列</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">人員／工期／優先度由實際人員確認</td
+        ><td style="text-align: left; vertical-align: top">待補</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">沒有把原型通過當正式驗收</td
+        ><td style="text-align: left; vertical-align: top">是</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">已在 Plane 實際建立</td
+        ><td style="text-align: left; vertical-align: top">否；本次交付開立文件</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">版本</td
+        ><td style="text-align: left; vertical-align: top"
+          >v1.1，2026-09-09，依指定平台 SOP 整理</td
+        ></tr
+      ></table
+    ><h2>結算需求同步與未完成任務</h2
+    ><p
+      >版本 v1.1。REC-01
+      以雙模式權限、手動交付調整、整數實收、實際收款方與登錄方、原子鎖為範圍；CARRY-01 保留完整跨期
+      GGR 與未收款承接，不能標完成。</p
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">任務</th
+        ><th style="text-align: left; vertical-align: top">工作內容</th
+        ><th style="text-align: left; vertical-align: top">驗收／目前狀態</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">REC-01</td
+        ><td style="text-align: left; vertical-align: top"
+          >結算單整合快照；移除獨立差異；平台全模式可操作，代理僅代理統收可操作；商戶唯讀</td
+        ><td style="text-align: left; vertical-align: top"
+          >原型資料層測試通過；正式後端待開發驗收</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">REC-01 子範圍</td
+        ><td style="text-align: left; vertical-align: top"
+          >實收直接去小數；調整非零填原因；實際收款方及操作者分開；原子鎖及重送冪等</td
+        ><td style="text-align: left; vertical-align: top"
+          >前端原型已測；正式員工身份與併發待完成</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">CARRY-01</td
+        ><td style="text-align: left; vertical-align: top"
+          >按對象、幣別及類型逐期承接負 GGR 與未收款，含部分交付與回調來源</td
+        ><td style="text-align: left; vertical-align: top">尚未完整實作／不得 Done</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">MODE-01</td
+        ><td style="text-align: left; vertical-align: top"
+          >商戶收付模式生效版本、未來排程、歷史不覆寫、跨模式舊餘額</td
+        ><td style="text-align: left; vertical-align: top"
+          >本期模式可演示；完整排程與歸屬待完成／決議</td
+        ></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">COMM-01</td
+        ><td style="text-align: left; vertical-align: top"
+          >如需自動傭金付款，另確認釋放、分層、部分收款及退款追扣</td
+        ><td style="text-align: left; vertical-align: top"
+          >不因平台登錄收款自動產生；待決不開發</td
+        ></tr
+      ></table
+    ><p
+      >各項沿用規格文件→開發→測試→驗收→上線五階段子單流程、單一負責人及審查規則。未在 Plane
+      工作區實際新增或修改工單；本文件為開立內容。</p
+    ><p
+      >本文件整合最新決議。標記為「規格」的內容不代表原型已完整實現；驗收範圍見文末。取代平台不能操作商戶單、平台代收不開放、獨立差異案件等舊規格。</p
+    ><h3>1. 流程</h3
+    ><p
+      >產生結算單 → 財務核帳／交付 →
+      確認後鎖定。計算依據與結算單合併呈現；不再設獨立差異案件、差異處理或結轉演示區。</p
+    ><h3>2. 商務條件</h3
+    ><p
+      >只採 GGR，按遊戲類型分別設定比例，例如 SLOT 5%、LIVE 8%。這是商務成本比例，不是遊戲
+      RTP。下開給直屬代理或商戶的比例不得低於自身同類型成本。條件變更必有生效日並保存版本，不覆蓋歷史結算。</p
+    ><p
+      >例：相同幣別、期間及類型的 GGR 1,000,000，代理成本 5%，下開 6%；上繳 50,000、向下應收
+      60,000、條件差額
+      10,000。例子不含差異、退款、負數抵扣與匯率。不能把條件差額直接視為平台已支付的傭金。</p
+    ><p
+      >按對帳對象、期間、遊戲類型及幣別區分計算，不跨幣直接相加，不把商戶明細與代理彙總重複計入平台應收。結算週期沿用合約；正式切帳時區、遲到事件及取消／退款／獎池口徑須明確定義。</p
+    ><h3>3. 模式及權限</h3
+    ><table
+      border="1"
+      cellpadding="6"
+      cellspacing="0"
+      style="border-collapse: collapse; width: 100%"
+      ><tr
+        ><th style="text-align: left; vertical-align: top">角色</th
+        ><th style="text-align: left; vertical-align: top">代理統收</th
+        ><th style="text-align: left; vertical-align: top">平台代收</th></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">平台</td
+        ><td style="text-align: left; vertical-align: top">設定、查看、核帳、交付</td
+        ><td style="text-align: left; vertical-align: top">設定、查看、核帳、交付</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">授權代理</td
+        ><td style="text-align: left; vertical-align: top">自己的直屬單據可核帳／交付</td
+        ><td style="text-align: left; vertical-align: top">同範圍唯讀</td></tr
+      ><tr
+        ><td style="text-align: left; vertical-align: top">商戶</td
+        ><td style="text-align: left; vertical-align: top">自己的單據與交付結果唯讀</td
+        ><td style="text-align: left; vertical-align: top">自己的單據與交付結果唯讀</td></tr
+      ></table
+    ><p
+      >平台可記錄實際收款方為平台或單據對應代理；代理操作時收款方固定本代理。登錄方與實際收款方分開。兩方共用原單，一方鎖定後另一方不得重複確認。模式本身不自動產生傭金支付、現金轉帳或已付款狀態。</p
+    ><p
+      >模式變更保留生效日及紀錄。原型目前是總後台選商戶初始模式及設定未鎖定單據的本期模式（適用該期起日），完整未來生效排程尚未完成。</p
+    ><h3>4. 結算欄位與核帳</h3
+    ><p
+      >結算單呈現單號、對象、期間、類型、交易幣／結算幣、模式、付款方與對應收款方；計算快照保存
+      GGR、商務比例／版本、匯率／版本、精度、捨入及計算時間。</p
+    ><p
+      >交付欄位：系統應結（唯讀）、上期退款／回調、差異調整、調整原因、調整後應結、實際收款方、實收／實付、剩餘款及保留至下期。非零差異必填原因。差異由人核對外部帳目後輸入，不由系統自動推定。</p
+    ><p
+      >調整後應結＝系統應結＋本單承接回調＋本次差異（回調若已含於系統應結不可重複加算）。原型不允許實收超過正的可交付金額；溢收處置仍需另訂規格。</p
+    ><p
+      >所有幣別的實收／實付直接捨去小數、不四捨五入。系統應結與差異仍保留計算精度。例：應結
+      1,000.99、交付 1,000、剩餘 0.99，可保留至下期。負 GGR 不填成負的實收。</p
+    ><h3>5. 累積與清零</h3><p>負 GGR 與未交付款項是兩個不同餘額。</p
+    ><p
+      >累積：上期負 GGR＋本期 GGR＝扣抵後
+      GGR；若仍為負，繼續承接；若轉正，按當期適用條件計算應結。清零：當期負 GGR
+      不承接下期。兩種模式均可保留尚未交付的正金額，清零不是免除欠款。</p
+    ><p
+      >必要欄位：上期累積 GGR、本期 GGR、扣抵後 GGR、結轉下期
+      GGR；上期待交付金額、本期新增應結、上期退款／回調、差異調整、合計待交付、本期實際交付、剩餘及結轉下期待交付。不同類型／幣別不任意互抵。</p
+    ><h3>6. 狀態與鎖定</h3
+    ><p
+      >對帳主要狀態為待確認、已鎖定；收付另列未收付、部分收付、已收付、已結轉下期。已鎖定不等於已收款；已結轉不等於已付款。</p
+    ><p
+      >鎖定後不改原計算、模式、調整或交付；更正以後續期間上期退款／回調連結原單。原型會檢查同一對象、線路與幣別且目標單未確認。完整稽核應包含正式操作者帳號、時間及修改前後值。</p
+    ><h3>7. 本次驗收結果與限制</h3
+    ><p
+      >已通過資料層自動驗收：平台在兩種模式可操作；代理統收代理可操作；平台代收代理拒絕且原單不變；非授權收款方拒絕；實際收款方與登錄方分開；整數實收；重複交付／鎖定後改模式拒絕；代理商戶共用結果及授權範圍；差異必填原因；回調不覆寫來源。型別檢查通過。</p
+    ><p
+      >尚不能宣稱完成：多期 GGR
+      及未收款自動承接、正式按類型出帳及跨版本條件算法、完整模式生效排程、同一單鎖定後分次補收流程、傭金付款、自動持久化跨瀏覽器同步、後端原子鎖與正式操作者驗權。原型仍使用示範金額，登錄身份目前記錄平台／代理來源而非正式員工身份。</p
+    ><p>本節為 v1.1 最新結算基線；正式後端待完成事項不得因原型測試通過而標 Done。</p
+    ><h3>商戶收付模式編輯補充（2026-09-10）</h3
+    ><p
+      >總後台「商戶管理 → 商戶詳細 →
+      編輯基本資料」與新增流程均提供必填的收付模式（代理統收／平台代收），編輯時帶入現值，儲存需填修改原因並記錄前後值。商戶預設模式適用後續新建帳單；既有帳單保留自身模式快照，平台可在未鎖定帳單內另行修改，鎖定帳單不得改動。代理統收允許授權代理操作，平台代收時代理唯讀；平台兩種模式均可操作。原型已補齊編輯欄位並通過型別檢查及模式權限測試；正式新期帳單產生與模式生效排程仍屬後端待實作驗收。</p
+    ></body
+  ></html
+>

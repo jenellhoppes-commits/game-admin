@@ -311,7 +311,7 @@
     {
       label: '待處理事項',
       value: formatNumber(totalTasks.value),
-      note: '審核、風控、差異與異常',
+      note: '審核、風控、交付與異常',
       icon: 'ri:task-line',
       path: '/approvals/pending',
       tone: totalTasks.value ? 'danger' : ''
