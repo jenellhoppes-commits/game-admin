@@ -11,7 +11,7 @@
               <span>Management Console</span>
             </div>
           </div>
-          <AuthTopBar embedded />
+          <AuthTopBar embedded :show-palette="false" />
         </div>
 
         <div class="auth-right-wrap">
@@ -87,9 +87,6 @@
                 <ElCheckbox v-model="formData.rememberPassword">{{
                   $t('login.rememberPwd')
                 }}</ElCheckbox>
-                <RouterLink class="text-theme" :to="{ name: 'ForgetPassword' }">{{
-                  $t('login.forgetPwd')
-                }}</RouterLink>
               </div>
 
               <div style="margin-top: 30px">

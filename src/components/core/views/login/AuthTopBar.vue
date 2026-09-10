@@ -14,7 +14,7 @@
     </div>
 
     <div class="flex-cc gap-1.5 mr-2 max-sm:mr-5">
-      <div class="color-picker-expandable relative flex-c max-sm:!hidden">
+      <div v-if="showPalette" class="color-picker-expandable relative flex-c max-sm:!hidden">
         <div
           class="color-dots absolute right-0 rounded-full flex-c gap-2 rounded-5 px-2.5 py-2 pr-9 pl-2.5 opacity-0"
         >
@@ -87,7 +87,10 @@
 
   defineOptions({ name: 'AuthTopBar' })
 
-  withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+  withDefaults(defineProps<{ embedded?: boolean; showPalette?: boolean }>(), {
+    embedded: false,
+    showPalette: true
+  })
 
   const settingStore = useSettingStore()
   const userStore = useUserStore()
